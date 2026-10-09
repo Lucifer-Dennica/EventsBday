@@ -5,33 +5,28 @@ import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import ru.yourname.events.data.settings.AppTheme
-import ru.yourname.events.data.settings.SettingsRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onOpenDesign: () -> Unit,
+    onOpenNotifications: () -> Unit,
+    onOpenBehavior: () -> Unit,
+    onOpenData: () -> Unit,
+    onOpenAbout: () -> Unit
+) {
     val ctx = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    val currentTheme by SettingsRepository.themeFlow(ctx).collectAsState(initial = AppTheme.SYSTEM)
-    val swipesEnabled by SettingsRepository.swipesEnabledFlow(ctx).collectAsState(initial = true)
-
     fun open(url: String) {
         runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
     }
@@ -41,69 +36,42 @@ fun SettingsScreen(onBack: () -> Unit) {
             TopAppBar(
                 title = { Text("Настройки") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) }
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { p ->
-        Column(
-            Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())
-        ) {
-            SettingsSection("Оформление")
-            Text(
-                "Тема",
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-            AppTheme.entries.forEach { t ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .selectable(
-                            selected = currentTheme == t,
-                            onClick = { scope.launch { SettingsRepository.setTheme(ctx, t) } }
-                        )
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = currentTheme == t,
-                        onClick = { scope.launch { SettingsRepository.setTheme(ctx, t) } }
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text(t.label)
-                }
-            }
+        Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
 
-            SettingsSection("Поведение")
-            ListItem(
-                headlineContent = { Text("Свайпы в списке") },
-                supportingContent = { Text("Свайп влево — удалить, долгое нажатие — выделить") },
-                trailingContent = {
-                    Switch(
-                        checked = swipesEnabled,
-                        onCheckedChange = { scope.launch { SettingsRepository.setSwipesEnabled(ctx, it) } }
-                    )
-                }
-            )
+            NavItem("🎨", "Дизайн", "Тема, цвет акцента, иконка приложения", onOpenDesign)
+            NavItem("🔔", "Уведомления", "Частота, время, выбор событий", onOpenNotifications)
+            NavItem("👆", "Поведение", "Свайпы, сортировка, вид списка", onOpenBehavior)
+            NavItem("💾", "Данные", "Экспорт и импорт, резервная копия", onOpenData)
 
-            SettingsSection("Разработчик")
-            SettingItem("✉️  Email", "denis22142qwe@gmail.com") {
-                open("mailto:denis22142qwe@gmail.com")
-            }
-            SettingItem("✈️  Telegram", "@Lucifer_Denicca_22142") {
-                open("https://t.me/Lucifer_Denicca_22142")
-            }
-            SettingItem("💝  Поддержать проект", "DonationAlerts") {
+            Spacer(Modifier.height(8.dp))
+            HorizontalDivider()
+            Spacer(Modifier.height(8.dp))
+
+            NavItem("💝", "Поддержать разработчика", "DonationAlerts") {
                 open("https://www.donationalerts.com/r/lucifer_dennica_1999")
             }
+            NavItem("✉️", "Написать разработчику", "denis22142qwe@gmail.com") {
+                open("mailto:denis22142qwe@gmail.com")
+            }
+            NavItem("✈️", "Telegram", "@Lucifer_Denicca_22142") {
+                open("https://t.me/Lucifer_Denicca_22142")
+            }
 
-            SettingsSection("О приложении")
-            SettingItem("Версия", "1.2.0", onClick = null)
-            SettingItem("Политика конфиденциальности", "", onClick = null)
+            Spacer(Modifier.height(8.dp))
+            HorizontalDivider()
+            Spacer(Modifier.height(8.dp))
 
-            SettingsSection("Реклама")
+            NavItem("ℹ️", "О приложении", "Версия 1.3.0", onOpenAbout)
+
+            // Реклама — Yandex Mobile Ads. Позже вставим AdView сюда.
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier
@@ -122,21 +90,27 @@ fun SettingsScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun SettingsSection(title: String) {
-    Text(
-        title,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.primary,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 4.dp)
-    )
-}
-
-@Composable
-private fun SettingItem(title: String, subtitle: String, onClick: (() -> Unit)?) {
-    ListItem(
-        headlineContent = { Text(title) },
-        supportingContent = if (subtitle.isBlank()) null else { { Text(subtitle) } },
-        modifier = if (onClick != null) Modifier.clickable { onClick() } else Modifier
-    )
+private fun NavItem(
+    emoji: String,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(emoji, style = MaterialTheme.typography.titleLarge)
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(subtitle, style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }
