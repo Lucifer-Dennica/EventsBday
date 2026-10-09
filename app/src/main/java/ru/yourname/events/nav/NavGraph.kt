@@ -1,15 +1,20 @@
 package ru.yourname.events.nav
 
+import android.app.Activity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import kotlinx.coroutines.launch
+import ru.yourname.events.ads.AdsConfig
+import ru.yourname.events.ads.InterstitialManager
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.ui.screens.AboutScreen
 import ru.yourname.events.ui.screens.AddEventScreen
@@ -42,7 +47,13 @@ fun NavGraph(vm: EventViewModel) {
     val nav = rememberNavController()
     val events by vm.events.collectAsState()
     val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
     val swipes by SettingsRepository.swipesEnabledFlow(ctx).collectAsState(initial = true)
+
+    // Предзагрузка межстраничной рекламы при старте
+    LaunchedEffect(Unit) {
+        InterstitialManager.preload(ctx)
+    }
 
     NavHost(navController = nav, startDestination = Routes.LIST) {
 
@@ -51,7 +62,16 @@ fun NavGraph(vm: EventViewModel) {
                 events = events,
                 swipesEnabled = swipes,
                 onAddClick = { nav.navigate(Routes.ADD) },
-                onEventClick = { nav.navigate(Routes.detail(it.id)) },
+                onEventClick = { event ->
+                    // Счётчик открытий карточек → возможно показать межстраничную
+                    scope.launch {
+                        val count = SettingsRepository.incrementCardOpens(ctx)
+                        if (count % AdsConfig.INTERSTITIAL_EVERY_N_OPENS == 0) {
+                            (ctx as? Activity)?.let { InterstitialManager.showIfReady(it) }
+                        }
+                    }
+                    nav.navigate(Routes.detail(event.id))
+                },
                 onImportContacts = { vm.importFromContacts { } },
                 onOpenSettings = { nav.navigate(Routes.SETTINGS) },
                 onDeleteMany = { vm.deleteMany(it) }
