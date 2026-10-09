@@ -18,12 +18,6 @@ import coil.compose.AsyncImage
 import ru.yourname.events.R
 import ru.yourname.events.data.model.Event
 
-/**
- * Универсальный аватар:
- * 1) если event.photoUri не пуст → грузим фото пользователя
- * 2) если event.presetAvatar в 1..12 → берём PNG из drawable
- * 3) иначе → цветной круг с инициалом
- */
 @Composable
 fun EventAvatar(
     event: Event,
@@ -41,7 +35,7 @@ fun EventAvatar(
                 modifier = Modifier.size(size).clip(CircleShape)
             )
         }
-        presetRes != null -> {
+        presetRes != null && presetRes != 0 -> {
             androidx.compose.foundation.Image(
                 painter = painterResource(presetRes),
                 contentDescription = null,
@@ -68,8 +62,8 @@ fun EventAvatar(
 }
 
 /**
- * Маппинг номера preset-аватара (1..12) на локальный ресурс.
- * Возвращает 0, если ресурса нет — тогда показываем инициал.
+ * Маппинг номера preset-аватара на локальный ресурс.
+ * Сейчас доступно 8 аватарок.
  */
 fun presetAvatarRes(index: Int): Int = when (index) {
     1 -> R.drawable.ic_avatar_girl
@@ -80,12 +74,8 @@ fun presetAvatarRes(index: Int): Int = when (index) {
     6 -> R.drawable.ic_avatar_old_man
     7 -> R.drawable.ic_avatar_astronaut
     8 -> R.drawable.ic_avatar_cat
-    9 -> R.drawable.ic_avatar_orb
-    10 -> R.drawable.ic_avatar_smiley
-    11 -> R.drawable.ic_avatar_flower
-    12 -> R.drawable.ic_avatar_penguin
     else -> 0
 }
 
-/** Все 12 пресетов для UI-выбора. */
-val AllPresetAvatars: List<Int> = (1..12).toList()
+/** Все доступные пресеты для UI-выбора. */
+val AllPresetAvatars: List<Int> = (1..8).toList()
