@@ -1,5 +1,7 @@
 package ru.yourname.events.data.model
 
+import android.content.Context
+
 enum class SocialPlatform(
     val key: String,
     val label: String,
@@ -17,6 +19,10 @@ enum class SocialPlatform(
     PHONE("phone", "Телефон", "📞", "tel:%s", "+7 999 123-45-67"),
     EMAIL("email", "Email", "✉️", "mailto:%s", "user@mail.com"),
     CUSTOM("custom", "Другое", "🔗", "%s", "https://...");
+
+    /** Возвращает resId иконки из drawable/ic_social_<key>.png или 0, если её нет. */
+    fun iconResId(ctx: Context): Int =
+        ctx.resources.getIdentifier("ic_social_$key", "drawable", ctx.packageName)
 
     companion object {
         fun fromKey(k: String): SocialPlatform = entries.find { it.key == k } ?: CUSTOM
