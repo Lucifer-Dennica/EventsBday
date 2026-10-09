@@ -102,11 +102,9 @@ fun AddEventScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // === Аватар ===
             Text("Фото", style = MaterialTheme.typography.titleMedium)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 item {
-                    // Кнопка выбора своего фото
                     Box(
                         modifier = Modifier
                             .size(64.dp)
