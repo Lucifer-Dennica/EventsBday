@@ -1,5 +1,9 @@
 package ru.yourname.events.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,17 +25,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import coil.compose.AsyncImage
 import ru.yourname.events.data.model.CardColors
 import ru.yourname.events.data.model.Event
-import ru.yourname.events.data.model.SocialLink
+import ru.yourname.events.ui.components.AllPresetAvatars
 import ru.yourname.events.ui.components.SocialLinksEditor
-import ru.yourname.events.ui.components.presetAvatarUrl
+import ru.yourname.events.ui.components.presetAvatarRes
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,16 +60,17 @@ fun AddEventScreen(
     var socials by remember { mutableStateOf(editing?.socialLinks ?: emptyList()) }
     var notifications by remember { mutableStateOf(editing?.notificationsEnabled ?: true) }
     var cardColor by remember { mutableStateOf(editing?.cardColor ?: 0) }
-
     var showDatePicker by remember { mutableStateOf(false) }
 
     val photoPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         if (uri != null) {
-            ctx.contentResolver.takePersistableUriPermission(
-                uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
+            runCatching {
+                ctx.contentResolver.takePersistableUriPermission(
+                    uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            }
             photoUri = uri.toString()
             presetAvatar = null
         }
@@ -104,6 +106,7 @@ fun AddEventScreen(
             Text("Фото", style = MaterialTheme.typography.titleMedium)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 item {
+                    // Кнопка выбора своего фото
                     Box(
                         modifier = Modifier
                             .size(64.dp)
@@ -128,8 +131,9 @@ fun AddEventScreen(
                         }
                     }
                 }
-                items((1..6).toList()) { idx ->
+                items(AllPresetAvatars) { idx ->
                     val selected = presetAvatar == idx && photoUri == null
+                    val res = presetAvatarRes(idx)
                     Box(
                         modifier = Modifier
                             .size(64.dp)
@@ -142,19 +146,21 @@ fun AddEventScreen(
                             .clickable {
                                 photoUri = null
                                 presetAvatar = if (presetAvatar == idx) null else idx
-                            }
+                            },
+                        contentAlignment = Alignment.Center
                     ) {
-                        AsyncImage(
-                            model = presetAvatarUrl(idx),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(64.dp).clip(CircleShape)
-                        )
+                        if (res != 0) {
+                            Image(
+                                painter = painterResource(res),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.size(64.dp).clip(CircleShape)
+                            )
+                        }
                     }
                 }
             }
 
-            // === Имя ===
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -163,17 +169,11 @@ fun AddEventScreen(
                 singleLine = true
             )
 
-            // === Дата ===
             Text("Дата", style = MaterialTheme.typography.titleMedium)
-            OutlinedButton(
-                onClick = { showDatePicker = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    if (hasYear)
-                        "📅 ${date.dayOfMonth}.${date.monthValue}.${date.year}"
-                    else
-                        "📅 ${date.dayOfMonth}.${date.monthValue} (без года)"
+                    if (hasYear) "📅 ${date.dayOfMonth}.${date.monthValue}.${date.year}"
+                    else "📅 ${date.dayOfMonth}.${date.monthValue} (без года)"
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -181,7 +181,6 @@ fun AddEventScreen(
                 Text("Указать год рождения")
             }
 
-            // === Группа ===
             Text("Группа", style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
                 value = group,
@@ -200,7 +199,6 @@ fun AddEventScreen(
                 }
             }
 
-            // === Цвет карточки ===
             Text("Цвет карточки", style = MaterialTheme.typography.titleMedium)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(CardColors.indices.toList()) { i ->
@@ -221,7 +219,6 @@ fun AddEventScreen(
                 }
             }
 
-            // === Заметка ===
             OutlinedTextField(
                 value = note,
                 onValueChange = { note = it },
@@ -230,10 +227,8 @@ fun AddEventScreen(
                 minLines = 2
             )
 
-            // === Соцсети ===
             SocialLinksEditor(links = socials, onChange = { socials = it })
 
-            // === Уведомления ===
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("Уведомления", style = MaterialTheme.typography.titleMedium)
