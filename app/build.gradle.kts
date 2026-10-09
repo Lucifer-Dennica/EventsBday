@@ -12,8 +12,8 @@ android {
         applicationId = "ru.yourname.events"
         minSdk = 24
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.3.0"
+        versionCode = 4
+        versionName = "1.4.0"
     }
 
     signingConfigs {
@@ -28,7 +28,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            isShrinkResources = false      // ← ВАЖНО: сохраняет иконки, на которые ссылаемся динамически
+            isShrinkResources = false
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
@@ -67,4 +67,8 @@ dependencies {
 
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("io.coil-kt:coil-gif:2.6.0")
+
+    // Yandex Mobile Ads
+    implementation("com.yandex.android:mobileads:7.3.0")
+    implementation("com.yandex.android:mobileads-consent:7.3.0")
 }
