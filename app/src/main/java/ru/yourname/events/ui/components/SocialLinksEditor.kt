@@ -1,11 +1,13 @@
 package ru.yourname.events.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,20 +18,20 @@ import ru.yourname.events.data.model.SocialLink
 import ru.yourname.events.data.model.SocialPlatform
 import ru.yourname.events.data.social.SocialUrlParser
 
-/** Редактор списка соцсетей: чипы с крестиком + кнопка "Добавить". */
 @Composable
 fun SocialLinksEditor(
     links: List<SocialLink>,
     onChange: (List<SocialLink>) -> Unit
 ) {
     var showPicker by remember { mutableStateOf(false) }
-    var editingIndex by remember { mutableStateOf<Int?>(null) }
+    var pendingPlatform by remember { mutableStateOf<SocialPlatform?>(null) }
+    var editingIndex by remember { mutableStateOf(-1) } // -1 = новый
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Соцсети и контакты", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.weight(1f))
-            TextButton(onClick = { showPicker = true }) {
+            TextButton(onClick = { editingIndex = -1; showPicker = true }) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
                 Text("Добавить")
@@ -50,7 +52,7 @@ fun SocialLinksEditor(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(link.platform.emoji, style = MaterialTheme.typography.titleMedium)
@@ -62,8 +64,11 @@ fun SocialLinksEditor(
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium)
                         }
-                        IconButton(onClick = { editingIndex = i }) {
-                            Icon(Icons.Default.Add, contentDescription = "Изменить",
+                        IconButton(onClick = {
+                            editingIndex = i
+                            pendingPlatform = link.platform
+                        }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Изменить",
                                 modifier = Modifier.size(18.dp))
                         }
                         IconButton(onClick = {
@@ -78,22 +83,36 @@ fun SocialLinksEditor(
     }
 
     if (showPicker) {
-        PlatformPickerSheet(
-            onDismiss = { showPicker = false },
-            onPick = { platform ->
-                editingIndex = -1 // означает "новый"
-                showPicker = false
-                pendingPlatform = platform
+        ModalBottomSheet(onDismissRequest = { showPicker = false }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+                    .padding(bottom = 24.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text("Выберите платформу", style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(16.dp))
+                SocialPlatform.entries.forEach { p ->
+                    ListItem(
+                        headlineContent = { Text(p.label) },
+                        leadingContent = { Text(p.emoji, style = MaterialTheme.typography.titleLarge) },
+                        modifier = Modifier.clickable {
+                            pendingPlatform = p
+                            showPicker = false
+                        }
+                    )
+                }
             }
-        )
+        }
     }
 
-    // Диалог ввода значения
-    var pendingPlatform by remember { mutableStateOf<SocialPlatform?>(null) }
     pendingPlatform?.let { platform ->
-        var value by remember(platform) { mutableStateOf("") }
+        val initial = if (editingIndex >= 0 && editingIndex < links.size) links[editingIndex].value else ""
+        var value by remember(platform, editingIndex) { mutableStateOf(initial) }
+
         AlertDialog(
-            onDismissRequest = { pendingPlatform = null; editingIndex = null },
+            onDismissRequest = { pendingPlatform = null; editingIndex = -1 },
             title = { Text("${platform.emoji} ${platform.label}") },
             text = {
                 OutlinedTextField(
@@ -110,52 +129,19 @@ fun SocialLinksEditor(
                         if (value.isNotBlank()) {
                             val newLink = SocialLink(platform, value.trim())
                             val list = links.toMutableList()
-                            val idx = editingIndex ?: -1
-                            if (idx >= 0) list[idx] = newLink else list.add(newLink)
+                            if (editingIndex in list.indices) list[editingIndex] = newLink
+                            else list.add(newLink)
                             onChange(list)
                         }
                         pendingPlatform = null
-                        editingIndex = null
+                        editingIndex = -1
                     },
                     enabled = value.isNotBlank()
                 ) { Text("Сохранить") }
             },
             dismissButton = {
-                TextButton(onClick = { pendingPlatform = null; editingIndex = null }) {
-                    Text("Отмена")
-                }
+                TextButton(onClick = { pendingPlatform = null; editingIndex = -1 }) { Text("Отмена") }
             }
         )
     }
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PlatformPickerSheet(
-    onDismiss: () -> Unit,
-    onPick: (SocialPlatform) -> Unit
-) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text("Выберите платформу", style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(vertical = 8.dp))
-            SocialPlatform.entries.forEach { p ->
-                ListItem(
-                    headlineContent = { Text(p.label) },
-                    leadingContent = { Text(p.emoji, style = MaterialTheme.typography.titleLarge) },
-                    modifier = Modifier.clickableNoRipple { onPick(p) }
-                )
-            }
-        }
-    }
-}
-
-private fun Modifier.clickableNoRipple(block: () -> Unit): Modifier =
-    this.then(Modifier).let { it } // упрощено — используем обычный clickable
