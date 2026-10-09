@@ -5,9 +5,11 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.settingsStore: DataStore<Preferences> by preferencesDataStore(name = "app_settings")
@@ -16,6 +18,7 @@ object SettingsRepository {
 
     private val KEY_THEME = stringPreferencesKey("theme")
     private val KEY_SWIPES = booleanPreferencesKey("swipes_enabled")
+    private val KEY_CARD_OPENS = intPreferencesKey("card_opens_count")
 
     fun themeFlow(ctx: Context): Flow<AppTheme> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_THEME]?.let { runCatching { AppTheme.valueOf(it) }.getOrNull() } ?: AppTheme.SYSTEM
@@ -31,6 +34,17 @@ object SettingsRepository {
 
     suspend fun setSwipesEnabled(ctx: Context, enabled: Boolean) {
         ctx.settingsStore.edit { it[KEY_SWIPES] = enabled }
+    }
+
+    /** Увеличивает счётчик открытий карточки и возвращает новое значение. */
+    suspend fun incrementCardOpens(ctx: Context): Int {
+        var newValue = 0
+        ctx.settingsStore.edit { prefs ->
+            val current = prefs[KEY_CARD_OPENS] ?: 0
+            newValue = current + 1
+            prefs[KEY_CARD_OPENS] = newValue
+        }
+        return newValue
     }
 }
 
