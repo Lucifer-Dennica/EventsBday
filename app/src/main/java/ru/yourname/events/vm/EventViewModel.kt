@@ -22,19 +22,14 @@ class EventViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList()
     )
 
-    val upcoming: StateFlow<List<Event>> = events
-        .map { list -> list.sortedBy { it.daysUntil(LocalDate.now()) } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
     fun addOrUpdate(event: Event) = viewModelScope.launch { repo.upsert(event) }
-
     fun delete(event: Event) = viewModelScope.launch { repo.delete(event) }
 
-    fun importFromContacts() = viewModelScope.launch {
+    fun importFromContacts(onDone: (Int) -> Unit) = viewModelScope.launch {
         val imported = ContactsImporter.import(getApplication<Application>().contentResolver)
-        // дедуп по contactId, чтобы не дублировать при повторном импорте
-        val existing = events.value.filter { it.isFromContacts }.associateBy { it.contactId }
-        val filtered = imported.filter { it.contactId !in existing.keys }
+        val existing = events.value.filter { it.isFromContacts }.mapNotNull { it.contactId }.toSet()
+        val filtered = imported.filter { it.contactId !in existing }
         repo.upsertAll(filtered)
+        onDone(filtered.size)
     }
 }
