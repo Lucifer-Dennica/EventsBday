@@ -13,13 +13,16 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.launch
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.ui.components.EventCard
 import java.time.LocalDate
@@ -33,8 +36,7 @@ fun EventListScreen(
     onAddClick: () -> Unit,
     onEventClick: (Event) -> Unit,
     onImportContacts: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onImported: (Int) -> Unit
+    onOpenSettings: () -> Unit
 ) {
     val ctx = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
@@ -45,12 +47,10 @@ fun EventListScreen(
     ) { granted ->
         if (granted) {
             onImportContacts()
-            scope.launch {
-                snackbar.showSnackbar("Импорт из контактов запущен")
-            }
+            scope.launch { snackbar.showSnackbar("Импорт запущен") }
         } else {
             scope.launch {
-                snackbar.showSnackbar("Разрешение на контакты не выдано. Откройте Настройки → Приложения → Разрешения.")
+                snackbar.showSnackbar("Разрешение на контакты не выдано")
             }
         }
     }
@@ -60,7 +60,7 @@ fun EventListScreen(
                 PackageManager.PERMISSION_GRANTED
         if (granted) {
             onImportContacts()
-            scope.launch { snackbar.showSnackbar("Импорт из контактов запущен") }
+            scope.launch { snackbar.showSnackbar("Импорт запущен") }
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
         } else {
