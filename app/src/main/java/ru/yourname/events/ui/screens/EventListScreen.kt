@@ -1,22 +1,25 @@
 package ru.yourname.events.ui.screens
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.ui.components.EventCard
 import java.time.LocalDate
@@ -29,27 +32,57 @@ fun EventListScreen(
     events: List<Event>,
     onAddClick: () -> Unit,
     onEventClick: (Event) -> Unit,
-    onImportContacts: () -> Unit
+    onImportContacts: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onImported: (Int) -> Unit
 ) {
+    val ctx = LocalContext.current
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted -> if (granted) onImportContacts() }
+    ) { granted ->
+        if (granted) {
+            onImportContacts()
+            scope.launch {
+                snackbar.showSnackbar("Импорт из контактов запущен")
+            }
+        } else {
+            scope.launch {
+                snackbar.showSnackbar("Разрешение на контакты не выдано. Откройте Настройки → Приложения → Разрешения.")
+            }
+        }
+    }
+
+    fun requestImport() {
+        val granted = ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_CONTACTS) ==
+                PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            onImportContacts()
+            scope.launch { snackbar.showSnackbar("Импорт из контактов запущен") }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+        } else {
+            onImportContacts()
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
                 title = { Text("Мои События") },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 actions = {
-                    IconButton(onClick = {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                            permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
-                        } else onImportContacts()
-                    }) {
-                        Icon(Icons.Default.Person, contentDescription = "Импорт из контактов", tint = Color.White)
+                    IconButton(onClick = { requestImport() }) {
+                        Icon(Icons.Default.Person, contentDescription = "Импорт из контактов")
+                    }
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = "Настройки")
                     }
                 }
             )
@@ -67,45 +100,18 @@ fun EventListScreen(
         if (events.isEmpty()) {
             EmptyState(Modifier.padding(padding))
         } else {
+            val today = LocalDate.now()
+            val sorted = events.sortedBy { it.daysUntil(today) }
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                val grouped = events.groupBy { it.month }
-                grouped.toSortedMap().forEach { (month, list) ->
-                    item {
-                        MonthHeader(month, list.size)
-                    }
-                    items(list.sortedBy { it.dayOfMonth }, key = { it.id }) { event ->
-                        EventCard(event) { onEventClick(event) }
-                    }
+                items(sorted, key = { it.id }) { event ->
+                    EventCard(event) { onEventClick(event) }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun MonthHeader(month: Int, count: Int) {
-    val name = LocalDate.of(2000, month, 1)
-        .format(DateTimeFormatter.ofPattern("LLLL", Locale("ru")))
-        .replaceFirstChar { it.uppercase() }
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = name,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = "($count)",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 
