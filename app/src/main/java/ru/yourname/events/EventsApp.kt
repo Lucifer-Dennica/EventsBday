@@ -1,12 +1,12 @@
 package ru.yourname.events
 
 import android.app.Application
-import com.yandex.mobile.ads.common.MobileAds
+import com.yandex.mobile.ads.common.YandexAds
 
 class EventsApp : Application() {
     override fun onCreate() {
         super.onCreate()
-        MobileAds.initialize(this) {
+        YandexAds.initialize(this) {
             // SDK готов к загрузке объявлений
         }
     }
