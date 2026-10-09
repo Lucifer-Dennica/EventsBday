@@ -9,28 +9,23 @@ import com.yandex.mobile.ads.common.ImpressionData
 import com.yandex.mobile.ads.interstitial.InterstitialAd
 import com.yandex.mobile.ads.interstitial.InterstitialAdEventListener
 import com.yandex.mobile.ads.interstitial.InterstitialAdLoadListener
+import com.yandex.mobile.ads.interstitial.InterstitialAdLoader
 
 /**
- * Управляет загрузкой и показом межстраничной рекламы.
- * Загружаем заранее, показываем, когда счётчик открытий карточки достиг N.
+ * Управляет загрузкой и показом межстраничной рекламы (SDK 8).
  */
 object InterstitialManager {
 
     private var ad: InterstitialAd? = null
-    private var loading = false
+    private var loader: InterstitialAdLoader? = null
 
     /** Вызывать при старте приложения и после каждого показа — предзагрузка. */
     fun preload(context: Context) {
-        if (ad != null || loading) return
-        loading = true
-        InterstitialAd.load(
-            context,
-            AdsConfig.INTERSTITIAL_ID,
-            AdRequest.Builder().build(),
-            object : InterstitialAdLoadListener {
+        if (ad != null) return
+        val loader = InterstitialAdLoader(context).apply {
+            setAdLoadListener(object : InterstitialAdLoadListener {
                 override fun onAdLoaded(interstitialAd: InterstitialAd) {
                     ad = interstitialAd
-                    loading = false
                     interstitialAd.setAdEventListener(object : InterstitialAdEventListener {
                         override fun onAdDismissed() {
                             ad = null
@@ -48,10 +43,11 @@ object InterstitialManager {
 
                 override fun onAdFailedToLoad(adRequestError: AdRequestError) {
                     ad = null
-                    loading = false
                 }
-            }
-        )
+            })
+        }
+        this.loader = loader
+        loader.loadAd(AdRequest.Builder(AdsConfig.INTERSTITIAL_ID).build())
     }
 
     /** Показать рекламу, если загружена. Если нет — просто пропускаем. */
