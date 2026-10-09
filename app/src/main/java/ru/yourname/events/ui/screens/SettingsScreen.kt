@@ -2,6 +2,7 @@ package ru.yourname.events.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -9,8 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -54,8 +55,6 @@ fun SettingsScreen(onBack: () -> Unit) {
             SettingItem("Политика конфиденциальности", "", onClick = null)
 
             SettingsSection("Реклама")
-            // Место под рекламный баннер Yandex Mobile Ads.
-            // Позже сюда вставим AdView. Пока — заглушка.
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier
@@ -63,7 +62,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                     .padding(16.dp)
                     .height(64.dp)
             ) {
-                Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("Здесь будет реклама (скоро)",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -89,11 +88,6 @@ private fun SettingItem(title: String, subtitle: String, onClick: (() -> Unit)?)
     ListItem(
         headlineContent = { Text(title) },
         supportingContent = if (subtitle.isBlank()) null else { { Text(subtitle) } },
-        modifier = if (onClick != null)
-            Modifier.clickableItem(onClick) else Modifier
+        modifier = if (onClick != null) Modifier.clickable { onClick() } else Modifier
     )
 }
-
-@Composable
-private fun Modifier.clickableItem(block: () -> Unit): Modifier =
-    this.then(Modifier).let { it }
