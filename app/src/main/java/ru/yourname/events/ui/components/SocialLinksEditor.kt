@@ -56,7 +56,7 @@ fun SocialLinksEditor(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(link.platform.emoji, style = MaterialTheme.typography.titleMedium)
+                        SocialIcon(link.platform)
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text(link.platform.label, style = MaterialTheme.typography.labelSmall,
@@ -97,7 +97,7 @@ fun SocialLinksEditor(
                 SocialPlatform.entries.forEach { p ->
                     ListItem(
                         headlineContent = { Text(p.label) },
-                        leadingContent = { Text(p.emoji, style = MaterialTheme.typography.titleLarge) },
+                        leadingContent = { SocialIcon(p, size = 28.dp) },
                         modifier = Modifier.clickable {
                             pendingPlatform = p
                             showPicker = false
@@ -114,7 +114,7 @@ fun SocialLinksEditor(
 
         AlertDialog(
             onDismissRequest = { pendingPlatform = null; editingIndex = -1 },
-            title = { Text("${platform.emoji} ${platform.label}") },
+            title = { Text(platform.label) },
             text = {
                 OutlinedTextField(
                     value = value,
