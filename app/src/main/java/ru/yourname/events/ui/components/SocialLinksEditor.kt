@@ -18,6 +18,7 @@ import ru.yourname.events.data.model.SocialLink
 import ru.yourname.events.data.model.SocialPlatform
 import ru.yourname.events.data.social.SocialUrlParser
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SocialLinksEditor(
     links: List<SocialLink>,
@@ -25,7 +26,7 @@ fun SocialLinksEditor(
 ) {
     var showPicker by remember { mutableStateOf(false) }
     var pendingPlatform by remember { mutableStateOf<SocialPlatform?>(null) }
-    var editingIndex by remember { mutableStateOf(-1) } // -1 = новый
+    var editingIndex by remember { mutableStateOf(-1) }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -108,7 +109,7 @@ fun SocialLinksEditor(
     }
 
     pendingPlatform?.let { platform ->
-        val initial = if (editingIndex >= 0 && editingIndex < links.size) links[editingIndex].value else ""
+        val initial = if (editingIndex in links.indices) links[editingIndex].value else ""
         var value by remember(platform, editingIndex) { mutableStateOf(initial) }
 
         AlertDialog(
