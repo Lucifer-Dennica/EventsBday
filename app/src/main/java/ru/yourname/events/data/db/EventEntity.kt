@@ -13,6 +13,10 @@ data class EventEntity(
     val group: String,
     val note: String,
     val photoUri: String?,
+    val presetAvatar: Int?,
     val contactId: Long?,
-    val isFromContacts: Boolean
+    val isFromContacts: Boolean,
+    val socialLinksRaw: String,      // JSON-массив
+    val notificationsEnabled: Boolean,
+    val cardColor: Int
 )
