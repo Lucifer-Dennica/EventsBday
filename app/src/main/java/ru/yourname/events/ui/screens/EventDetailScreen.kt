@@ -1,5 +1,7 @@
 package ru.yourname.events.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -10,6 +12,10 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -38,7 +44,7 @@ fun EventDetailScreen(
     val fmtFull = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("ru"))
     val age = event.ageAtNext(today)
 
-    var confirmDelete by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -80,7 +86,6 @@ fun EventDetailScreen(
 
             HorizontalDivider(Modifier.padding(vertical = 4.dp))
 
-            // Соцсети
             if (event.socialLinks.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                     Text("Контакты", style = MaterialTheme.typography.labelSmall,
@@ -90,9 +95,7 @@ fun EventDetailScreen(
                             modifier = Modifier.fillMaxWidth().clickable {
                                 val url = SocialUrlParser.buildUrl(link)
                                 runCatching {
-                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW,
-                                        android.net.Uri.parse(url))
-                                    ctx.startActivity(intent)
+                                    ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                                 }
                             }.padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -112,7 +115,6 @@ fun EventDetailScreen(
                 }
             }
 
-            // Заметка
             if (event.note.isNotBlank()) {
                 Column(Modifier.fillMaxWidth()) {
                     Text("Заметка", style = MaterialTheme.typography.labelSmall,
@@ -121,7 +123,6 @@ fun EventDetailScreen(
                 }
             }
 
-            // Группа и год
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     Text("Группа", style = MaterialTheme.typography.labelSmall,
@@ -137,7 +138,6 @@ fun EventDetailScreen(
                 }
             }
 
-            // Зодиак
             ZodiacBlock(event)
         }
     }
