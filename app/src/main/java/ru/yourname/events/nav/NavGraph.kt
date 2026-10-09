@@ -4,11 +4,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.ui.screens.AddEventScreen
 import ru.yourname.events.ui.screens.EventDetailScreen
 import ru.yourname.events.ui.screens.EventListScreen
@@ -29,16 +31,20 @@ object Routes {
 fun NavGraph(vm: EventViewModel) {
     val nav = rememberNavController()
     val events by vm.events.collectAsState()
+    val ctx = LocalContext.current
+    val swipes by SettingsRepository.swipesEnabledFlow(ctx).collectAsState(initial = true)
 
     NavHost(navController = nav, startDestination = Routes.LIST) {
 
         composable(Routes.LIST) {
             EventListScreen(
                 events = events,
+                swipesEnabled = swipes,
                 onAddClick = { nav.navigate(Routes.ADD) },
                 onEventClick = { nav.navigate(Routes.detail(it.id)) },
                 onImportContacts = { vm.importFromContacts { } },
-                onOpenSettings = { nav.navigate(Routes.SETTINGS) }
+                onOpenSettings = { nav.navigate(Routes.SETTINGS) },
+                onDeleteMany = { list -> vm.deleteMany(list) }
             )
         }
 
