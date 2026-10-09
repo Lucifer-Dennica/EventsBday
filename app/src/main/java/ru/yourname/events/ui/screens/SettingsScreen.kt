@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import ru.yourname.events.ads.YandexBanner
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,22 +70,17 @@ fun SettingsScreen(
             HorizontalDivider()
             Spacer(Modifier.height(8.dp))
 
-            NavItem("ℹ️", "О приложении", "Версия 1.3.0", onOpenAbout)
+            NavItem("ℹ️", "О приложении", "Версия 1.4.0", onOpenAbout)
 
-            // Реклама — Yandex Mobile Ads. Позже вставим AdView сюда.
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .height(64.dp)
+            // Рекламный баннер Yandex — только в настройках, ненавязчиво
+            Spacer(Modifier.height(12.dp))
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Здесь будет реклама (скоро)",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                YandexBanner()
             }
+            Spacer(Modifier.height(12.dp))
         }
     }
 }
