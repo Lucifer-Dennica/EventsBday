@@ -4,9 +4,6 @@ import android.content.ContentResolver
 import android.net.Uri
 import android.provider.ContactsContract
 
-/**
- * Извлекает телефон или email из URI контакта, выбранного через ActivityResultContracts.PickContact().
- */
 object ContactDataReader {
 
     fun readPhone(resolver: ContentResolver, contactUri: Uri): String? {
@@ -34,7 +31,6 @@ object ContactDataReader {
     }
 
     private fun resolveContactId(resolver: ContentResolver, contactUri: Uri): Long? {
-        // lookupContact возвращает Uri? (может быть null)
         val uri = ContactsContract.Contacts.lookupContact(resolver, contactUri) ?: return null
         val cursor = resolver.query(
             uri,
