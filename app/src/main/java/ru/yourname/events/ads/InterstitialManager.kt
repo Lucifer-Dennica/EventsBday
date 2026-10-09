@@ -11,17 +11,13 @@ import com.yandex.mobile.ads.interstitial.InterstitialAdEventListener
 import com.yandex.mobile.ads.interstitial.InterstitialAdLoadListener
 import com.yandex.mobile.ads.interstitial.InterstitialAdLoader
 
-/**
- * Управляет загрузкой и показом межстраничной рекламы (SDK 8).
- */
 object InterstitialManager {
 
     private var ad: InterstitialAd? = null
-    private var loader: InterstitialAdLoader? = null
 
-    /** Вызывать при старте приложения и после каждого показа — предзагрузка. */
     fun preload(context: Context) {
         if (ad != null) return
+
         val loader = InterstitialAdLoader(context).apply {
             setAdLoadListener(object : InterstitialAdLoadListener {
                 override fun onAdLoaded(interstitialAd: InterstitialAd) {
@@ -46,11 +42,11 @@ object InterstitialManager {
                 }
             })
         }
-        this.loader = loader
+
+        // ID передаётся в AdRequest.Builder
         loader.loadAd(AdRequest.Builder(AdsConfig.INTERSTITIAL_ID).build())
     }
 
-    /** Показать рекламу, если загружена. Если нет — просто пропускаем. */
     fun showIfReady(activity: Activity) {
         ad?.show(activity)
     }
