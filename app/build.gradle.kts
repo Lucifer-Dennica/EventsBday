@@ -6,14 +6,14 @@ plugins {
 
 android {
     namespace = "ru.yourname.events"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "ru.yourname.events"
         minSdk = 24
-        targetSdk = 35
-        versionCode = 4
-        versionName = "1.4.0"
+        targetSdk = 34
+        versionCode = 5
+        versionName = "1.4.1"
     }
 
     signingConfigs {
@@ -68,6 +68,6 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("io.coil-kt:coil-gif:2.6.0")
 
-    // Yandex Mobile Ads SDK — теперь в Maven Central
+    // Yandex Mobile Ads SDK 8 — теперь в Maven Central
     implementation("com.yandex.android:mobileads:8.5.0")
 }
