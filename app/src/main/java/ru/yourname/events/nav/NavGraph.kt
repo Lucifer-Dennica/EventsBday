@@ -1,6 +1,7 @@
 package ru.yourname.events.nav
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.navigation.NavType
@@ -37,18 +38,14 @@ fun NavGraph(vm: EventViewModel) {
                 onAddClick = { nav.navigate(Routes.ADD) },
                 onEventClick = { nav.navigate(Routes.detail(it.id)) },
                 onImportContacts = { vm.importFromContacts { } },
-                onOpenSettings = { nav.navigate(Routes.SETTINGS) },
-                onImported = { }
+                onOpenSettings = { nav.navigate(Routes.SETTINGS) }
             )
         }
 
         composable(Routes.ADD) {
             AddEventScreen(
                 editing = null,
-                onSave = {
-                    vm.addOrUpdate(it)
-                    nav.popBackStack()
-                },
+                onSave = { vm.addOrUpdate(it); nav.popBackStack() },
                 onBack = { nav.popBackStack() }
             )
         }
@@ -56,13 +53,13 @@ fun NavGraph(vm: EventViewModel) {
         composable(Routes.EDIT, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
             val id = entry.arguments?.getLong("id") ?: return@composable
             val event = events.find { it.id == id }
-            if (event == null) { nav.popBackStack(); return@composable }
+            if (event == null) {
+                LaunchedEffect(Unit) { nav.popBackStack() }
+                return@composable
+            }
             AddEventScreen(
                 editing = event,
-                onSave = {
-                    vm.addOrUpdate(it)
-                    nav.popBackStack()
-                },
+                onSave = { vm.addOrUpdate(it); nav.popBackStack() },
                 onBack = { nav.popBackStack() }
             )
         }
@@ -71,17 +68,13 @@ fun NavGraph(vm: EventViewModel) {
             val id = entry.arguments?.getLong("id") ?: return@composable
             val event = events.find { it.id == id }
             if (event == null) {
-                // Событие удалено — возвращаемся к списку
-                androidx.compose.runtime.LaunchedEffect(Unit) { nav.popBackStack() }
+                LaunchedEffect(Unit) { nav.popBackStack() }
                 return@composable
             }
             EventDetailScreen(
                 event = event,
                 onEdit = { nav.navigate(Routes.edit(event.id)) },
-                onDelete = {
-                    vm.delete(event)
-                    nav.popBackStack()
-                },
+                onDelete = { vm.delete(event); nav.popBackStack() },
                 onBack = { nav.popBackStack() }
             )
         }
