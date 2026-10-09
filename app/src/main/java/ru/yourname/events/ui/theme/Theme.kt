@@ -11,18 +11,19 @@ private val LightColors = lightColorScheme(
     primary = Primary, onPrimary = OnPrimary, primaryContainer = PrimaryContainer,
     secondary = Secondary, tertiary = Tertiary,
     background = Background, surface = Surface, surfaceVariant = SurfaceVariant,
-    onSurface = OnSurface, onSurfaceVariant = OnSurfaceVariant
+    onSurface = OnSurface, onSurfaceVariant = OnSurfaceVariant,
+    outline = Outline, error = Error
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFFD0BCFF),
-    onPrimary = Color(0xFF381E72),
-    primaryContainer = Color(0xFF4F378B),
-    background = Color(0xFF141218),
-    surface = Color(0xFF1D1B20),
-    surfaceVariant = Color(0xFF49454F),
-    onSurface = Color(0xFFE6E0E9),
-    onSurfaceVariant = Color(0xFFCAC4D0)
+    primary = Color(0xFFB8C2FF),
+    onPrimary = Color(0xFF1D2878),
+    primaryContainer = Color(0xFF394099),
+    background = Color(0xFF121318),
+    surface = Color(0xFF1C1E24),
+    surfaceVariant = Color(0xFF2A2D36),
+    onSurface = Color(0xFFE4E6EE),
+    onSurfaceVariant = Color(0xFFB0B6C4)
 )
 
 @Composable
