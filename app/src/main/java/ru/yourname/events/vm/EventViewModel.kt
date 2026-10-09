@@ -5,14 +5,12 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.yourname.events.data.contacts.ContactsImporter
 import ru.yourname.events.data.db.AppDatabase
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.repository.EventRepository
-import java.time.LocalDate
 
 class EventViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -24,6 +22,10 @@ class EventViewModel(app: Application) : AndroidViewModel(app) {
 
     fun addOrUpdate(event: Event) = viewModelScope.launch { repo.upsert(event) }
     fun delete(event: Event) = viewModelScope.launch { repo.delete(event) }
+
+    fun deleteMany(list: List<Event>) = viewModelScope.launch {
+        list.forEach { repo.delete(it) }
+    }
 
     fun importFromContacts(onDone: (Int) -> Unit) = viewModelScope.launch {
         val imported = ContactsImporter.import(getApplication<Application>().contentResolver)
