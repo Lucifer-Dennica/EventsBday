@@ -9,7 +9,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -31,7 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,6 +40,7 @@ import ru.yourname.events.data.model.SocialPlatform
 import ru.yourname.events.data.settings.SortMode
 import ru.yourname.events.data.settings.SwipeAction
 import ru.yourname.events.ui.components.EventCard
+import ru.yourname.events.ui.components.SwipeNavigationBox
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -116,7 +115,6 @@ fun EventListScreen(
                 compareBy<Event> { it.group.lowercase() }.thenBy { it.daysUntil(today) }
             )
         }
-        // Закреплённые всегда сверху
         base.sortedByDescending { it.isPinned }
     }
     val todayEvents = remember(sorted) {
@@ -147,27 +145,11 @@ fun EventListScreen(
 
     val selectionMode = selectedIds.isNotEmpty()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .then(
-                if (swipeToSettingsEnabled) {
-                    Modifier.pointerInput(Unit) {
-                        var totalDrag = 0f
-                        detectHorizontalDragGestures(
-                            onDragStart = { totalDrag = 0f },
-                            onDragEnd = {
-                                // Свайп вправо по пустому месту → настройки
-                                if (totalDrag > 150f) {
-                                    onOpenSettings()
-                                }
-                            }
-                        ) { _, dragAmount ->
-                            totalDrag += dragAmount
-                        }
-                    }
-                } else Modifier
-            )
+    SwipeNavigationBox(
+        onSwipeLeft = if (swipeToSettingsEnabled && !selectionMode) {
+            { onOpenSettings() }
+        } else null,
+        modifier = Modifier.fillMaxSize()
     ) {
         Scaffold(
             snackbarHost = { SnackbarHost(snackbar) },
