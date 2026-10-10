@@ -11,8 +11,8 @@ enum class ViewMode {
 }
 
 enum class CalendarMarkStyle(val label: String) {
-    DOTS("Точки (цвет карточек)"),
-    BAR("Полоска"),
-    SQUARE("Квадрат"),
+    FILLED_SQUARE("Заливка квадратом"),
+    FILLED_CIRCLE("Заливка кругом"),
+    OUTLINE("Обводка цветом"),
     NONE("Без отметок")
 }
