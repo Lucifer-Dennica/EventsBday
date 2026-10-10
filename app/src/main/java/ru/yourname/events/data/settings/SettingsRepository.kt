@@ -20,6 +20,9 @@ object SettingsRepository {
     private val KEY_CARD_OPENS = intPreferencesKey("card_opens_count")
     private val KEY_EVENTS_CREATED = intPreferencesKey("events_created_count")
 
+    private val KEY_SWIPE_LEFT = stringPreferencesKey("swipe_left_action")
+    private val KEY_SWIPE_RIGHT = stringPreferencesKey("swipe_right_action")
+
     private val KEY_NOTIF_ENABLED = booleanPreferencesKey("notif_enabled")
     private val KEY_NOTIF_MODE = stringPreferencesKey("notif_mode")
     private val KEY_NOTIF_FREQ = stringPreferencesKey("notif_frequency")
@@ -45,6 +48,24 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_SWIPES] = enabled }
     }
 
+    fun swipeLeftActionFlow(ctx: Context): Flow<SwipeAction> = ctx.settingsStore.data.map { prefs ->
+        prefs[KEY_SWIPE_LEFT]?.let {
+            runCatching { SwipeAction.valueOf(it) }.getOrNull()
+        } ?: SwipeAction.DELETE
+    }
+    suspend fun setSwipeLeftAction(ctx: Context, action: SwipeAction) {
+        ctx.settingsStore.edit { it[KEY_SWIPE_LEFT] = action.name }
+    }
+
+    fun swipeRightActionFlow(ctx: Context): Flow<SwipeAction> = ctx.settingsStore.data.map { prefs ->
+        prefs[KEY_SWIPE_RIGHT]?.let {
+            runCatching { SwipeAction.valueOf(it) }.getOrNull()
+        } ?: SwipeAction.NOTHING
+    }
+    suspend fun setSwipeRightAction(ctx: Context, action: SwipeAction) {
+        ctx.settingsStore.edit { it[KEY_SWIPE_RIGHT] = action.name }
+    }
+
     suspend fun incrementCardOpens(ctx: Context): Int {
         var newValue = 0
         ctx.settingsStore.edit { prefs ->
@@ -55,7 +76,6 @@ object SettingsRepository {
         return newValue
     }
 
-    /** Увеличивает счётчик созданных событий. Возвращает новое значение. */
     suspend fun incrementEventsCreated(ctx: Context): Int {
         var newValue = 0
         ctx.settingsStore.edit { prefs ->
@@ -131,7 +151,8 @@ object SettingsRepository {
 
     suspend fun markAchievementShown(ctx: Context, key: String) {
         ctx.settingsStore.edit { prefs ->
-            val current = (prefs[KEY_ACHIEVEMENTS_SHOWN] ?: "").split(",").filter { it.isNotBlank() }.toMutableSet()
+            val current = (prefs[KEY_ACHIEVEMENTS_SHOWN] ?: "")
+                .split(",").filter { it.isNotBlank() }.toMutableSet()
             current.add(key)
             prefs[KEY_ACHIEVEMENTS_SHOWN] = current.joinToString(",")
         }
