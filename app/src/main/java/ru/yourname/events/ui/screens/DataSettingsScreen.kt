@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ru.yourname.events.data.backup.BackupManager
+import ru.yourname.events.ui.components.SwipeNavigationBox
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,48 +51,53 @@ fun DataSettingsScreen(onBack: () -> Unit) {
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbar) },
-        topBar = {
-            TopAppBar(
-                title = { Text("Данные") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+    SwipeNavigationBox(
+        onSwipeRight = { onBack() },
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbar) },
+            topBar = {
+                TopAppBar(
+                    title = { Text("Данные") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                )
+            }
+        ) { p ->
+            Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
+
+                ActionCard(
+                    icon = Icons.Default.CloudUpload,
+                    title = "Сохранить резервную копию",
+                    subtitle = "Экспортирует все события в JSON-файл",
+                    onClick = {
+                        val name = "events_backup_${LocalDate.now()}.json"
+                        exportLauncher.launch(name)
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
-            )
-        }
-    ) { p ->
-        Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
+                )
 
-            ActionCard(
-                icon = Icons.Default.CloudUpload,
-                title = "Сохранить резервную копию",
-                subtitle = "Экспортирует все события в JSON-файл",
-                onClick = {
-                    val name = "events_backup_${LocalDate.now()}.json"
-                    exportLauncher.launch(name)
-                }
-            )
+                ActionCard(
+                    icon = Icons.Default.Download,
+                    title = "Восстановить из файла",
+                    subtitle = "Загрузит события из ранее сохранённого JSON",
+                    onClick = { importLauncher.launch(arrayOf("application/json")) }
+                )
 
-            ActionCard(
-                icon = Icons.Default.Download,
-                title = "Восстановить из файла",
-                subtitle = "Загрузит события из ранее сохранённого JSON",
-                onClick = { importLauncher.launch(arrayOf("application/json")) }
-            )
+                Spacer(Modifier.height(24.dp))
 
-            Spacer(Modifier.height(24.dp))
-
-            Text(
-                "⚠️ Экспорт сохраняет события, но не пользовательские фото — они остаются в галерее. " +
-                        "Сохраните бэкап на облако или ПК.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
+                Text(
+                    "⚠️ Экспорт сохраняет события, но не пользовательские фото — они остаются в галерее. " +
+                            "Сохраните бэкап на облако или ПК.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
         }
     }
 }
