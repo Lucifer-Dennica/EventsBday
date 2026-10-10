@@ -1,7 +1,10 @@
 package ru.yourname.events.ui.screens
 
+import android.os.PowerManager
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -13,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import ru.yourname.events.data.settings.AnimationMode
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.data.settings.SwipeAction
 import ru.yourname.events.ui.components.SwipeNavigationBox
@@ -27,6 +31,16 @@ fun BehaviorSettingsScreen(onBack: () -> Unit) {
     val swipeToSettings by SettingsRepository.swipeToSettingsEnabledFlow(ctx).collectAsState(initial = true)
     val leftAction by SettingsRepository.swipeLeftActionFlow(ctx).collectAsState(initial = SwipeAction.DELETE)
     val rightAction by SettingsRepository.swipeRightActionFlow(ctx).collectAsState(initial = SwipeAction.NOTHING)
+
+    val animEnabled by SettingsRepository.animEnabledFlow(ctx).collectAsState(initial = true)
+    val animBatterySaver by SettingsRepository.animBatterySaverFlow(ctx).collectAsState(initial = false)
+    val animRespectSystem by SettingsRepository.animRespectSystemFlow(ctx).collectAsState(initial = true)
+    val animMode by SettingsRepository.animModeFlow(ctx).collectAsState(initial = AnimationMode.ALL_VISIBLE)
+
+    val inPowerSave = remember {
+        val pm = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager
+        pm.isPowerSaveMode
+    }
 
     SwipeNavigationBox(
         onSwipeRight = { onBack() },
@@ -68,7 +82,6 @@ fun BehaviorSettingsScreen(onBack: () -> Unit) {
 
                 if (swipesEnabled) {
                     Spacer(Modifier.height(8.dp))
-
                     ActionDropdown(
                         title = "Свайп влево",
                         subtitle = "Справа налево",
@@ -76,9 +89,7 @@ fun BehaviorSettingsScreen(onBack: () -> Unit) {
                         exclude = rightAction,
                         onPick = { scope.launch { SettingsRepository.setSwipeLeftAction(ctx, it) } }
                     )
-
                     Spacer(Modifier.height(12.dp))
-
                     ActionDropdown(
                         title = "Свайп вправо",
                         subtitle = "Слева направо",
@@ -110,6 +121,114 @@ fun BehaviorSettingsScreen(onBack: () -> Unit) {
                         )
                     }
                 )
+
+                HorizontalDivider(Modifier.padding(vertical = 16.dp))
+
+                // === АНИМАЦИИ ===
+                SectionHeader("Анимации карточек")
+                Text(
+                    "Анимированные фоны включены у конкретных карточек в редакторе. Здесь — общие настройки.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+                )
+
+                ListItem(
+                    headlineContent = {
+                        Text("Разрешить анимации",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold)
+                    },
+                    supportingContent = { Text("Главный выключатель всех анимаций") },
+                    trailingContent = {
+                        Switch(
+                            checked = animEnabled,
+                            onCheckedChange = {
+                                scope.launch { SettingsRepository.setAnimEnabled(ctx, it) }
+                            }
+                        )
+                    }
+                )
+
+                if (animEnabled) {
+                    ListItem(
+                        headlineContent = {
+                            Text("Режим отображения",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold)
+                        },
+                        supportingContent = { Text("Сколько карточек анимировать одновременно") }
+                    )
+
+                    AnimationMode.entries.forEach { m ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = animMode == m,
+                                    onClick = {
+                                        scope.launch { SettingsRepository.setAnimMode(ctx, m) }
+                                    }
+                                )
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = animMode == m,
+                                onClick = { scope.launch { SettingsRepository.setAnimMode(ctx, m) } }
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(m.label, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+
+                    ListItem(
+                        headlineContent = {
+                            Text("Уважать системную настройку «Убрать анимации»",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold)
+                        },
+                        supportingContent = {
+                            Text("Если в Android включён режим доступности без анимаций, они будут отключены")
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = animRespectSystem,
+                                onCheckedChange = {
+                                    scope.launch { SettingsRepository.setAnimRespectSystem(ctx, it) }
+                                }
+                            )
+                        }
+                    )
+
+                    ListItem(
+                        headlineContent = {
+                            Text("Анимации в режиме экономии батареи",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold)
+                        },
+                        supportingContent = {
+                            Text(
+                                if (inPowerSave)
+                                    "⚡ Режим экономии сейчас включён. " +
+                                            (if (animBatterySaver) "Анимации продолжают работать."
+                                            else "Анимации приостановлены.")
+                                else if (animBatterySaver)
+                                    "Анимации продолжают работать в режиме экономии"
+                                else
+                                    "По умолчанию анимации приостанавливаются в режиме экономии"
+                            )
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = animBatterySaver,
+                                onCheckedChange = {
+                                    scope.launch { SettingsRepository.setAnimBatterySaver(ctx, it) }
+                                }
+                            )
+                        }
+                    )
+                }
 
                 Spacer(Modifier.height(24.dp))
             }
