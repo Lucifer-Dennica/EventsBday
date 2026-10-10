@@ -4,7 +4,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -18,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -33,6 +33,8 @@ fun EventCard(
     event: Event,
     isSelected: Boolean,
     selectionMode: Boolean,
+    showNotificationsIcon: Boolean,
+    showPinIcon: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onToggleNotifications: () -> Unit,
@@ -114,29 +116,34 @@ fun EventCard(
                 if (days > 0L) {
                     Text("дн.", style = MaterialTheme.typography.labelSmall, color = subTextColor)
                 }
-                Spacer(Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    SmallIconTap(
-                        icon = if (event.notificationsEnabled)
-                            Icons.Default.Notifications else Icons.Default.NotificationsOff,
-                        contentDescription = if (event.notificationsEnabled)
-                            "Уведомления включены" else "Уведомления выключены",
-                        tint = if (event.notificationsEnabled) accentOnCard else subTextColor,
-                        onClick = onToggleNotifications
-                    )
-                    SmallIconTap(
-                        icon = Icons.Default.PushPin,
-                        contentDescription = if (event.isPinned) "Открепить" else "Закрепить",
-                        tint = if (event.isPinned) accentOnCard else subTextColor,
-                        onClick = onTogglePin
-                    )
+                if (showNotificationsIcon || showPinIcon) {
+                    Spacer(Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        if (showNotificationsIcon) {
+                            SmallIconTap(
+                                icon = if (event.notificationsEnabled)
+                                    Icons.Default.Notifications else Icons.Default.NotificationsOff,
+                                contentDescription = if (event.notificationsEnabled)
+                                    "Уведомления включены" else "Уведомления выключены",
+                                tint = if (event.notificationsEnabled) accentOnCard else subTextColor,
+                                onClick = onToggleNotifications
+                            )
+                        }
+                        if (showPinIcon) {
+                            SmallIconTap(
+                                icon = Icons.Default.PushPin,
+                                contentDescription = if (event.isPinned) "Открепить" else "Закрепить",
+                                tint = if (event.isPinned) accentOnCard else subTextColor,
+                                onClick = onTogglePin
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-/** Маленькая иконка-кнопка без лишней тактильной отдачи и риппла на весь размер. */
 @Composable
 private fun SmallIconTap(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
