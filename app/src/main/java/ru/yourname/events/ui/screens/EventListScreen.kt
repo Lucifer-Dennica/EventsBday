@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PushPin
@@ -70,7 +69,7 @@ fun EventListScreen(
     var eventToDelete by remember { mutableStateOf<Event?>(null) }
     var showBulkDeleteConfirm by remember { mutableStateOf(false) }
 
-    // Действия, доступные на жестах — скрываем соответствующие иконки с карточек
+    // Если действие назначено на любой жест — прячем соответствующую иконку с карточки
     val showNotificationsIcon = swipeLeftAction != SwipeAction.NOTIFICATIONS &&
             swipeRightAction != SwipeAction.NOTIFICATIONS
     val showPinIcon = swipeLeftAction != SwipeAction.PIN &&
@@ -468,22 +467,26 @@ private fun EventRow(
             val target = when (dismissState.dismissDirection) {
                 SwipeToDismissBoxValue.EndToStart -> swipeLeftAction
                 SwipeToDismissBoxValue.StartToEnd -> swipeRightAction
-                else -> null
+                else -> SwipeAction.NOTHING
             }
-            if (target != null && target != SwipeAction.NOTHING) {
-                val (icon, colorBg, colorFg) = backgroundFor(target)
+            if (target != SwipeAction.NOTHING) {
+                val icon = actionIcon(target)
+                val bg = actionBg(target)
+                val fg = actionFg(target)
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
-                            color = colorBg,
+                            color = bg,
                             shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
                         )
                         .padding(horizontal = 20.dp),
-                    contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart)
-                        Alignment.CenterEnd else Alignment.CenterStart
+                    contentAlignment =
+                        if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart)
+                            Alignment.CenterEnd
+                        else Alignment.CenterStart
                 ) {
-                    Icon(icon, contentDescription = target.label, tint = colorFg)
+                    Icon(icon, contentDescription = target.label, tint = fg)
                 }
             }
         }
@@ -502,45 +505,34 @@ private fun EventRow(
     }
 }
 
-private data class BgColors(
-    val icon: ImageVector,
-    val background: Color,
-    val foreground: Color
-)
+private fun actionIcon(action: SwipeAction): ImageVector = when (action) {
+    SwipeAction.DELETE -> Icons.Default.Delete
+    SwipeAction.PIN -> Icons.Default.PushPin
+    SwipeAction.NOTIFICATIONS -> Icons.Default.NotificationsOff
+    SwipeAction.EDIT -> Icons.Default.Edit
+    SwipeAction.CALL -> Icons.Default.Call
+    SwipeAction.NOTHING -> Icons.Default.Delete
+}
 
 @Composable
-private fun backgroundFor(action: SwipeAction): BgColors = when (action) {
-    SwipeAction.DELETE -> Triple(
-        Icons.Default.Delete,
-        MaterialTheme.colorScheme.errorContainer,
-        MaterialTheme.colorScheme.onErrorContainer
-    )
-    SwipeAction.PIN -> Triple(
-        Icons.Default.PushPin,
-        MaterialTheme.colorScheme.primaryContainer,
-        MaterialTheme.colorScheme.onPrimaryContainer
-    )
-    SwipeAction.NOTIFICATIONS -> Triple(
-        Icons.Default.NotificationsOff,
-        MaterialTheme.colorScheme.tertiaryContainer,
-        MaterialTheme.colorScheme.onTertiaryContainer
-    )
-    SwipeAction.EDIT -> Triple(
-        Icons.Default.Edit,
-        MaterialTheme.colorScheme.secondaryContainer,
-        MaterialTheme.colorScheme.onSecondaryContainer
-    )
-    SwipeAction.CALL -> Triple(
-        Icons.Default.Call,
-        MaterialTheme.colorScheme.primaryContainer,
-        MaterialTheme.colorScheme.onPrimaryContainer
-    )
-    SwipeAction.NOTHING -> Triple(
-        Icons.Default.Delete,
-        Color.Transparent,
-        Color.Transparent
-    )
-}.let { (icon, bg, fg) -> BgColors(icon, bg, fg) }
+private fun actionBg(action: SwipeAction): Color = when (action) {
+    SwipeAction.DELETE -> MaterialTheme.colorScheme.errorContainer
+    SwipeAction.PIN -> MaterialTheme.colorScheme.primaryContainer
+    SwipeAction.NOTIFICATIONS -> MaterialTheme.colorScheme.tertiaryContainer
+    SwipeAction.EDIT -> MaterialTheme.colorScheme.secondaryContainer
+    SwipeAction.CALL -> MaterialTheme.colorScheme.primaryContainer
+    SwipeAction.NOTHING -> Color.Transparent
+}
+
+@Composable
+private fun actionFg(action: SwipeAction): Color = when (action) {
+    SwipeAction.DELETE -> MaterialTheme.colorScheme.onErrorContainer
+    SwipeAction.PIN -> MaterialTheme.colorScheme.onPrimaryContainer
+    SwipeAction.NOTIFICATIONS -> MaterialTheme.colorScheme.onTertiaryContainer
+    SwipeAction.EDIT -> MaterialTheme.colorScheme.onSecondaryContainer
+    SwipeAction.CALL -> MaterialTheme.colorScheme.onPrimaryContainer
+    SwipeAction.NOTHING -> Color.Transparent
+}
 
 @Composable
 private fun EmptyState(modifier: Modifier = Modifier) {
