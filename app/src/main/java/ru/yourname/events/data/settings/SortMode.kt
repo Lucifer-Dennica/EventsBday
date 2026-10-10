@@ -9,3 +9,10 @@ enum class SortMode(val label: String) {
 enum class ViewMode {
     LIST, CALENDAR
 }
+
+enum class CalendarMarkStyle(val label: String) {
+    DOTS("Точки (цвет карточек)"),
+    BAR("Полоска"),
+    SQUARE("Квадрат"),
+    NONE("Без отметок")
+}
