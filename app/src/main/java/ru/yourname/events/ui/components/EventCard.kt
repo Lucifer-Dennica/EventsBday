@@ -35,6 +35,7 @@ fun EventCard(
     selectionMode: Boolean,
     showNotificationsIcon: Boolean,
     showPinIcon: Boolean,
+    animationsAllowed: Boolean = true,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onToggleNotifications: () -> Unit,
@@ -56,86 +57,101 @@ fun EventCard(
         else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
     }
 
+    val cardShape = RoundedCornerShape(18.dp)
+    val playAnimation = animationsAllowed && event.animation.name != "NONE"
+
     Card(
         colors = CardDefaults.cardColors(containerColor = bgColor),
-        shape = RoundedCornerShape(18.dp),
+        shape = cardShape,
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = BorderStroke(width = if (isSelected || event.isPinned) 2.dp else 1.dp, color = borderColor),
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
     ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (selectionMode) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = if (isSelected) accent else subTextColor,
-                    modifier = Modifier.size(24.dp)
+        Box(modifier = Modifier.fillMaxWidth()) {
+            if (playAnimation) {
+                AnimatedBackground(
+                    type = event.animation.name,
+                    tint = accentOnCard,
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(cardShape)
                 )
-                Spacer(Modifier.width(10.dp))
             }
 
-            EventAvatar(event, size = 54.dp, accentColor = accentOnCard)
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (event.isPinned) {
-                        Icon(
-                            Icons.Default.PushPin,
-                            contentDescription = "Закреплено",
-                            tint = accentOnCard,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                    }
-                    Text(event.name, style = MaterialTheme.typography.titleMedium, color = textColor)
+            Row(
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (selectionMode) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = if (isSelected) accent else subTextColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(10.dp))
                 }
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = buildDateString(event, today),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = subTextColor
-                )
-                if (event.group.isNotBlank()) {
-                    Spacer(Modifier.height(6.dp))
-                    GroupChip(event.group, accentOnCard)
-                }
-            }
-            Spacer(Modifier.width(6.dp))
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = if (days == 0L) "сегодня" else "$days",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = if (days <= 7) accentOnCard else textColor
-                )
-                if (days > 0L) {
-                    Text("дн.", style = MaterialTheme.typography.labelSmall, color = subTextColor)
-                }
-                if (showNotificationsIcon || showPinIcon) {
-                    Spacer(Modifier.height(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        if (showNotificationsIcon) {
-                            SmallIconTap(
-                                icon = if (event.notificationsEnabled)
-                                    Icons.Default.Notifications else Icons.Default.NotificationsOff,
-                                contentDescription = if (event.notificationsEnabled)
-                                    "Уведомления включены" else "Уведомления выключены",
-                                tint = if (event.notificationsEnabled) accentOnCard else subTextColor,
-                                onClick = onToggleNotifications
+
+                EventAvatar(event, size = 54.dp, accentColor = accentOnCard)
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (event.isPinned) {
+                            Icon(
+                                Icons.Default.PushPin,
+                                contentDescription = "Закреплено",
+                                tint = accentOnCard,
+                                modifier = Modifier.size(14.dp)
                             )
+                            Spacer(Modifier.width(4.dp))
                         }
-                        if (showPinIcon) {
-                            SmallIconTap(
-                                icon = Icons.Default.PushPin,
-                                contentDescription = if (event.isPinned) "Открепить" else "Закрепить",
-                                tint = if (event.isPinned) accentOnCard else subTextColor,
-                                onClick = onTogglePin
-                            )
+                        Text(event.name, style = MaterialTheme.typography.titleMedium, color = textColor)
+                    }
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = buildDateString(event, today),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = subTextColor
+                    )
+                    if (event.group.isNotBlank()) {
+                        Spacer(Modifier.height(6.dp))
+                        GroupChip(event.group, accentOnCard)
+                    }
+                }
+                Spacer(Modifier.width(6.dp))
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = if (days == 0L) "сегодня" else "$days",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (days <= 7) accentOnCard else textColor
+                    )
+                    if (days > 0L) {
+                        Text("дн.", style = MaterialTheme.typography.labelSmall, color = subTextColor)
+                    }
+                    if (showNotificationsIcon || showPinIcon) {
+                        Spacer(Modifier.height(6.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            if (showNotificationsIcon) {
+                                SmallIconTap(
+                                    icon = if (event.notificationsEnabled)
+                                        Icons.Default.Notifications else Icons.Default.NotificationsOff,
+                                    contentDescription = if (event.notificationsEnabled)
+                                        "Уведомления включены" else "Уведомления выключены",
+                                    tint = if (event.notificationsEnabled) accentOnCard else subTextColor,
+                                    onClick = onToggleNotifications
+                                )
+                            }
+                            if (showPinIcon) {
+                                SmallIconTap(
+                                    icon = Icons.Default.PushPin,
+                                    contentDescription = if (event.isPinned) "Открепить" else "Закрепить",
+                                    tint = if (event.isPinned) accentOnCard else subTextColor,
+                                    onClick = onTogglePin
+                                )
+                            }
                         }
                     }
                 }
