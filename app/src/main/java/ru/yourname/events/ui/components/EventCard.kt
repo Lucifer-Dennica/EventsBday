@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,29 +30,31 @@ fun EventCard(
     isSelected: Boolean,
     selectionMode: Boolean,
     onClick: () -> Unit,
-    onLongClick: () -> Unit
+    onLongClick: () -> Unit,
+    onToggleNotifications: () -> Unit,
+    onTogglePin: () -> Unit
 ) {
     val today = LocalDate.now()
-    val next = event.nextOccurrence(today)
     val days = event.daysUntil(today)
     val accent = MaterialTheme.colorScheme.primary
 
-    // Логика контраста: если у карточки свой цвет (не 0), используем фиксированные тёмные цвета текста,
-    // потому что все пастельные карточки светлые. Если цвет 0 — берём цвет из темы.
     val hasCustomBg = event.cardColor != 0
     val bgColor = if (hasCustomBg) cardColorAt(event.cardColor) else MaterialTheme.colorScheme.surface
     val textColor = if (hasCustomBg) Color(0xFF1A1C22) else MaterialTheme.colorScheme.onSurface
     val subTextColor = if (hasCustomBg) Color(0xFF5B6478) else MaterialTheme.colorScheme.onSurfaceVariant
     val accentOnCard = if (hasCustomBg) Color(0xFF394099) else accent
-    val borderColor = if (isSelected) accent
-                      else if (hasCustomBg) Color(0xFFB8BEC9)
-                      else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+    val borderColor = when {
+        isSelected -> accent
+        event.isPinned -> accent.copy(alpha = 0.6f)
+        hasCustomBg -> Color(0xFFB8BEC9)
+        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+    }
 
     Card(
         colors = CardDefaults.cardColors(containerColor = bgColor),
         shape = RoundedCornerShape(18.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(width = if (isSelected) 2.dp else 1.dp, color = borderColor),
+        border = BorderStroke(width = if (isSelected || event.isPinned) 2.dp else 1.dp, color = borderColor),
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
@@ -71,7 +76,18 @@ fun EventCard(
             EventAvatar(event, size = 54.dp, accentColor = accentOnCard)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(event.name, style = MaterialTheme.typography.titleMedium, color = textColor)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (event.isPinned) {
+                        Icon(
+                            Icons.Default.PushPin,
+                            contentDescription = "Закреплено",
+                            tint = accentOnCard,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                    }
+                    Text(event.name, style = MaterialTheme.typography.titleMedium, color = textColor)
+                }
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = buildDateString(event, today),
@@ -84,7 +100,7 @@ fun EventCard(
                 }
             }
             Spacer(Modifier.width(8.dp))
-            Column(horizontalAlignment = Alignment.End) {
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = if (days == 0L) "сегодня" else "$days",
                     style = MaterialTheme.typography.titleLarge,
@@ -93,6 +109,32 @@ fun EventCard(
                 )
                 if (days > 0L) {
                     Text("дн.", style = MaterialTheme.typography.labelSmall, color = subTextColor)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
+                    IconButton(
+                        onClick = onToggleNotifications,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (event.notificationsEnabled)
+                                Icons.Default.Notifications else Icons.Default.NotificationsOff,
+                            contentDescription = if (event.notificationsEnabled)
+                                "Уведомления включены" else "Уведомления выключены",
+                            tint = if (event.notificationsEnabled) accentOnCard else subTextColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    IconButton(
+                        onClick = onTogglePin,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PushPin,
+                            contentDescription = if (event.isPinned) "Открепить" else "Закрепить",
+                            tint = if (event.isPinned) accentOnCard else subTextColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
         }
