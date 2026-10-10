@@ -114,7 +114,6 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
 
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
-            // === ЗА СКОЛЬКО ДНЕЙ ===
             SectionHeader("За сколько дней начинать напоминать")
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
@@ -157,7 +156,6 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
                 textAlign = TextAlign.Center
             )
 
-            // === ВРЕМЯ ===
             SectionHeader("Время уведомлений")
             ListItem(
                 headlineContent = { Text("Показывать в", style = MaterialTheme.typography.bodyLarge) },
@@ -212,15 +210,21 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
             title = {
-                Text("Время уведомлений", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                Text(
+                    "Время уведомлений",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
             },
             text = {
-                // Центрируем TimePicker по горизонтали
+                // Ограничиваем ширину и центрируем TimePicker
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    TimePicker(state = state)
+                    Box(modifier = Modifier.width(280.dp)) {
+                        TimePicker(state = state)
+                    }
                 }
             },
             confirmButton = {
