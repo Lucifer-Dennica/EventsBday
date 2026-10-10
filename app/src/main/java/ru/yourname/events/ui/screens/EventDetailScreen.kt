@@ -70,23 +70,51 @@ fun EventDetailScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // === ШАПКА ===
             EventAvatar(event, size = 96.dp, accentColor = MaterialTheme.colorScheme.primary)
-
             Text(event.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-
             Text(
                 text = if (days == 0L) "Сегодня 🎉" else "Через $days дн. — ${next.format(fmtFull)}",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )
-
             if (age != null) {
                 Text("Исполнится $age лет", style = MaterialTheme.typography.titleLarge)
             }
 
-            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+            // === 1. АСТРОЛОГИЯ ===
+            ZodiacBlock(event)
 
+            // === 2. ЗАМЕТКА ===
+            if (event.note.isNotBlank()) {
+                Column(Modifier.fillMaxWidth()) {
+                    Text("Заметка", style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(4.dp))
+                    Text(event.note, style = MaterialTheme.typography.bodyLarge)
+                }
+                HorizontalDivider()
+            }
+
+            // === 3. ГРУППА И ГОД ===
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text("Группа", style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(event.group, style = MaterialTheme.typography.bodyLarge)
+                }
+                if (event.year != null) {
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("Год рождения", style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(event.year.toString(), style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+
+            // === 4. КОНТАКТЫ ===
             if (event.socialLinks.isNotEmpty()) {
+                HorizontalDivider()
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                     Text("Контакты", style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -111,34 +139,8 @@ fun EventDetailScreen(
                             }
                         }
                     }
-                    HorizontalDivider(Modifier.padding(vertical = 4.dp))
                 }
             }
-
-            if (event.note.isNotBlank()) {
-                Column(Modifier.fillMaxWidth()) {
-                    Text("Заметка", style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(event.note, style = MaterialTheme.typography.bodyLarge)
-                }
-            }
-
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    Text("Группа", style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(event.group, style = MaterialTheme.typography.bodyLarge)
-                }
-                if (event.year != null) {
-                    Column {
-                        Text("Год рождения", style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(event.year.toString(), style = MaterialTheme.typography.bodyLarge)
-                    }
-                }
-            }
-
-            ZodiacBlock(event)
         }
     }
 
