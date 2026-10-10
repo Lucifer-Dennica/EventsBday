@@ -2,6 +2,7 @@ package ru.yourname.events.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,13 +10,21 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import ru.yourname.events.R
 import ru.yourname.events.ads.YandexBanner
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,34 +57,25 @@ fun SettingsScreen(
     ) { p ->
         Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
 
-            NavItem("🎨", "Дизайн", "Тема, цвет акцента, иконка приложения", onOpenDesign)
-            NavItem("🔔", "Уведомления", "Частота, время, выбор событий", onOpenNotifications)
-            NavItem("👆", "Поведение", "Свайпы, сортировка, вид списка", onOpenBehavior)
-            NavItem("💾", "Данные", "Экспорт и импорт, резервная копия", onOpenData)
+            NavItemVector(Icons.Default.Palette, "Дизайн", "Тема, цвет акцента, иконка приложения", onOpenDesign)
+            NavItemVector(Icons.Default.Notifications, "Уведомления", "Частота, время, выбор событий", onOpenNotifications)
+            NavItemVector(Icons.Default.TouchApp, "Поведение", "Свайпы, сортировка, вид списка", onOpenBehavior)
+            NavItemVector(Icons.Default.Storage, "Данные", "Экспорт и импорт, резервная копия", onOpenData)
 
             Spacer(Modifier.height(8.dp))
             HorizontalDivider()
             Spacer(Modifier.height(8.dp))
 
-            NavItem("💝", "Поддержать разработчика", "DonationAlerts") {
+            // Донат — оставляем сердечко, оно норм
+            NavItemEmoji("❤️", "Поддержать разработчика", "DonationAlerts") {
                 open("https://www.donationalerts.com/r/lucifer_dennica_1999")
             }
-            NavItem("✉️", "Написать разработчику", "denis22142qwe@gmail.com") {
-                open("mailto:denis22142qwe@gmail.com")
-            }
-            NavItem("✈️", "Telegram", "@Lucifer_Denicca_22142") {
-                open("https://t.me/Lucifer_Denicca_22142")
-            }
 
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider()
-            Spacer(Modifier.height(8.dp))
-
-            NavItem("ℹ️", "О приложении", "Версия 1.6.0", onOpenAbout)
+            NavItemVector(Icons.Default.Info, "О приложении", "Версия, контакты разработчика", onOpenAbout)
 
             Spacer(Modifier.height(16.dp))
 
-            // === РЕКЛАМНЫЙ БАННЕР В САМОМ НИЗУ ===
+            // Баннер в самом низу
             YandexBanner(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -88,7 +88,45 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun NavItem(
+private fun NavItemVector(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(2.dp))
+            Text(subtitle, style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun NavItemEmoji(
     emoji: String,
     title: String,
     subtitle: String,
@@ -101,8 +139,13 @@ private fun NavItem(
             .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(emoji, style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.width(16.dp))
+        Box(
+            modifier = Modifier.size(44.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(emoji, style = MaterialTheme.typography.headlineSmall)
+        }
+        Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(2.dp))
