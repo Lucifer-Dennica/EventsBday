@@ -5,7 +5,7 @@ import java.time.temporal.ChronoUnit
 
 data class SocialLink(
     val platform: SocialPlatform,
-    val value: String   // либо чистый ник, либо URL, либо номер — что ввёл пользователь
+    val value: String
 )
 
 data class Event(
@@ -17,12 +17,13 @@ data class Event(
     val group: String = "Знакомые",
     val note: String = "",
     val photoUri: String? = null,
-    val presetAvatar: Int? = null,       // 1..6, если пользователь выбрал готовый аватар
+    val presetAvatar: Int? = null,
     val contactId: Long? = null,
     val isFromContacts: Boolean = false,
     val socialLinks: List<SocialLink> = emptyList(),
     val notificationsEnabled: Boolean = true,
-    val cardColor: Int = 0                // индекс палитры 0..9
+    val cardColor: Int = 0,
+    val isPinned: Boolean = false
 ) {
     fun nextOccurrence(from: LocalDate): LocalDate {
         var date = LocalDate.of(from.year, month, dayOfMonth)
