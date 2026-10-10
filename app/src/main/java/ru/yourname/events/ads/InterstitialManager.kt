@@ -4,70 +4,48 @@ import android.app.Activity
 import android.content.Context
 import com.yandex.mobile.ads.common.AdError
 import com.yandex.mobile.ads.common.AdRequest
+import com.yandex.mobile.ads.common.AdRequestError
 import com.yandex.mobile.ads.common.ImpressionData
 import com.yandex.mobile.ads.interstitial.InterstitialAd
 import com.yandex.mobile.ads.interstitial.InterstitialAdEventListener
+import com.yandex.mobile.ads.interstitial.InterstitialAdLoadListener
 import com.yandex.mobile.ads.interstitial.InterstitialAdLoader
-import com.yandex.mobile.ads.interstitial.InterstitialAdLoadResult
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 object InterstitialManager {
 
     private var ad: InterstitialAd? = null
-    private var isLoading = false
 
-    /**
-     * Предзагрузка рекламы.
-     * loadAd — suspend-функция, поэтому запускаем в корутине.
-     */
     fun preload(context: Context) {
-        if (ad != null || isLoading) return
-        isLoading = true
+        if (ad != null) return
 
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val loader = InterstitialAdLoader(context)
-                val request = AdRequest.Builder(AdsConfig.INTERSTITIAL_ID).build()
-
-                // В SDK 8 loadAd возвращает InterstitialAdLoadResult
-                when (val result = loader.loadAd(request)) {
-                    is InterstitialAdLoadResult.Success -> {
-                        val loadedAd = result.ad
-                        withContext(Dispatchers.Main) {
-                            ad = loadedAd
-                            isLoading = false
-                            // Слушатель событий устанавливается через setInterstitialAdEventListener
-                            loadedAd.setInterstitialAdEventListener(
-                                object : InterstitialAdEventListener {
-                                    override fun onAdShown() {}
-                                    override fun onAdDismissed() {
-                                        ad = null
-                                        preload(context)
-                                    }
-                                    override fun onAdFailedToShow(adError: AdError) {
-                                        ad = null
-                                        preload(context)
-                                    }
-                                    override fun onAdImpression(impressionData: ImpressionData?) {}
-                                    override fun onAdClicked() {}
-                                }
-                            )
+        val loader = InterstitialAdLoader(context).apply {
+            setAdLoadListener(object : InterstitialAdLoadListener {
+                override fun onAdLoaded(interstitialAd: InterstitialAd) {
+                    ad = interstitialAd
+                    interstitialAd.setAdEventListener(object : InterstitialAdEventListener {
+                        override fun onAdShown() {}
+                        override fun onAdFailedToShow(adError: AdError) {
+                            ad = null
+                            preload(context)
                         }
-                    }
-                    is InterstitialAdLoadResult.Failure -> {
-                        isLoading = false
-                    }
+                        override fun onAdDismissed() {
+                            ad = null
+                            preload(context)
+                        }
+                        override fun onAdClicked() {}
+                        override fun onAdImpression(impressionData: ImpressionData?) {}
+                    })
                 }
-            } catch (e: Exception) {
-                isLoading = false
-            }
+
+                override fun onAdFailedToLoad(adRequestError: AdRequestError) {
+                    ad = null
+                }
+            })
         }
+
+        loader.loadAd(AdRequest.Builder(AdsConfig.INTERSTITIAL_ID).build())
     }
 
-    /** Показать рекламу, если загружена. */
     fun showIfReady(activity: Activity) {
         ad?.show(activity)
     }
