@@ -78,7 +78,11 @@ fun NavGraph(vm: EventViewModel) {
 
         composable(Routes.ADD) {
             AddEventScreen(editing = null,
-                onSave = { vm.addOrUpdate(it); nav.popBackStack() },
+                onSave = {
+                    vm.addOrUpdate(it)
+                    scope.launch { SettingsRepository.incrementEventsCreated(ctx) }
+                    nav.popBackStack()
+                },
                 onBack = { nav.popBackStack() })
         }
 
