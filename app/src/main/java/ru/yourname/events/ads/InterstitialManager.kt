@@ -28,10 +28,11 @@ object InterstitialManager {
                 val loader = InterstitialAdLoader(context)
                 val request = AdRequest.Builder(AdsConfig.INTERSTITIAL_ID).build()
 
-                // В SDK 8 loadAd — suspend-функция, возвращает InterstitialAdLoadResult
+                // loadAd — suspend-функция, возвращает InterstitialAdLoadResult
                 when (val result = loader.loadAd(request)) {
                     is InterstitialAdLoadResult.Success -> {
-                        val loadedAd = result.interstitialAd
+                        // ✅ Правильное поле — result.ad (подтверждено документацией)
+                        val loadedAd = result.ad
                         withContext(Dispatchers.Main) {
                             ad = loadedAd
                             isLoading = false
