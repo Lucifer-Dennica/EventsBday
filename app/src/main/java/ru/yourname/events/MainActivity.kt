@@ -8,16 +8,21 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import ru.yourname.events.data.achievements.Achievements
 import ru.yourname.events.data.settings.AppTheme
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.nav.NavGraph
 import ru.yourname.events.notif.NotificationHelper
 import ru.yourname.events.notif.NotificationScheduler
+import ru.yourname.events.ui.components.AchievementDialog
 import ru.yourname.events.ui.theme.EventsTheme
 import ru.yourname.events.vm.EventViewModel
 
@@ -48,8 +53,49 @@ class MainActivity : ComponentActivity() {
         setContent {
             val theme by SettingsRepository.themeFlow(this)
                 .collectAsState(initial = AppTheme.SYSTEM)
+
+            var pendingAchievement by remember { mutableStateOf<String?>(null) }
+
+            // При старте проверяем, есть ли новое достижение
+            LaunchedEffect(Unit) {
+                val key = Achievements.checkAndGetNewlyUnlocked(this@MainActivity)
+                if (key != null) pendingAchievement = key
+            }
+
             EventsTheme(theme = theme) {
                 NavGraph(vm)
+
+                // Показ всплывашки при разблокировке
+                pendingAchievement?.let { key ->
+                    val (avatarRes, title, desc) = when (key) {
+                        Achievements.ASTRONAUT_KEY -> Triple(
+                            R.drawable.ic_avatar_astronaut,
+                            "Космонавт",
+                            "Вы с нами уже целый год! Спасибо, что пользуетесь приложением."
+                        )
+                        Achievements.CAT_KEY -> Triple(
+                            R.drawable.ic_avatar_cat,
+                            "Кот-программист",
+                            "Вы создали 50 карточек событий. Вот вам кот!"
+                        )
+                        else -> Triple(0, "", "")
+                    }
+                    if (avatarRes != 0) {
+                        AchievementDialog(
+                            avatarRes = avatarRes,
+                            title = title,
+                            description = desc,
+                            onDismiss = {
+                                lifecycleScope.launch {
+                                    SettingsRepository.markAchievementShown(this@MainActivity, key)
+                                }
+                                pendingAchievement = null
+                            }
+                        )
+                    } else {
+                        pendingAchievement = null
+                    }
+                }
             }
         }
     }
