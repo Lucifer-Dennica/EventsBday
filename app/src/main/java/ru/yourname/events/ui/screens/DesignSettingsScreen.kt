@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ru.yourname.events.data.settings.AppTheme
+import ru.yourname.events.data.settings.CalendarMarkStyle
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.data.settings.SortMode
 import ru.yourname.events.ui.components.SwipeNavigationBox
@@ -26,6 +27,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val current by SettingsRepository.themeFlow(ctx).collectAsState(initial = AppTheme.SYSTEM)
     val sortMode by SettingsRepository.sortModeFlow(ctx).collectAsState(initial = SortMode.BY_DATE)
+    val markStyle by SettingsRepository.calendarMarkStyleFlow(ctx).collectAsState(initial = CalendarMarkStyle.DOTS)
 
     var themeExpanded by remember { mutableStateOf(false) }
 
@@ -48,7 +50,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
         ) { p ->
             Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
 
-                // === ТЕМА ===
                 SectionHeader("Тема оформления")
                 ExposedDropdownMenuBox(
                     expanded = themeExpanded,
@@ -85,7 +86,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 HorizontalDivider(Modifier.padding(vertical = 16.dp))
 
-                // === СОРТИРОВКА ===
                 SectionHeader("Сортировка списка")
                 SortMode.entries.forEach { s ->
                     Row(
@@ -109,12 +109,27 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 HorizontalDivider(Modifier.padding(vertical = 16.dp))
 
-                Text(
-                    "Скоро: цвет акцента, иконка приложения, шрифт, анимации карточек",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(16.dp)
-                )
+                SectionHeader("Отметки в календаре")
+                CalendarMarkStyle.entries.forEach { m ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = markStyle == m,
+                                onClick = { scope.launch { SettingsRepository.setCalendarMarkStyle(ctx, m) } }
+                            )
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = markStyle == m,
+                            onClick = { scope.launch { SettingsRepository.setCalendarMarkStyle(ctx, m) } }
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(m.label, style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+
                 Spacer(Modifier.height(24.dp))
             }
         }
