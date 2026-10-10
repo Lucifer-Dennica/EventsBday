@@ -17,11 +17,14 @@ object SettingsRepository {
 
     private val KEY_THEME = stringPreferencesKey("theme")
     private val KEY_SWIPES = booleanPreferencesKey("swipes_enabled")
+    private val KEY_SWIPE_TO_SETTINGS = booleanPreferencesKey("swipe_to_settings_enabled")
     private val KEY_CARD_OPENS = intPreferencesKey("card_opens_count")
     private val KEY_EVENTS_CREATED = intPreferencesKey("events_created_count")
 
     private val KEY_SWIPE_LEFT = stringPreferencesKey("swipe_left_action")
     private val KEY_SWIPE_RIGHT = stringPreferencesKey("swipe_right_action")
+
+    private val KEY_SORT = stringPreferencesKey("sort_mode")
 
     private val KEY_NOTIF_ENABLED = booleanPreferencesKey("notif_enabled")
     private val KEY_NOTIF_MODE = stringPreferencesKey("notif_mode")
@@ -48,6 +51,12 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_SWIPES] = enabled }
     }
 
+    fun swipeToSettingsEnabledFlow(ctx: Context): Flow<Boolean> =
+        ctx.settingsStore.data.map { it[KEY_SWIPE_TO_SETTINGS] ?: true }
+    suspend fun setSwipeToSettingsEnabled(ctx: Context, enabled: Boolean) {
+        ctx.settingsStore.edit { it[KEY_SWIPE_TO_SETTINGS] = enabled }
+    }
+
     fun swipeLeftActionFlow(ctx: Context): Flow<SwipeAction> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_SWIPE_LEFT]?.let {
             runCatching { SwipeAction.valueOf(it) }.getOrNull()
@@ -64,6 +73,14 @@ object SettingsRepository {
     }
     suspend fun setSwipeRightAction(ctx: Context, action: SwipeAction) {
         ctx.settingsStore.edit { it[KEY_SWIPE_RIGHT] = action.name }
+    }
+
+    // === СОРТИРОВКА ===
+    fun sortModeFlow(ctx: Context): Flow<SortMode> = ctx.settingsStore.data.map { prefs ->
+        prefs[KEY_SORT]?.let { runCatching { SortMode.valueOf(it) }.getOrNull() } ?: SortMode.BY_DATE
+    }
+    suspend fun setSortMode(ctx: Context, mode: SortMode) {
+        ctx.settingsStore.edit { it[KEY_SORT] = mode.name }
     }
 
     suspend fun incrementCardOpens(ctx: Context): Int {
