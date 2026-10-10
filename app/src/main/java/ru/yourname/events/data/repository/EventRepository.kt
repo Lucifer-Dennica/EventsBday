@@ -5,6 +5,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import ru.yourname.events.data.db.EventDao
 import ru.yourname.events.data.db.EventEntity
+import ru.yourname.events.data.model.CardAnimation
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.model.SocialLink
 import ru.yourname.events.data.model.SocialPlatform
@@ -24,7 +25,8 @@ class EventRepository(private val dao: EventDao) {
         socialLinks = parseSocials(socialLinksRaw),
         notificationsEnabled = notificationsEnabled,
         cardColor = cardColor,
-        isPinned = isPinned
+        isPinned = isPinned,
+        animation = CardAnimation.fromName(animation)
     )
 
     private fun Event.toEntity() = EventEntity(
@@ -34,7 +36,8 @@ class EventRepository(private val dao: EventDao) {
         socialLinksRaw = serializeSocials(socialLinks),
         notificationsEnabled = notificationsEnabled,
         cardColor = cardColor,
-        isPinned = isPinned
+        isPinned = isPinned,
+        animation = animation.name
     )
 
     private fun parseSocials(raw: String): List<SocialLink> {
