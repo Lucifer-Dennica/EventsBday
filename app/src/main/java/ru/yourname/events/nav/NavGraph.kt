@@ -72,7 +72,9 @@ fun NavGraph(vm: EventViewModel) {
                 },
                 onImportContacts = { vm.importFromContacts { } },
                 onOpenSettings = { nav.navigate(Routes.SETTINGS) },
-                onDeleteMany = { vm.deleteMany(it) }
+                onDeleteMany = { vm.deleteMany(it) },
+                onToggleNotifications = { vm.toggleNotifications(it) },
+                onTogglePin = { vm.togglePin(it) }
             )
         }
 
