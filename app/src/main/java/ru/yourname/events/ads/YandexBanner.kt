@@ -1,5 +1,6 @@
 package ru.yourname.events.ads
 
+import android.util.Log
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.foundation.layout.Box
@@ -10,9 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.yandex.mobile.ads.banner.BannerAdEventListener
 import com.yandex.mobile.ads.banner.BannerAdSize
 import com.yandex.mobile.ads.banner.BannerAdView
 import com.yandex.mobile.ads.common.AdRequest
+import com.yandex.mobile.ads.common.AdRequestError
+import com.yandex.mobile.ads.common.ImpressionData
 
 @Composable
 fun YandexBanner(
@@ -20,7 +24,7 @@ fun YandexBanner(
     adUnitId: String = AdsConfig.BANNER_ID
 ) {
     Box(
-        modifier = modifier.fillMaxWidth().height(60.dp),
+        modifier = modifier.fillMaxWidth().height(64.dp),
         contentAlignment = Alignment.Center
     ) {
         AndroidView(
@@ -32,8 +36,21 @@ fun YandexBanner(
                         ViewGroup.LayoutParams.WRAP_CONTENT
                     )
                     val adView = BannerAdView(ctx).apply {
-                        // Явно задаём inline-размер — работает стабильно в SDK 8
-                        setAdSize(BannerAdSize.inline(ctx, 320, 50))
+                        setAdSize(BannerAdSize.sticky(ctx, 320))
+                        setBannerAdEventListener(object : BannerAdEventListener {
+                            override fun onAdLoaded() {
+                                Log.d("AdsDebug", "Banner loaded OK")
+                            }
+                            override fun onAdFailedToLoad(error: AdRequestError) {
+                                Log.e("AdsDebug", "Banner failed: ${error.description} (code ${error.code})")
+                            }
+                            override fun onAdClicked() {
+                                Log.d("AdsDebug", "Banner clicked")
+                            }
+                            override fun onLeftApplication() {}
+                            override fun onReturnedToApplication() {}
+                            override fun onImpression(impressionData: ImpressionData?) {}
+                        })
                         loadAd(AdRequest.Builder(adUnitId).build())
                     }
                     addView(adView)
