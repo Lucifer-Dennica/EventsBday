@@ -15,36 +15,32 @@ private val Context.settingsStore: DataStore<Preferences> by preferencesDataStor
 
 object SettingsRepository {
 
-    // Тема
     private val KEY_THEME = stringPreferencesKey("theme")
-    // Поведение
     private val KEY_SWIPES = booleanPreferencesKey("swipes_enabled")
     private val KEY_CARD_OPENS = intPreferencesKey("card_opens_count")
+    private val KEY_EVENTS_CREATED = intPreferencesKey("events_created_count")
 
-    // Уведомления
     private val KEY_NOTIF_ENABLED = booleanPreferencesKey("notif_enabled")
     private val KEY_NOTIF_MODE = stringPreferencesKey("notif_mode")
     private val KEY_NOTIF_FREQ = stringPreferencesKey("notif_frequency")
     private val KEY_NOTIF_DAYS_BEFORE = intPreferencesKey("notif_days_before")
     private val KEY_NOTIF_HOUR = intPreferencesKey("notif_hour")
     private val KEY_NOTIF_MINUTE = intPreferencesKey("notif_minute")
+
     private val KEY_FIRST_LAUNCH = stringPreferencesKey("first_launch_iso")
+    private val KEY_ACHIEVEMENTS_SHOWN = stringPreferencesKey("achievements_shown")
 
-    // ============ ТЕМА ============
-
+    // === ТЕМА ===
     fun themeFlow(ctx: Context): Flow<AppTheme> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_THEME]?.let { runCatching { AppTheme.valueOf(it) }.getOrNull() } ?: AppTheme.SYSTEM
     }
-
     suspend fun setTheme(ctx: Context, theme: AppTheme) {
         ctx.settingsStore.edit { it[KEY_THEME] = theme.name }
     }
 
-    // ============ ПОВЕДЕНИЕ ============
-
+    // === ПОВЕДЕНИЕ ===
     fun swipesEnabledFlow(ctx: Context): Flow<Boolean> =
         ctx.settingsStore.data.map { it[KEY_SWIPES] ?: true }
-
     suspend fun setSwipesEnabled(ctx: Context, enabled: Boolean) {
         ctx.settingsStore.edit { it[KEY_SWIPES] = enabled }
     }
@@ -59,38 +55,43 @@ object SettingsRepository {
         return newValue
     }
 
-    // ============ УВЕДОМЛЕНИЯ ============
+    /** Увеличивает счётчик созданных событий. Возвращает новое значение. */
+    suspend fun incrementEventsCreated(ctx: Context): Int {
+        var newValue = 0
+        ctx.settingsStore.edit { prefs ->
+            val current = prefs[KEY_EVENTS_CREATED] ?: 0
+            newValue = current + 1
+            prefs[KEY_EVENTS_CREATED] = newValue
+        }
+        return newValue
+    }
 
+    fun eventsCreatedFlow(ctx: Context): Flow<Int> =
+        ctx.settingsStore.data.map { it[KEY_EVENTS_CREATED] ?: 0 }
+
+    // === УВЕДОМЛЕНИЯ ===
     fun notifEnabledFlow(ctx: Context): Flow<Boolean> =
         ctx.settingsStore.data.map { it[KEY_NOTIF_ENABLED] ?: true }
-
     suspend fun setNotifEnabled(ctx: Context, enabled: Boolean) {
         ctx.settingsStore.edit { it[KEY_NOTIF_ENABLED] = enabled }
     }
 
     fun notifModeFlow(ctx: Context): Flow<NotificationMode> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_NOTIF_MODE]?.let {
-            runCatching { NotificationMode.valueOf(it) }.getOrNull()
-        } ?: NotificationMode.ALL
+        prefs[KEY_NOTIF_MODE]?.let { runCatching { NotificationMode.valueOf(it) }.getOrNull() } ?: NotificationMode.ALL
     }
-
     suspend fun setNotifMode(ctx: Context, mode: NotificationMode) {
         ctx.settingsStore.edit { it[KEY_NOTIF_MODE] = mode.name }
     }
 
     fun notifFrequencyFlow(ctx: Context): Flow<NotificationFrequency> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_NOTIF_FREQ]?.let {
-            runCatching { NotificationFrequency.valueOf(it) }.getOrNull()
-        } ?: NotificationFrequency.EVERY_DAY
+        prefs[KEY_NOTIF_FREQ]?.let { runCatching { NotificationFrequency.valueOf(it) }.getOrNull() } ?: NotificationFrequency.EVERY_DAY
     }
-
     suspend fun setNotifFrequency(ctx: Context, f: NotificationFrequency) {
         ctx.settingsStore.edit { it[KEY_NOTIF_FREQ] = f.name }
     }
 
     fun notifDaysBeforeFlow(ctx: Context): Flow<Int> =
         ctx.settingsStore.data.map { it[KEY_NOTIF_DAYS_BEFORE] ?: 7 }
-
     suspend fun setNotifDaysBefore(ctx: Context, days: Int) {
         ctx.settingsStore.edit { it[KEY_NOTIF_DAYS_BEFORE] = days }
     }
@@ -98,7 +99,6 @@ object SettingsRepository {
     fun notifTimeFlow(ctx: Context): Flow<Pair<Int, Int>> = ctx.settingsStore.data.map { prefs ->
         (prefs[KEY_NOTIF_HOUR] ?: 9) to (prefs[KEY_NOTIF_MINUTE] ?: 0)
     }
-
     suspend fun setNotifTime(ctx: Context, hour: Int, minute: Int) {
         ctx.settingsStore.edit {
             it[KEY_NOTIF_HOUR] = hour
@@ -106,7 +106,7 @@ object SettingsRepository {
         }
     }
 
-    // Первый запуск — для достижения "космонавт"
+    // === ПЕРВЫЙ ЗАПУСК ===
     fun firstLaunchFlow(ctx: Context): Flow<String?> =
         ctx.settingsStore.data.map { it[KEY_FIRST_LAUNCH] }
 
@@ -123,11 +123,30 @@ object SettingsRepository {
         }
         return iso
     }
+
+    // === ДОСТИЖЕНИЯ ===
+    fun achievementsShownFlow(ctx: Context): Flow<Set<String>> = ctx.settingsStore.data.map { prefs ->
+        (prefs[KEY_ACHIEVEMENTS_SHOWN] ?: "").split(",").filter { it.isNotBlank() }.toSet()
+    }
+
+    suspend fun markAchievementShown(ctx: Context, key: String) {
+        ctx.settingsStore.edit { prefs ->
+            val current = (prefs[KEY_ACHIEVEMENTS_SHOWN] ?: "").split(",").filter { it.isNotBlank() }.toMutableSet()
+            current.add(key)
+            prefs[KEY_ACHIEVEMENTS_SHOWN] = current.joinToString(",")
+        }
+    }
 }
 
 enum class AppTheme(val label: String) {
     SYSTEM("Системная"),
     LIGHT("Светлая"),
     DARK("Тёмная"),
-    AMOLED("AMOLED (чёрная)")
+    AMOLED("AMOLED (чёрная)"),
+    BLUE_NIGHT("Синяя ночь"),
+    WARM_SUNSET("Тёплый закат"),
+    FOREST("Лес"),
+    BERRY("Ягодный милкшейк"),
+    MINIMAL("Минимал"),
+    HIGH_CONTRAST("Высокий контраст")
 }
