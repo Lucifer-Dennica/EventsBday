@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import ru.yourname.events.ads.AdsConfig
 import ru.yourname.events.ads.InterstitialManager
 import ru.yourname.events.data.settings.SettingsRepository
+import ru.yourname.events.data.settings.SortMode
 import ru.yourname.events.data.settings.SwipeAction
 import ru.yourname.events.ui.screens.AboutScreen
 import ru.yourname.events.ui.screens.AddEventScreen
@@ -26,7 +27,6 @@ import ru.yourname.events.ui.screens.EventDetailScreen
 import ru.yourname.events.ui.screens.EventListScreen
 import ru.yourname.events.ui.screens.NotificationsSettingsScreen
 import ru.yourname.events.ui.screens.SettingsScreen
-import ru.yourname.events.ui.screens.SwipeGesturesScreen
 import ru.yourname.events.vm.EventViewModel
 
 object Routes {
@@ -38,7 +38,6 @@ object Routes {
     const val SETTINGS_DESIGN = "settings/design"
     const val SETTINGS_NOTIF = "settings/notif"
     const val SETTINGS_BEHAVIOR = "settings/behavior"
-    const val SETTINGS_SWIPES = "settings/swipes"
     const val SETTINGS_DATA = "settings/data"
     const val SETTINGS_ABOUT = "settings/about"
     fun edit(id: Long) = "edit/$id"
@@ -53,8 +52,10 @@ fun NavGraph(vm: EventViewModel) {
     val scope = rememberCoroutineScope()
 
     val swipes by SettingsRepository.swipesEnabledFlow(ctx).collectAsState(initial = true)
+    val swipeToSettings by SettingsRepository.swipeToSettingsEnabledFlow(ctx).collectAsState(initial = true)
     val swipeLeft by SettingsRepository.swipeLeftActionFlow(ctx).collectAsState(initial = SwipeAction.DELETE)
     val swipeRight by SettingsRepository.swipeRightActionFlow(ctx).collectAsState(initial = SwipeAction.NOTHING)
+    val sortMode by SettingsRepository.sortModeFlow(ctx).collectAsState(initial = SortMode.BY_DATE)
 
     LaunchedEffect(Unit) {
         InterstitialManager.preload(ctx)
@@ -68,6 +69,8 @@ fun NavGraph(vm: EventViewModel) {
                 swipesEnabled = swipes,
                 swipeLeftAction = swipeLeft,
                 swipeRightAction = swipeRight,
+                swipeToSettingsEnabled = swipeToSettings,
+                sortMode = sortMode,
                 onAddClick = { nav.navigate(Routes.ADD) },
                 onEventClick = { event ->
                     scope.launch {
@@ -130,12 +133,8 @@ fun NavGraph(vm: EventViewModel) {
         composable(Routes.SETTINGS_DESIGN) { DesignSettingsScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.SETTINGS_NOTIF) { NotificationsSettingsScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.SETTINGS_BEHAVIOR) {
-            BehaviorSettingsScreen(
-                onBack = { nav.popBackStack() },
-                onOpenSwipeSettings = { nav.navigate(Routes.SETTINGS_SWIPES) }
-            )
+            BehaviorSettingsScreen(onBack = { nav.popBackStack() })
         }
-        composable(Routes.SETTINGS_SWIPES) { SwipeGesturesScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.SETTINGS_DATA) { DataSettingsScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.SETTINGS_ABOUT) { AboutScreen(onBack = { nav.popBackStack() }) }
     }
