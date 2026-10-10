@@ -176,7 +176,7 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
                 supportingContent = {
                     Text(String.format(Locale.US, "%02d:%02d", time.first, time.second))
                 },
-                modifier = Modifier.clickableRow { showTimePicker = true }
+                modifier = Modifier.clickable { showTimePicker = true }
             )
 
             Spacer(Modifier.height(24.dp))
