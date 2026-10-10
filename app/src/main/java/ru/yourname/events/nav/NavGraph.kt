@@ -50,7 +50,6 @@ fun NavGraph(vm: EventViewModel) {
     val scope = rememberCoroutineScope()
     val swipes by SettingsRepository.swipesEnabledFlow(ctx).collectAsState(initial = true)
 
-    // Предзагрузка межстраничной рекламы при старте
     LaunchedEffect(Unit) {
         InterstitialManager.preload(ctx)
     }
@@ -63,7 +62,6 @@ fun NavGraph(vm: EventViewModel) {
                 swipesEnabled = swipes,
                 onAddClick = { nav.navigate(Routes.ADD) },
                 onEventClick = { event ->
-                    // Счётчик открытий карточек → возможно показать межстраничную
                     scope.launch {
                         val count = SettingsRepository.incrementCardOpens(ctx)
                         if (count % AdsConfig.INTERSTITIAL_EVERY_N_OPENS == 0) {
