@@ -5,3 +5,7 @@ enum class SortMode(val label: String) {
     BY_NAME("По имени (А-Я)"),
     BY_GROUP("По группе")
 }
+
+enum class ViewMode {
+    LIST, CALENDAR
+}
