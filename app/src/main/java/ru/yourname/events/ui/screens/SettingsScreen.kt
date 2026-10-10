@@ -2,7 +2,6 @@ package ru.yourname.events.ui.screens
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,11 +20,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import ru.yourname.events.R
 import ru.yourname.events.ads.YandexBanner
+import ru.yourname.events.ui.components.SwipeNavigationBox
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,47 +40,55 @@ fun SettingsScreen(
         runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Настройки") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
-            )
-        }
-    ) { p ->
-        Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
-
-            NavItemVector(Icons.Default.Palette, "Дизайн", "Тема, цвет акцента, иконка приложения", onOpenDesign)
-            NavItemVector(Icons.Default.Notifications, "Уведомления", "Частота, время, выбор событий", onOpenNotifications)
-            NavItemVector(Icons.Default.TouchApp, "Поведение", "Свайпы, сортировка, вид списка", onOpenBehavior)
-            NavItemVector(Icons.Default.Storage, "Данные", "Экспорт и импорт, резервная копия", onOpenData)
-
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider()
-            Spacer(Modifier.height(8.dp))
-
-            // Донат — оставляем сердечко, оно норм
-            NavItemEmoji("❤️", "Поддержать разработчика", "DonationAlerts") {
-                open("https://www.donationalerts.com/r/lucifer_dennica_1999")
+    SwipeNavigationBox(
+        onSwipeRight = { onBack() },
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Настройки") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                )
             }
+        ) { p ->
+            Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
 
-            NavItemVector(Icons.Default.Info, "О приложении", "Версия, контакты разработчика", onOpenAbout)
+                NavItemVector(Icons.Default.Palette, "Дизайн",
+                    "Тема, сортировка, иконка приложения", onOpenDesign)
+                NavItemVector(Icons.Default.Notifications, "Уведомления",
+                    "Частота, время, выбор событий", onOpenNotifications)
+                NavItemVector(Icons.Default.TouchApp, "Поведение",
+                    "Свайпы и жесты", onOpenBehavior)
+                NavItemVector(Icons.Default.Storage, "Данные",
+                    "Экспорт и импорт, резервная копия", onOpenData)
 
-            Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(8.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(8.dp))
 
-            // Баннер в самом низу
-            YandexBanner(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-            )
+                NavItemEmoji("❤️", "Поддержать разработчика", "DonationAlerts") {
+                    open("https://www.donationalerts.com/r/lucifer_dennica_1999")
+                }
 
-            Spacer(Modifier.height(16.dp))
+                NavItemVector(Icons.Default.Info, "О приложении",
+                    "Версия, контакты разработчика", onOpenAbout)
+
+                Spacer(Modifier.height(16.dp))
+
+                YandexBanner(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                )
+
+                Spacer(Modifier.height(16.dp))
+            }
         }
     }
 }
@@ -101,11 +107,7 @@ private fun NavItemVector(
             .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.size(44.dp), contentAlignment = Alignment.Center) {
             Icon(
                 icon,
                 contentDescription = null,
@@ -139,10 +141,7 @@ private fun NavItemEmoji(
             .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier.size(44.dp),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.size(44.dp), contentAlignment = Alignment.Center) {
             Text(emoji, style = MaterialTheme.typography.headlineSmall)
         }
         Spacer(Modifier.width(14.dp))
