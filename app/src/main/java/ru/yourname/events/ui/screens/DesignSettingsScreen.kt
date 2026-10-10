@@ -1,8 +1,12 @@
 package ru.yourname.events.ui.screens
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -10,12 +14,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import ru.yourname.events.R
+import ru.yourname.events.data.settings.AppIcon
 import ru.yourname.events.data.settings.AppTheme
 import ru.yourname.events.data.settings.CalendarMarkStyle
+import ru.yourname.events.data.settings.IconSwitcher
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.data.settings.SortMode
 import ru.yourname.events.ui.components.SwipeNavigationBox
@@ -28,6 +37,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
     val current by SettingsRepository.themeFlow(ctx).collectAsState(initial = AppTheme.SYSTEM)
     val sortMode by SettingsRepository.sortModeFlow(ctx).collectAsState(initial = SortMode.BY_DATE)
     val markStyle by SettingsRepository.calendarMarkStyleFlow(ctx).collectAsState(initial = CalendarMarkStyle.FILLED_SQUARE)
+    val appIcon by SettingsRepository.appIconFlow(ctx).collectAsState(initial = AppIcon.MAIN)
 
     var themeExpanded by remember { mutableStateOf(false) }
 
@@ -50,6 +60,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
         ) { p ->
             Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
 
+                // === ТЕМА ===
                 SectionHeader("Тема оформления")
                 ExposedDropdownMenuBox(
                     expanded = themeExpanded,
@@ -86,6 +97,73 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 HorizontalDivider(Modifier.padding(vertical = 16.dp))
 
+                // === ИКОНКА ПРИЛОЖЕНИЯ ===
+                SectionHeader("Иконка приложения")
+                Text(
+                    "Рабочий стол может обновиться не сразу — иногда требуется перезагрузка",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    IconTile(
+                        iconRes = R.mipmap.ic_launcher_main,
+                        label = "Торт",
+                        selected = appIcon == AppIcon.MAIN,
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.MAIN) }
+                            IconSwitcher.switchTo(ctx, AppIcon.MAIN)
+                        }
+                    )
+                    IconTile(
+                        iconRes = R.mipmap.ic_launcher_cake,
+                        label = "Свечи",
+                        selected = appIcon == AppIcon.CAKE,
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.CAKE) }
+                            IconSwitcher.switchTo(ctx, AppIcon.CAKE)
+                        }
+                    )
+                }
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    IconTile(
+                        iconRes = R.mipmap.ic_launcher_calendar,
+                        label = "Календарь",
+                        selected = appIcon == AppIcon.CALENDAR,
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.CALENDAR) }
+                            IconSwitcher.switchTo(ctx, AppIcon.CALENDAR)
+                        }
+                    )
+                    IconTile(
+                        iconRes = R.mipmap.ic_launcher_gift,
+                        label = "Подарок",
+                        selected = appIcon == AppIcon.GIFT,
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.GIFT) }
+                            IconSwitcher.switchTo(ctx, AppIcon.GIFT)
+                        }
+                    )
+                }
+
+                HorizontalDivider(Modifier.padding(vertical = 16.dp))
+
+                // === СОРТИРОВКА ===
                 SectionHeader("Сортировка списка")
                 SortMode.entries.forEach { s ->
                     Row(
@@ -109,6 +187,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 HorizontalDivider(Modifier.padding(vertical = 16.dp))
 
+                // === ОТМЕТКИ КАЛЕНДАРЯ ===
                 SectionHeader("Отметки в календаре")
                 CalendarMarkStyle.entries.forEach { m ->
                     Row(
@@ -133,6 +212,47 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                 Spacer(Modifier.height(24.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun IconTile(
+    iconRes: Int,
+    label: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val borderColor = if (selected) MaterialTheme.colorScheme.primary
+                      else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+    val borderWidth = if (selected) 3.dp else 1.dp
+
+    Column(
+        modifier = modifier.clickable { onClick() },
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .aspectRatio(1f)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .border(borderWidth, borderColor, RoundedCornerShape(16.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(iconRes),
+                contentDescription = label,
+                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))
+            )
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (selected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+        )
     }
 }
 
