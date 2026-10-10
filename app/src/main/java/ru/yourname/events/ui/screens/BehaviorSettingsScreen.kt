@@ -1,12 +1,11 @@
 package ru.yourname.events.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,16 +15,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ru.yourname.events.data.settings.SettingsRepository
+import ru.yourname.events.data.settings.SortMode
+import ru.yourname.events.data.settings.SwipeAction
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BehaviorSettingsScreen(
-    onBack: () -> Unit,
-    onOpenSwipeSettings: () -> Unit
-) {
+fun BehaviorSettingsScreen(onBack: () -> Unit) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
+
     val swipesEnabled by SettingsRepository.swipesEnabledFlow(ctx).collectAsState(initial = true)
+    val swipeToSettings by SettingsRepository.swipeToSettingsEnabledFlow(ctx).collectAsState(initial = true)
+    val leftAction by SettingsRepository.swipeLeftActionFlow(ctx).collectAsState(initial = SwipeAction.DELETE)
+    val rightAction by SettingsRepository.swipeRightActionFlow(ctx).collectAsState(initial = SwipeAction.NOTHING)
+    val sortMode by SettingsRepository.sortModeFlow(ctx).collectAsState(initial = SortMode.BY_DATE)
 
     Scaffold(
         topBar = {
@@ -42,8 +45,35 @@ fun BehaviorSettingsScreen(
     ) { p ->
         Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
 
+            // === СОРТИРОВКА ===
+            SectionHeader("Сортировка списка")
+            SortMode.entries.forEach { s ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = sortMode == s,
+                            onClick = { scope.launch { SettingsRepository.setSortMode(ctx, s) } }
+                        )
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = sortMode == s,
+                        onClick = { scope.launch { SettingsRepository.setSortMode(ctx, s) } }
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(s.label, style = MaterialTheme.typography.bodyLarge)
+                }
+            }
+
+            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+
+            // === ЖЕСТЫ ===
+            SectionHeader("Жесты")
+
             ListItem(
-                headlineContent = { Text("Свайпы в списке",
+                headlineContent = { Text("Свайпы по карточкам",
                     style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) },
                 supportingContent = { Text("Движение пальцем по карточке для действий") },
                 trailingContent = {
@@ -55,27 +85,108 @@ fun BehaviorSettingsScreen(
             )
 
             if (swipesEnabled) {
-                ListItem(
-                    headlineContent = { Text("Настроить действия жестов",
-                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) },
-                    supportingContent = { Text("Что происходит при свайпе влево и вправо") },
-                    trailingContent = {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    },
-                    modifier = Modifier.clickable { onOpenSwipeSettings() }
+                Spacer(Modifier.height(8.dp))
+
+                ActionDropdown(
+                    title = "Свайп влево",
+                    subtitle = "Справа налево",
+                    current = leftAction,
+                    exclude = rightAction,
+                    onPick = { scope.launch { SettingsRepository.setSwipeLeftAction(ctx, it) } }
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                ActionDropdown(
+                    title = "Свайп вправо",
+                    subtitle = "Слева направо",
+                    current = rightAction,
+                    exclude = leftAction,
+                    onPick = { scope.launch { SettingsRepository.setSwipeRightAction(ctx, it) } }
                 )
             }
 
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+            Spacer(Modifier.height(12.dp))
 
-            Text(
-                "Совет: свайпните вправо по пустому месту на главном экране, чтобы быстро открыть настройки.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(16.dp)
+            ListItem(
+                headlineContent = { Text("Свайп для настроек",
+                    style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) },
+                supportingContent = {
+                    Text(if (swipeToSettings)
+                        "Свайп вправо по пустому месту → открыть настройки; в настройках — свайп влево → назад"
+                        else "Отключено")
+                },
+                trailingContent = {
+                    Switch(
+                        checked = swipeToSettings,
+                        onCheckedChange = { scope.launch { SettingsRepository.setSwipeToSettingsEnabled(ctx, it) } }
+                    )
+                }
             )
+
+            Spacer(Modifier.height(24.dp))
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ActionDropdown(
+    title: String,
+    subtitle: String,
+    current: SwipeAction,
+    exclude: SwipeAction,
+    onPick: (SwipeAction) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(Modifier.padding(horizontal = 16.dp)) {
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Text(subtitle, style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(6.dp))
+
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = it },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = current.label,
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                },
+                modifier = Modifier.menuAnchor().fillMaxWidth()
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                SwipeAction.entries.forEach { a ->
+                    if (a != exclude) {
+                        DropdownMenuItem(
+                            text = { Text(a.label) },
+                            onClick = {
+                                onPick(a)
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+    )
 }
