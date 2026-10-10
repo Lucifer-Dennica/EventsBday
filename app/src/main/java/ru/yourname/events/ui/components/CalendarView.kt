@@ -5,8 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -36,22 +34,20 @@ fun CalendarView(
     events: List<Event>,
     selectedDate: LocalDate?,
     markStyle: CalendarMarkStyle,
-    onDayClick: (LocalDate) -> Unit
+    onDayClick: (LocalDate) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var currentMonth by remember { mutableStateOf(YearMonth.now()) }
     var showMonthPicker by remember { mutableStateOf(false) }
 
     val today = LocalDate.now()
 
-    // События по датам в текущем отображаемом году + следующий год для уже прошедших
     val eventsByDate: Map<LocalDate, List<Event>> = remember(events, currentMonth) {
         val result = mutableMapOf<LocalDate, MutableList<Event>>()
         events.forEach { e ->
-            // Дата в текущем году
             val thisYear = runCatching {
                 LocalDate.of(currentMonth.year, e.month, e.dayOfMonth)
             }.getOrNull()
-            // Если она в прошлом — берём следующий год
             val date = when {
                 thisYear == null -> null
                 thisYear.isBefore(today) -> runCatching {
@@ -59,17 +55,19 @@ fun CalendarView(
                 }.getOrNull()
                 else -> thisYear
             } ?: return@forEach
-
-            if (date.year == currentMonth.year && date.month == currentMonth.month) {
+            if (date.year == currentMonth.year && date.monthValue == currentMonth.monthValue) {
                 result.getOrPut(date) { mutableListOf() }.add(e)
             }
         }
         result
     }
 
-    Column(Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
-
-        // === Шапка: месяц и стрелки ===
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+    ) {
+        // === Шапка ===
         Row(
             Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -92,10 +90,11 @@ fun CalendarView(
             }
         }
 
+        Spacer(Modifier.height(4.dp))
+
         // === Дни недели ===
-        val daysOfWeek = listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
         Row(Modifier.fillMaxWidth()) {
-            daysOfWeek.forEach { day ->
+            listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс").forEach { day ->
                 Text(
                     day,
                     modifier = Modifier.weight(1f),
@@ -107,9 +106,15 @@ fun CalendarView(
             }
         }
 
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(6.dp))
 
-        // === Сетка с поддержкой свайпа для смены месяца ===
+        // === Сетка с свайпом для смены месяца ===
+        val firstOfMonth = currentMonth.atDay(1)
+        val firstDayOfWeek = firstOfMonth.dayOfWeek.value // 1=Пн
+        val daysInMonth = currentMonth.lengthOfMonth()
+        val totalCells = firstDayOfWeek - 1 + daysInMonth
+        val rows = (totalCells + 6) / 7
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -129,42 +134,40 @@ fun CalendarView(
                     }
                 }
         ) {
-            val firstOfMonth = currentMonth.atDay(1)
-            val firstDayOfWeek = firstOfMonth.dayOfWeek.value // 1=Пн
-            val daysInMonth = currentMonth.lengthOfMonth()
-            val totalCells = firstDayOfWeek - 1 + daysInMonth
-            val rows = (totalCells + 6) / 7
-            val totalSlots = rows * 7
-
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(7),
-                modifier = Modifier.fillMaxWidth(),
-                userScrollEnabled = false,
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                items(totalSlots) { idx ->
-                    val dayNumber = idx - (firstDayOfWeek - 1) + 1
-                    if (dayNumber in 1..daysInMonth) {
-                        val date = currentMonth.atDay(dayNumber)
-                        val eventsForDay = eventsByDate[date].orEmpty()
-                        DayCell(
-                            date = date,
-                            dayNumber = dayNumber,
-                            isToday = date == today,
-                            isSelected = date == selectedDate,
-                            eventsForDay = eventsForDay,
-                            markStyle = markStyle,
-                            onClick = { onDayClick(date) }
-                        )
-                    } else {
-                        Spacer(Modifier.height(48.dp))
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                for (row in 0 until rows) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        for (col in 0 until 7) {
+                            val idx = row * 7 + col
+                            val dayNumber = idx - (firstDayOfWeek - 1) + 1
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .aspectRatio(1f)
+                            ) {
+                                if (dayNumber in 1..daysInMonth) {
+                                    val date = currentMonth.atDay(dayNumber)
+                                    DayCell(
+                                        date = date,
+                                        dayNumber = dayNumber,
+                                        isToday = date == today,
+                                        isSelected = date == selectedDate,
+                                        eventsForDay = eventsByDate[date].orEmpty(),
+                                        markStyle = markStyle,
+                                        onClick = { onDayClick(date) }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    // === Диалог выбора месяца и года ===
     if (showMonthPicker) {
         MonthYearPickerDialog(
             initial = currentMonth,
@@ -187,89 +190,102 @@ private fun DayCell(
     markStyle: CalendarMarkStyle,
     onClick: () -> Unit
 ) {
-    val bg = when {
-        isSelected -> MaterialTheme.colorScheme.primary
-        else -> Color.Transparent
+    val hasEvents = eventsForDay.isNotEmpty()
+    val eventColor = eventsForDay.firstOrNull()?.let {
+        if (it.cardColor == 0) MaterialTheme.colorScheme.primary else cardColorAt(it.cardColor)
+    } ?: MaterialTheme.colorScheme.primary
+
+    val shape = when (markStyle) {
+        CalendarMarkStyle.FILLED_CIRCLE -> CircleShape
+        else -> RoundedCornerShape(12.dp)
     }
-    val fg = when {
-        isSelected -> MaterialTheme.colorScheme.onPrimary
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-    val borderColor = when {
-        isToday && !isSelected -> MaterialTheme.colorScheme.primary
-        else -> Color.Transparent
+
+    // Определяем цвета и обводку
+    val bgColor: Color
+    val textColor: Color
+    val borderColor: Color
+    val borderWidth: androidx.compose.ui.unit.Dp
+    val fontWeight: FontWeight
+
+    when {
+        // Выбранный день — плотная заливка primary
+        isSelected -> {
+            bgColor = MaterialTheme.colorScheme.primary
+            textColor = MaterialTheme.colorScheme.onPrimary
+            borderColor = Color.Transparent
+            borderWidth = 0.dp
+            fontWeight = FontWeight.Bold
+        }
+        // Сегодня + есть событие — заливка цветом события + обводка
+        isToday && hasEvents && markStyle != CalendarMarkStyle.NONE -> {
+            bgColor = eventColor
+            textColor = MaterialTheme.colorScheme.onSurface
+            borderColor = MaterialTheme.colorScheme.primary
+            borderWidth = 2.dp
+            fontWeight = FontWeight.Bold
+        }
+        // Просто сегодня — обводка без заливки
+        isToday -> {
+            bgColor = Color.Transparent
+            textColor = MaterialTheme.colorScheme.onSurface
+            borderColor = MaterialTheme.colorScheme.primary
+            borderWidth = 2.dp
+            fontWeight = FontWeight.Bold
+        }
+        // День с событием — по стилю
+        hasEvents && markStyle != CalendarMarkStyle.NONE -> {
+            when (markStyle) {
+                CalendarMarkStyle.FILLED_SQUARE,
+                CalendarMarkStyle.FILLED_CIRCLE -> {
+                    bgColor = eventColor
+                    textColor = MaterialTheme.colorScheme.onSurface
+                    borderColor = Color.Transparent
+                    borderWidth = 0.dp
+                }
+                CalendarMarkStyle.OUTLINE -> {
+                    bgColor = Color.Transparent
+                    textColor = MaterialTheme.colorScheme.onSurface
+                    borderColor = eventColor
+                    borderWidth = 2.dp
+                }
+                CalendarMarkStyle.NONE -> {
+                    bgColor = Color.Transparent
+                    textColor = MaterialTheme.colorScheme.onSurface
+                    borderColor = Color.Transparent
+                    borderWidth = 0.dp
+                }
+            }
+            fontWeight = FontWeight.Medium
+        }
+        // Обычный день
+        else -> {
+            bgColor = Color.Transparent
+            textColor = MaterialTheme.colorScheme.onSurface
+            borderColor = Color.Transparent
+            borderWidth = 0.dp
+            fontWeight = FontWeight.Normal
+        }
     }
 
     Box(
         modifier = Modifier
-            .aspectRatio(1f)
-            .padding(2.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(bg)
-            .border(
-                width = if (isToday && !isSelected) 2.dp else 0.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(12.dp)
+            .fillMaxSize()
+            .clip(shape)
+            .background(bgColor)
+            .then(
+                if (borderWidth > 0.dp)
+                    Modifier.border(borderWidth, borderColor, shape)
+                else Modifier
             )
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                dayNumber.toString(),
-                style = MaterialTheme.typography.bodyLarge,
-                color = fg,
-                fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Normal
-            )
-
-            if (eventsForDay.isNotEmpty() && markStyle != CalendarMarkStyle.NONE) {
-                Spacer(Modifier.height(3.dp))
-                when (markStyle) {
-                    CalendarMarkStyle.DOTS -> {
-                        val dots = eventsForDay.take(3)
-                        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                            dots.forEach { ev ->
-                                val color = if (ev.cardColor == 0) MaterialTheme.colorScheme.primary
-                                            else cardColorAt(ev.cardColor)
-                                Box(
-                                    modifier = Modifier
-                                        .size(5.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isSelected) MaterialTheme.colorScheme.onPrimary else color)
-                                )
-                            }
-                        }
-                    }
-                    CalendarMarkStyle.BAR -> {
-                        val color = eventsForDay.first().let {
-                            if (it.cardColor == 0) MaterialTheme.colorScheme.primary else cardColorAt(it.cardColor)
-                        }
-                        Box(
-                            modifier = Modifier
-                                .width(20.dp)
-                                .height(3.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(if (isSelected) MaterialTheme.colorScheme.onPrimary else color)
-                        )
-                    }
-                    CalendarMarkStyle.SQUARE -> {
-                        val color = eventsForDay.first().let {
-                            if (it.cardColor == 0) MaterialTheme.colorScheme.primary else cardColorAt(it.cardColor)
-                        }
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(if (isSelected) MaterialTheme.colorScheme.onPrimary else color)
-                        )
-                    }
-                    CalendarMarkStyle.NONE -> {}
-                }
-            }
-        }
+        Text(
+            dayNumber.toString(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = textColor,
+            fontWeight = fontWeight
+        )
     }
 }
 
@@ -284,8 +300,10 @@ private fun MonthYearPickerDialog(
     var month by remember { mutableStateOf(initial.monthValue) }
 
     val monthNames = listOf(
-        "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
-        "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+        "Янв", "Фев", "Мар",
+        "Апр", "Май", "Июн",
+        "Июл", "Авг", "Сен",
+        "Окт", "Ноя", "Дек"
     )
 
     AlertDialog(
@@ -313,27 +331,39 @@ private fun MonthYearPickerDialog(
                     }
                 }
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(16.dp))
 
-                // Сетка месяцев 4x3
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    (0..11 step 4).forEach { rowStart ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            (rowStart..rowStart + 3).forEach { idx ->
-                                val isSelected = (idx + 1) == month
-                                OutlinedButton(
-                                    onClick = { month = idx + 1 },
-                                    modifier = Modifier.weight(1f),
-                                    colors = if (isSelected)
-                                        ButtonDefaults.outlinedButtonColors(
-                                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                                        )
-                                    else ButtonDefaults.outlinedButtonColors()
+                // Сетка 3x4
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (rowStart in 0..11 step 3) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            for (i in rowStart until rowStart + 3) {
+                                val isSelected = (i + 1) == month
+                                Surface(
+                                    onClick = { month = i + 1 },
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = if (isSelected)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(48.dp)
                                 ) {
-                                    Text(
-                                        monthNames[idx].take(3),
-                                        style = MaterialTheme.typography.labelMedium
-                                    )
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            monthNames[i],
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (isSelected)
+                                                MaterialTheme.colorScheme.onPrimary
+                                            else
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             }
                         }
