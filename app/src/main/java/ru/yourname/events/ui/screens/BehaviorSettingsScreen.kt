@@ -2,7 +2,6 @@ package ru.yourname.events.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -15,8 +14,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ru.yourname.events.data.settings.SettingsRepository
-import ru.yourname.events.data.settings.SortMode
 import ru.yourname.events.data.settings.SwipeAction
+import ru.yourname.events.ui.components.SwipeNavigationBox
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,103 +27,92 @@ fun BehaviorSettingsScreen(onBack: () -> Unit) {
     val swipeToSettings by SettingsRepository.swipeToSettingsEnabledFlow(ctx).collectAsState(initial = true)
     val leftAction by SettingsRepository.swipeLeftActionFlow(ctx).collectAsState(initial = SwipeAction.DELETE)
     val rightAction by SettingsRepository.swipeRightActionFlow(ctx).collectAsState(initial = SwipeAction.NOTHING)
-    val sortMode by SettingsRepository.sortModeFlow(ctx).collectAsState(initial = SortMode.BY_DATE)
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Поведение") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
-            )
-        }
-    ) { p ->
-        Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
-
-            // === СОРТИРОВКА ===
-            SectionHeader("Сортировка списка")
-            SortMode.entries.forEach { s ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .selectable(
-                            selected = sortMode == s,
-                            onClick = { scope.launch { SettingsRepository.setSortMode(ctx, s) } }
-                        )
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = sortMode == s,
-                        onClick = { scope.launch { SettingsRepository.setSortMode(ctx, s) } }
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text(s.label, style = MaterialTheme.typography.bodyLarge)
-                }
-            }
-
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
-
-            // === ЖЕСТЫ ===
-            SectionHeader("Жесты")
-
-            ListItem(
-                headlineContent = { Text("Свайпы по карточкам",
-                    style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) },
-                supportingContent = { Text("Движение пальцем по карточке для действий") },
-                trailingContent = {
-                    Switch(
-                        checked = swipesEnabled,
-                        onCheckedChange = { scope.launch { SettingsRepository.setSwipesEnabled(ctx, it) } }
-                    )
-                }
-            )
-
-            if (swipesEnabled) {
-                Spacer(Modifier.height(8.dp))
-
-                ActionDropdown(
-                    title = "Свайп влево",
-                    subtitle = "Справа налево",
-                    current = leftAction,
-                    exclude = rightAction,
-                    onPick = { scope.launch { SettingsRepository.setSwipeLeftAction(ctx, it) } }
+    SwipeNavigationBox(
+        onSwipeRight = { onBack() },
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Поведение") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
                 )
+            }
+        ) { p ->
+            Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
+
+                SectionHeader("Жесты")
+
+                ListItem(
+                    headlineContent = {
+                        Text("Свайпы по карточкам",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold)
+                    },
+                    supportingContent = { Text("Движение пальцем по карточке для действий") },
+                    trailingContent = {
+                        Switch(
+                            checked = swipesEnabled,
+                            onCheckedChange = {
+                                scope.launch { SettingsRepository.setSwipesEnabled(ctx, it) }
+                            }
+                        )
+                    }
+                )
+
+                if (swipesEnabled) {
+                    Spacer(Modifier.height(8.dp))
+
+                    ActionDropdown(
+                        title = "Свайп влево",
+                        subtitle = "Справа налево",
+                        current = leftAction,
+                        exclude = rightAction,
+                        onPick = { scope.launch { SettingsRepository.setSwipeLeftAction(ctx, it) } }
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    ActionDropdown(
+                        title = "Свайп вправо",
+                        subtitle = "Слева направо",
+                        current = rightAction,
+                        exclude = leftAction,
+                        onPick = { scope.launch { SettingsRepository.setSwipeRightAction(ctx, it) } }
+                    )
+                }
 
                 Spacer(Modifier.height(12.dp))
 
-                ActionDropdown(
-                    title = "Свайп вправо",
-                    subtitle = "Слева направо",
-                    current = rightAction,
-                    exclude = leftAction,
-                    onPick = { scope.launch { SettingsRepository.setSwipeRightAction(ctx, it) } }
+                ListItem(
+                    headlineContent = {
+                        Text("Свайп между главным экраном и настройками",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold)
+                    },
+                    supportingContent = {
+                        Text(if (swipeToSettings)
+                            "Свайп влево на главном → настройки; свайп вправо в настройках → назад"
+                            else "Отключено")
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = swipeToSettings,
+                            onCheckedChange = {
+                                scope.launch { SettingsRepository.setSwipeToSettingsEnabled(ctx, it) }
+                            }
+                        )
+                    }
                 )
+
+                Spacer(Modifier.height(24.dp))
             }
-
-            Spacer(Modifier.height(12.dp))
-
-            ListItem(
-                headlineContent = { Text("Свайп для настроек",
-                    style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) },
-                supportingContent = {
-                    Text(if (swipeToSettings)
-                        "Свайп вправо по пустому месту → открыть настройки; в настройках — свайп влево → назад"
-                        else "Отключено")
-                },
-                trailingContent = {
-                    Switch(
-                        checked = swipeToSettings,
-                        onCheckedChange = { scope.launch { SettingsRepository.setSwipeToSettingsEnabled(ctx, it) } }
-                    )
-                }
-            )
-
-            Spacer(Modifier.height(24.dp))
         }
     }
 }
