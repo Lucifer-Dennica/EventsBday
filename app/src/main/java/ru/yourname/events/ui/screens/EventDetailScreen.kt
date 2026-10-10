@@ -8,8 +8,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Message
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ru.yourname.events.data.model.Event
+import ru.yourname.events.data.model.SocialPlatform
 import ru.yourname.events.data.social.SocialUrlParser
 import ru.yourname.events.ui.components.EventAvatar
 import ru.yourname.events.ui.components.ZodiacBlock
@@ -45,6 +48,33 @@ fun EventDetailScreen(
     val age = event.ageAtNext(today)
 
     var confirmDelete by remember { mutableStateOf(false) }
+
+    // Телефон для звонка — телефон, WhatsApp или Viber
+    val phoneLink = event.socialLinks.firstOrNull {
+        it.platform == SocialPlatform.PHONE ||
+                it.platform == SocialPlatform.WHATSAPP ||
+                it.platform == SocialPlatform.VIBER
+    }
+    val phoneDigits = phoneLink?.value
+        ?.filter { it.isDigit() || it == '+' }
+        ?.takeIf { it.isNotBlank() }
+
+    // Ссылка для SMS — берём телефон же
+    val smsLink = phoneDigits
+
+    fun dial() {
+        if (phoneDigits == null) return
+        runCatching {
+            ctx.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phoneDigits")))
+        }
+    }
+
+    fun sendSms() {
+        if (smsLink == null) return
+        runCatching {
+            ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("sms:$smsLink")))
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -80,6 +110,31 @@ fun EventDetailScreen(
             )
             if (age != null) {
                 Text("Исполнится $age лет", style = MaterialTheme.typography.titleLarge)
+            }
+
+            // === БЫСТРЫЕ ДЕЙСТВИЯ ===
+            if (phoneDigits != null) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Button(
+                        onClick = { dial() },
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Позвонить")
+                    }
+                    OutlinedButton(
+                        onClick = { sendSms() },
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        Icon(Icons.Default.Message, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("SMS")
+                    }
+                }
             }
 
             // === 1. АСТРОЛОГИЯ ===
