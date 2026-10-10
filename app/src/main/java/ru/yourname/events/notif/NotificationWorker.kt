@@ -3,9 +3,9 @@ package ru.yourname.events.notif
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.flow.first
 import ru.yourname.events.data.db.AppDatabase
-import ru.yourname.events.data.model.SocialLink
-import ru.yourname.events.data.model.SocialPlatform
+import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.settings.NotificationFrequency
 import ru.yourname.events.data.settings.NotificationMode
 import ru.yourname.events.data.settings.SettingsRepository
@@ -19,30 +19,22 @@ class NotificationWorker(
     override suspend fun doWork(): Result {
         val ctx = applicationContext
 
-        // Проверяем, включены ли уведомления вообще
-        val enabled = SettingsRepository.notifEnabledFlow(ctx)
-            .let { flow ->
-                var v = true
-                kotlinx.coroutines.flow.first(flow).let { v = it }
-                v
-            }
+        val enabled = SettingsRepository.notifEnabledFlow(ctx).first()
         if (!enabled) return Result.success()
 
-        val mode = kotlinx.coroutines.flow.first(SettingsRepository.notifModeFlow(ctx))
-        val freq = kotlinx.coroutines.flow.first(SettingsRepository.notifFrequencyFlow(ctx))
-        val daysBefore = kotlinx.coroutines.flow.first(SettingsRepository.notifDaysBeforeFlow(ctx))
+        val mode: NotificationMode = SettingsRepository.notifModeFlow(ctx).first()
+        val freq: NotificationFrequency = SettingsRepository.notifFrequencyFlow(ctx).first()
+        val daysBefore: Int = SettingsRepository.notifDaysBeforeFlow(ctx).first()
 
         val dao = AppDatabase.get(ctx).eventDao()
-        val entities = kotlinx.coroutines.flow.first(dao.observeAll())
+        val entities = dao.observeAll().first()
         val today = LocalDate.now()
 
         entities.forEach { entity ->
-            // Пропускаем те, у которых уведомления выключены на карточке
             if (!entity.notificationsEnabled) return@forEach
-            // В режиме "Выборочно" уведомляем только о тех, у кого тумблер включён
             if (mode == NotificationMode.CUSTOM && !entity.notificationsEnabled) return@forEach
 
-            val event = ru.yourname.events.data.model.Event(
+            val event = Event(
                 id = entity.id,
                 name = entity.name,
                 dayOfMonth = entity.dayOfMonth,
@@ -59,11 +51,10 @@ class NotificationWorker(
                 cardColor = entity.cardColor
             )
 
-            val days = event.daysUntil(today)
-            if (days < 0 || days > daysBefore) return@forEach
+            val days: Long = event.daysUntil(today)
+            if (days < 0L || days > daysBefore.toLong()) return@forEach
 
-            // Логика частоты: проверяем, нужно ли уведомлять именно сегодня
-            val shouldNotify = when (freq) {
+            val shouldNotify: Boolean = when (freq) {
                 NotificationFrequency.ONCE -> days == 0L
                 NotificationFrequency.EVERY_DAY -> true
                 NotificationFrequency.EVERY_2_DAYS -> (days % 2L) == 0L
