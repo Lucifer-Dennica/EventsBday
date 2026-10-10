@@ -4,10 +4,10 @@ import android.content.Context
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import kotlinx.coroutines.flow.first
 import ru.yourname.events.data.settings.SettingsRepository
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.flow.first
 
 object NotificationScheduler {
 
@@ -18,7 +18,9 @@ object NotificationScheduler {
      * WorkManager сам переживёт перезагрузку устройства.
      */
     suspend fun schedule(ctx: Context) {
-        val (hour, minute) = kotlinx.coroutines.flow.first(SettingsRepository.notifTimeFlow(ctx))
+        val timePair = SettingsRepository.notifTimeFlow(ctx).first()
+        val hour = timePair.first
+        val minute = timePair.second
 
         // Вычисляем задержку до ближайшего нужного времени
         val now = Calendar.getInstance()
