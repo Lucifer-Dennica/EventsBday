@@ -3,6 +3,7 @@ package ru.yourname.events.data.backup
 import android.content.Context
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -18,10 +19,7 @@ object BackupManager {
     /** Сохраняет все события в файл по указанному URI. Возвращает количество сохранённых. */
     suspend fun export(ctx: Context, uri: Uri): Int = withContext(Dispatchers.IO) {
         val dao = AppDatabase.get(ctx).eventDao()
-        val events = dao.observeAll().let { flow ->
-            // забираем один раз — используем first
-            kotlinx.coroutines.flow.first(flow)
-        }
+        val events: List<EventEntity> = dao.observeAll().first()
 
         val root = JSONObject().apply {
             put("format_version", FORMAT_VERSION)
