@@ -27,7 +27,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val current by SettingsRepository.themeFlow(ctx).collectAsState(initial = AppTheme.SYSTEM)
     val sortMode by SettingsRepository.sortModeFlow(ctx).collectAsState(initial = SortMode.BY_DATE)
-    val markStyle by SettingsRepository.calendarMarkStyleFlow(ctx).collectAsState(initial = CalendarMarkStyle.DOTS)
+    val markStyle by SettingsRepository.calendarMarkStyleFlow(ctx).collectAsState(initial = CalendarMarkStyle.FILLED_SQUARE)
 
     var themeExpanded by remember { mutableStateOf(false) }
 
