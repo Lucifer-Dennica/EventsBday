@@ -4,15 +4,19 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ru.yourname.events.data.settings.NotificationFrequency
@@ -55,7 +59,8 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
         Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
 
             ListItem(
-                headlineContent = { Text("Включить уведомления") },
+                headlineContent = { Text("Включить уведомления",
+                    style = MaterialTheme.typography.titleMedium) },
                 supportingContent = { Text("Напоминать о предстоящих событиях") },
                 trailingContent = {
                     Switch(
@@ -72,8 +77,9 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
 
             if (!enabled) return@Column
 
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
+            // === РЕЖИМ ===
             SectionHeader("О каких событиях уведомлять")
             NotificationMode.entries.forEach { m ->
                 Row(
@@ -88,56 +94,87 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
                                 }
                             }
                         )
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     RadioButton(
                         selected = mode == m,
                         onClick = { scope.launch { SettingsRepository.setNotifMode(ctx, m); reschedule() } }
                     )
-                    Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(14.dp))
                     Column {
-                        Text(m.label)
+                        Text(m.label, style = MaterialTheme.typography.bodyLarge)
                         if (m == NotificationMode.CUSTOM) {
                             Text("Уведомления по событиям с включённым тумблером",
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
             }
 
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
+            // === ЗА СКОЛЬКО ДНЕЙ (по центру) ===
             SectionHeader("За сколько дней начинать напоминать")
             Row(
-                Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedButton(
+                FilledIconButton(
                     onClick = {
                         scope.launch {
                             SettingsRepository.setNotifDaysBefore(ctx, (daysBefore - 1).coerceAtLeast(0))
                             reschedule()
                         }
-                    }
-                ) { Text("−") }
+                    },
+                    shape = CircleShape
+                ) { Icon(Icons.Default.Remove, contentDescription = "Меньше") }
+
                 Text(
-                    "  $daysBefore  ",
-                    style = MaterialTheme.typography.titleMedium
+                    text = daysBefore.toString(),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 28.dp)
                 )
-                OutlinedButton(
+
+                FilledIconButton(
                     onClick = {
                         scope.launch {
                             SettingsRepository.setNotifDaysBefore(ctx, (daysBefore + 1).coerceAtMost(30))
                             reschedule()
                         }
-                    }
-                ) { Text("+") }
+                    },
+                    shape = CircleShape
+                ) { Icon(Icons.Default.Add, contentDescription = "Больше") }
             }
+            Text(
+                text = "дней",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
 
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            // === ВРЕМЯ (под блоком дней) ===
+            SectionHeader("Время уведомлений")
+            ListItem(
+                headlineContent = { Text("Показывать в", style = MaterialTheme.typography.bodyLarge) },
+                supportingContent = {
+                    Text(
+                        String.format(Locale.US, "%02d:%02d", time.first, time.second),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                },
+                modifier = Modifier.clickable { showTimePicker = true }
+            )
 
+            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+
+            // === ЧАСТОТА ===
             SectionHeader("Частота напоминаний")
             NotificationFrequency.entries.forEach { f ->
                 Row(
@@ -152,28 +189,17 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
                                 }
                             }
                         )
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     RadioButton(
                         selected = freq == f,
                         onClick = { scope.launch { SettingsRepository.setNotifFrequency(ctx, f); reschedule() } }
                     )
-                    Spacer(Modifier.width(12.dp))
-                    Text(f.label)
+                    Spacer(Modifier.width(14.dp))
+                    Text(f.label, style = MaterialTheme.typography.bodyLarge)
                 }
             }
-
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
-
-            SectionHeader("Время уведомлений")
-            ListItem(
-                headlineContent = { Text("Показывать в") },
-                supportingContent = {
-                    Text(String.format(Locale.US, "%02d:%02d", time.first, time.second))
-                },
-                modifier = Modifier.clickable { showTimePicker = true }
-            )
 
             Spacer(Modifier.height(24.dp))
         }
@@ -209,9 +235,9 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
 private fun SectionHeader(text: String) {
     Text(
         text,
-        style = MaterialTheme.typography.labelSmall,
+        style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
         fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
+        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
     )
 }
