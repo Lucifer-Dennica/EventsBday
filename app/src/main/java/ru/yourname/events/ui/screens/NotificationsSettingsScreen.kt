@@ -79,7 +79,6 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
 
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
-            // === РЕЖИМ ===
             SectionHeader("О каких событиях уведомлять")
             NotificationMode.entries.forEach { m ->
                 Row(
@@ -115,7 +114,7 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
 
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
-            // === ЗА СКОЛЬКО ДНЕЙ (по центру) ===
+            // === ЗА СКОЛЬКО ДНЕЙ ===
             SectionHeader("За сколько дней начинать напоминать")
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
@@ -158,7 +157,7 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
                 textAlign = TextAlign.Center
             )
 
-            // === ВРЕМЯ (под блоком дней) ===
+            // === ВРЕМЯ ===
             SectionHeader("Время уведомлений")
             ListItem(
                 headlineContent = { Text("Показывать в", style = MaterialTheme.typography.bodyLarge) },
@@ -174,7 +173,6 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
 
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
-            // === ЧАСТОТА ===
             SectionHeader("Частота напоминаний")
             NotificationFrequency.entries.forEach { f ->
                 Row(
@@ -213,8 +211,18 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
         )
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
-            title = { Text("Время уведомлений") },
-            text = { TimePicker(state = state) },
+            title = {
+                Text("Время уведомлений", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+            },
+            text = {
+                // Центрируем TimePicker по горизонтали
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    TimePicker(state = state)
+                }
+            },
             confirmButton = {
                 TextButton(onClick = {
                     scope.launch {
