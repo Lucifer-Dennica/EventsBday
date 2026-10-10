@@ -18,9 +18,7 @@ fun YandexBanner(
         factory = { ctx ->
             FrameLayout(ctx).apply {
                 val adView = BannerAdView(ctx).apply {
-                    // В SDK 8 используется BannerAdSize.sticky
                     setAdSize(BannerAdSize.sticky(ctx, 320))
-                    // ID передаётся прямо в AdRequest.Builder
                     loadAd(AdRequest.Builder(adUnitId).build())
                 }
                 addView(adView)
