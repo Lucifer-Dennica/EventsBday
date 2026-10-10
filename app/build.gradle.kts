@@ -12,8 +12,8 @@ android {
         applicationId = "ru.yourname.events"
         minSdk = 24
         targetSdk = 34
-        versionCode = 5
-        versionName = "1.4.1"
+        versionCode = 6
+        versionName = "1.5.0"
     }
 
     signingConfigs {
@@ -68,6 +68,9 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("io.coil-kt:coil-gif:2.6.0")
 
-    // Yandex Mobile Ads SDK 8 — теперь в Maven Central
+    // WorkManager для уведомлений
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+
+    // Yandex Mobile Ads SDK 8
     implementation("com.yandex.android:mobileads:8.5.0")
 }
