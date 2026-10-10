@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -156,18 +157,36 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
                 textAlign = TextAlign.Center
             )
 
+            // === ВРЕМЯ — ПО ЦЕНТРУ ===
             SectionHeader("Время уведомлений")
-            ListItem(
-                headlineContent = { Text("Показывать в", style = MaterialTheme.typography.bodyLarge) },
-                supportingContent = {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .clickable { showTimePicker = true }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 18.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "Показывать в",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(6.dp))
                     Text(
                         String.format(Locale.US, "%02d:%02d", time.first, time.second),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
-                },
-                modifier = Modifier.clickable { showTimePicker = true }
-            )
+                }
+            }
 
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
@@ -217,7 +236,6 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
                 )
             },
             text = {
-                // Ограничиваем ширину и центрируем TimePicker
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
