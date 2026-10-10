@@ -1,5 +1,6 @@
 package ru.yourname.events.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -53,7 +54,6 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
     ) { p ->
         Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
 
-            // Главный выключатель
             ListItem(
                 headlineContent = { Text("Включить уведомления") },
                 supportingContent = { Text("Напоминать о предстоящих событиях") },
@@ -74,7 +74,6 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            // Режим: Все / Выборочно
             SectionHeader("О каких событиях уведомлять")
             NotificationMode.entries.forEach { m ->
                 Row(
@@ -110,7 +109,6 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            // За сколько дней предупреждать
             SectionHeader("За сколько дней начинать напоминать")
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -140,7 +138,6 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            // Частота
             SectionHeader("Частота напоминаний")
             NotificationFrequency.entries.forEach { f ->
                 Row(
@@ -169,7 +166,6 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            // Время
             SectionHeader("Время уведомлений")
             ListItem(
                 headlineContent = { Text("Показывать в") },
@@ -207,17 +203,6 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
             }
         )
     }
-}
-
-@Composable
-private fun SectionHeader(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.primary,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
-    )
 }
 
 @Composable
