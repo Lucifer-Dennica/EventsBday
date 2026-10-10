@@ -23,8 +23,8 @@ object SettingsRepository {
 
     private val KEY_SWIPE_LEFT = stringPreferencesKey("swipe_left_action")
     private val KEY_SWIPE_RIGHT = stringPreferencesKey("swipe_right_action")
-
     private val KEY_SORT = stringPreferencesKey("sort_mode")
+    private val KEY_VIEW_MODE = stringPreferencesKey("view_mode")
 
     private val KEY_NOTIF_ENABLED = booleanPreferencesKey("notif_enabled")
     private val KEY_NOTIF_MODE = stringPreferencesKey("notif_mode")
@@ -58,18 +58,16 @@ object SettingsRepository {
     }
 
     fun swipeLeftActionFlow(ctx: Context): Flow<SwipeAction> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_SWIPE_LEFT]?.let {
-            runCatching { SwipeAction.valueOf(it) }.getOrNull()
-        } ?: SwipeAction.DELETE
+        prefs[KEY_SWIPE_LEFT]?.let { runCatching { SwipeAction.valueOf(it) }.getOrNull() }
+            ?: SwipeAction.DELETE
     }
     suspend fun setSwipeLeftAction(ctx: Context, action: SwipeAction) {
         ctx.settingsStore.edit { it[KEY_SWIPE_LEFT] = action.name }
     }
 
     fun swipeRightActionFlow(ctx: Context): Flow<SwipeAction> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_SWIPE_RIGHT]?.let {
-            runCatching { SwipeAction.valueOf(it) }.getOrNull()
-        } ?: SwipeAction.NOTHING
+        prefs[KEY_SWIPE_RIGHT]?.let { runCatching { SwipeAction.valueOf(it) }.getOrNull() }
+            ?: SwipeAction.NOTHING
     }
     suspend fun setSwipeRightAction(ctx: Context, action: SwipeAction) {
         ctx.settingsStore.edit { it[KEY_SWIPE_RIGHT] = action.name }
@@ -81,6 +79,14 @@ object SettingsRepository {
     }
     suspend fun setSortMode(ctx: Context, mode: SortMode) {
         ctx.settingsStore.edit { it[KEY_SORT] = mode.name }
+    }
+
+    // === ВИД (список/календарь) ===
+    fun viewModeFlow(ctx: Context): Flow<ViewMode> = ctx.settingsStore.data.map { prefs ->
+        prefs[KEY_VIEW_MODE]?.let { runCatching { ViewMode.valueOf(it) }.getOrNull() } ?: ViewMode.LIST
+    }
+    suspend fun setViewMode(ctx: Context, mode: ViewMode) {
+        ctx.settingsStore.edit { it[KEY_VIEW_MODE] = mode.name }
     }
 
     suspend fun incrementCardOpens(ctx: Context): Int {
@@ -114,14 +120,16 @@ object SettingsRepository {
     }
 
     fun notifModeFlow(ctx: Context): Flow<NotificationMode> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_NOTIF_MODE]?.let { runCatching { NotificationMode.valueOf(it) }.getOrNull() } ?: NotificationMode.ALL
+        prefs[KEY_NOTIF_MODE]?.let { runCatching { NotificationMode.valueOf(it) }.getOrNull() }
+            ?: NotificationMode.ALL
     }
     suspend fun setNotifMode(ctx: Context, mode: NotificationMode) {
         ctx.settingsStore.edit { it[KEY_NOTIF_MODE] = mode.name }
     }
 
     fun notifFrequencyFlow(ctx: Context): Flow<NotificationFrequency> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_NOTIF_FREQ]?.let { runCatching { NotificationFrequency.valueOf(it) }.getOrNull() } ?: NotificationFrequency.EVERY_DAY
+        prefs[KEY_NOTIF_FREQ]?.let { runCatching { NotificationFrequency.valueOf(it) }.getOrNull() }
+            ?: NotificationFrequency.EVERY_DAY
     }
     suspend fun setNotifFrequency(ctx: Context, f: NotificationFrequency) {
         ctx.settingsStore.edit { it[KEY_NOTIF_FREQ] = f.name }
