@@ -26,6 +26,7 @@ object SettingsRepository {
     private val KEY_SORT = stringPreferencesKey("sort_mode")
     private val KEY_VIEW_MODE = stringPreferencesKey("view_mode")
     private val KEY_CAL_MARK = stringPreferencesKey("calendar_mark_style")
+    private val KEY_APP_ICON = stringPreferencesKey("app_icon")
 
     private val KEY_NOTIF_ENABLED = booleanPreferencesKey("notif_enabled")
     private val KEY_NOTIF_MODE = stringPreferencesKey("notif_mode")
@@ -43,6 +44,14 @@ object SettingsRepository {
     }
     suspend fun setTheme(ctx: Context, theme: AppTheme) {
         ctx.settingsStore.edit { it[KEY_THEME] = theme.name }
+    }
+
+    // === ИКОНКА ===
+    fun appIconFlow(ctx: Context): Flow<AppIcon> = ctx.settingsStore.data.map { prefs ->
+        prefs[KEY_APP_ICON]?.let { runCatching { AppIcon.valueOf(it) }.getOrNull() } ?: AppIcon.MAIN
+    }
+    suspend fun setAppIcon(ctx: Context, icon: AppIcon) {
+        ctx.settingsStore.edit { it[KEY_APP_ICON] = icon.name }
     }
 
     // === ПОВЕДЕНИЕ ===
@@ -82,7 +91,7 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_SORT] = mode.name }
     }
 
-    // === ВИД (список/календарь) ===
+    // === ВИД ===
     fun viewModeFlow(ctx: Context): Flow<ViewMode> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_VIEW_MODE]?.let { runCatching { ViewMode.valueOf(it) }.getOrNull() } ?: ViewMode.LIST
     }
@@ -90,10 +99,10 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_VIEW_MODE] = mode.name }
     }
 
-    // === СТИЛЬ ОТМЕТОК В КАЛЕНДАРЕ ===
+    // === ОТМЕТКИ КАЛЕНДАРЯ ===
     fun calendarMarkStyleFlow(ctx: Context): Flow<CalendarMarkStyle> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_CAL_MARK]?.let { runCatching { CalendarMarkStyle.valueOf(it) }.getOrNull() }
-            ?: CalendarMarkStyle.DOTS
+            ?: CalendarMarkStyle.FILLED_SQUARE
     }
     suspend fun setCalendarMarkStyle(ctx: Context, style: CalendarMarkStyle) {
         ctx.settingsStore.edit { it[KEY_CAL_MARK] = style.name }
