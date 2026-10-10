@@ -19,5 +19,6 @@ data class EventEntity(
     val socialLinksRaw: String,
     val notificationsEnabled: Boolean,
     val cardColor: Int,
-    val isPinned: Boolean = false
+    val isPinned: Boolean = false,
+    val animation: String = "NONE"
 )
