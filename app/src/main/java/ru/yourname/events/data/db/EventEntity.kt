@@ -16,7 +16,8 @@ data class EventEntity(
     val presetAvatar: Int?,
     val contactId: Long?,
     val isFromContacts: Boolean,
-    val socialLinksRaw: String,      // JSON-массив
+    val socialLinksRaw: String,
     val notificationsEnabled: Boolean,
-    val cardColor: Int
+    val cardColor: Int,
+    val isPinned: Boolean = false
 )
