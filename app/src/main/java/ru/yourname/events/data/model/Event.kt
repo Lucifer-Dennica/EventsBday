@@ -23,7 +23,8 @@ data class Event(
     val socialLinks: List<SocialLink> = emptyList(),
     val notificationsEnabled: Boolean = true,
     val cardColor: Int = 0,
-    val isPinned: Boolean = false
+    val isPinned: Boolean = false,
+    val animation: CardAnimation = CardAnimation.NONE
 ) {
     fun nextOccurrence(from: LocalDate): LocalDate {
         var date = LocalDate.of(from.year, month, dayOfMonth)
