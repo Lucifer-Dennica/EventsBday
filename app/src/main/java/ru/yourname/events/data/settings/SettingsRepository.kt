@@ -25,6 +25,7 @@ object SettingsRepository {
     private val KEY_SWIPE_RIGHT = stringPreferencesKey("swipe_right_action")
     private val KEY_SORT = stringPreferencesKey("sort_mode")
     private val KEY_VIEW_MODE = stringPreferencesKey("view_mode")
+    private val KEY_CAL_MARK = stringPreferencesKey("calendar_mark_style")
 
     private val KEY_NOTIF_ENABLED = booleanPreferencesKey("notif_enabled")
     private val KEY_NOTIF_MODE = stringPreferencesKey("notif_mode")
@@ -87,6 +88,15 @@ object SettingsRepository {
     }
     suspend fun setViewMode(ctx: Context, mode: ViewMode) {
         ctx.settingsStore.edit { it[KEY_VIEW_MODE] = mode.name }
+    }
+
+    // === СТИЛЬ ОТМЕТОК В КАЛЕНДАРЕ ===
+    fun calendarMarkStyleFlow(ctx: Context): Flow<CalendarMarkStyle> = ctx.settingsStore.data.map { prefs ->
+        prefs[KEY_CAL_MARK]?.let { runCatching { CalendarMarkStyle.valueOf(it) }.getOrNull() }
+            ?: CalendarMarkStyle.DOTS
+    }
+    suspend fun setCalendarMarkStyle(ctx: Context, style: CalendarMarkStyle) {
+        ctx.settingsStore.edit { it[KEY_CAL_MARK] = style.name }
     }
 
     suspend fun incrementCardOpens(ctx: Context): Int {
