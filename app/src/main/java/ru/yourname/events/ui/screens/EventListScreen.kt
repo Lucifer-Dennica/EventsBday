@@ -15,10 +15,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PushPin
@@ -39,9 +41,13 @@ import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.model.SocialPlatform
 import ru.yourname.events.data.settings.SortMode
 import ru.yourname.events.data.settings.SwipeAction
+import ru.yourname.events.data.settings.ViewMode
+import ru.yourname.events.ui.components.CalendarView
 import ru.yourname.events.ui.components.EventCard
 import ru.yourname.events.ui.components.SwipeNavigationBox
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -52,6 +58,8 @@ fun EventListScreen(
     swipeRightAction: SwipeAction,
     swipeToSettingsEnabled: Boolean,
     sortMode: SortMode,
+    viewMode: ViewMode,
+    onToggleViewMode: () -> Unit,
     onAddClick: () -> Unit,
     onEventClick: (Event) -> Unit,
     onImportContacts: () -> Unit,
@@ -70,6 +78,7 @@ fun EventListScreen(
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var eventToDelete by remember { mutableStateOf<Event?>(null) }
     var showBulkDeleteConfirm by remember { mutableStateOf(false) }
+    var showDayDialog by remember { mutableStateOf<LocalDate?>(null) }
 
     val showNotificationsIcon = swipeLeftAction != SwipeAction.NOTIFICATIONS &&
             swipeRightAction != SwipeAction.NOTIFICATIONS
@@ -178,6 +187,13 @@ fun EventListScreen(
                             containerColor = MaterialTheme.colorScheme.surface
                         ),
                         actions = {
+                            IconButton(onClick = onToggleViewMode) {
+                                Icon(
+                                    imageVector = if (viewMode == ViewMode.LIST)
+                                        Icons.Default.CalendarMonth else Icons.Default.List,
+                                    contentDescription = "Переключить вид"
+                                )
+                            }
                             IconButton(onClick = { requestImport() }) {
                                 Icon(Icons.Default.Person, contentDescription = "Импорт")
                             }
@@ -202,65 +218,144 @@ fun EventListScreen(
         ) { padding ->
             Column(Modifier.fillMaxSize().padding(padding)) {
 
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    placeholder = { Text("Поиск по имени") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    trailingIcon = {
-                        if (query.isNotEmpty()) {
-                            IconButton(onClick = { query = "" }) {
-                                Icon(Icons.Default.Close, contentDescription = null)
+                if (viewMode == ViewMode.CALENDAR) {
+                    CalendarView(
+                        events = events,
+                        onDayClick = { showDayDialog = it }
+                    )
+                } else {
+                    // === СПИСОК (как было) ===
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        placeholder = { Text("Поиск по имени") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        trailingIcon = {
+                            if (query.isNotEmpty()) {
+                                IconButton(onClick = { query = "" }) {
+                                    Icon(Icons.Default.Close, contentDescription = null)
+                                }
                             }
-                        }
-                    },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                )
+                        },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
 
-                if (allGroups.isNotEmpty()) {
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        item {
-                            FilterChip(
-                                selected = selectedGroup == null,
-                                onClick = { selectedGroup = null },
-                                label = { Text("Все") }
-                            )
-                        }
-                        items(allGroups) { g ->
-                            FilterChip(
-                                selected = selectedGroup == g,
-                                onClick = { selectedGroup = if (selectedGroup == g) null else g },
-                                label = { Text(g) }
-                            )
+                    if (allGroups.isNotEmpty()) {
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            item {
+                                FilterChip(
+                                    selected = selectedGroup == null,
+                                    onClick = { selectedGroup = null },
+                                    label = { Text("Все") }
+                                )
+                            }
+                            items(allGroups) { g ->
+                                FilterChip(
+                                    selected = selectedGroup == g,
+                                    onClick = { selectedGroup = if (selectedGroup == g) null else g },
+                                    label = { Text(g) }
+                                )
+                            }
                         }
                     }
-                }
 
-                if (sorted.isEmpty()) {
-                    EmptyState(Modifier.fillMaxSize())
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        val pinned = sorted.filter { it.isPinned }
-                        if (pinned.isNotEmpty() && selectedGroup == null && query.isBlank()) {
-                            item {
-                                Text(
-                                    "Закреплённые",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.SemiBold
-                                )
+                    if (sorted.isEmpty()) {
+                        EmptyState(Modifier.fillMaxSize())
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            val pinned = sorted.filter { it.isPinned }
+                            if (pinned.isNotEmpty() && selectedGroup == null && query.isBlank()) {
+                                item {
+                                    Text("Закреплённые",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.SemiBold)
+                                }
+                                items(pinned, key = { "pin_${it.id}" }) { event ->
+                                    EventRow(
+                                        event = event,
+                                        swipesEnabled = swipesEnabled && !selectionMode,
+                                        swipeLeftAction = swipeLeftAction,
+                                        swipeRightAction = swipeRightAction,
+                                        isSelected = event.id in selectedIds,
+                                        selectionMode = selectionMode,
+                                        showNotificationsIcon = showNotificationsIcon,
+                                        showPinIcon = showPinIcon,
+                                        onClick = {
+                                            if (selectionMode) {
+                                                selectedIds = if (event.id in selectedIds)
+                                                    selectedIds - event.id else selectedIds + event.id
+                                            } else onEventClick(event)
+                                        },
+                                        onLongClick = {
+                                            selectedIds = if (event.id in selectedIds)
+                                                selectedIds - event.id else selectedIds + event.id
+                                        },
+                                        onDelete = { eventToDelete = event },
+                                        onToggleNotifications = { onToggleNotifications(event) },
+                                        onTogglePin = { onTogglePin(event) },
+                                        onEdit = { onEditEvent(event) },
+                                        onCall = { dialEvent(event) }
+                                    )
+                                }
+                                item { Spacer(Modifier.height(4.dp)) }
                             }
-                            items(pinned, key = { "pin_${it.id}" }) { event ->
+
+                            if (todayEvents.isNotEmpty() && selectedGroup == null && query.isBlank() && sortMode == SortMode.BY_DATE) {
+                                item {
+                                    Text("Сегодня",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.SemiBold)
+                                }
+                                items(todayEvents, key = { "today_${it.id}" }) { event ->
+                                    EventRow(
+                                        event = event,
+                                        swipesEnabled = swipesEnabled && !selectionMode,
+                                        swipeLeftAction = swipeLeftAction,
+                                        swipeRightAction = swipeRightAction,
+                                        isSelected = event.id in selectedIds,
+                                        selectionMode = selectionMode,
+                                        showNotificationsIcon = showNotificationsIcon,
+                                        showPinIcon = showPinIcon,
+                                        onClick = {
+                                            if (selectionMode) {
+                                                selectedIds = if (event.id in selectedIds)
+                                                    selectedIds - event.id else selectedIds + event.id
+                                            } else onEventClick(event)
+                                        },
+                                        onLongClick = {
+                                            selectedIds = if (event.id in selectedIds)
+                                                selectedIds - event.id else selectedIds + event.id
+                                        },
+                                        onDelete = { eventToDelete = event },
+                                        onToggleNotifications = { onToggleNotifications(event) },
+                                        onTogglePin = { onTogglePin(event) },
+                                        onEdit = { onEditEvent(event) },
+                                        onCall = { dialEvent(event) }
+                                    )
+                                }
+                                item {
+                                    Spacer(Modifier.height(8.dp))
+                                    Text("Все события",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+
+                            val others = sorted.filter { !it.isPinned }
+                            items(others, key = { it.id }) { event ->
                                 EventRow(
                                     event = event,
                                     swipesEnabled = swipesEnabled && !selectionMode,
@@ -287,88 +382,42 @@ fun EventListScreen(
                                     onCall = { dialEvent(event) }
                                 )
                             }
-                            item { Spacer(Modifier.height(4.dp)) }
-                        }
-
-                        if (todayEvents.isNotEmpty() && selectedGroup == null && query.isBlank() && sortMode == SortMode.BY_DATE) {
-                            item {
-                                Text(
-                                    "Сегодня",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                            items(todayEvents, key = { "today_${it.id}" }) { event ->
-                                EventRow(
-                                    event = event,
-                                    swipesEnabled = swipesEnabled && !selectionMode,
-                                    swipeLeftAction = swipeLeftAction,
-                                    swipeRightAction = swipeRightAction,
-                                    isSelected = event.id in selectedIds,
-                                    selectionMode = selectionMode,
-                                    showNotificationsIcon = showNotificationsIcon,
-                                    showPinIcon = showPinIcon,
-                                    onClick = {
-                                        if (selectionMode) {
-                                            selectedIds = if (event.id in selectedIds)
-                                                selectedIds - event.id else selectedIds + event.id
-                                        } else onEventClick(event)
-                                    },
-                                    onLongClick = {
-                                        selectedIds = if (event.id in selectedIds)
-                                            selectedIds - event.id else selectedIds + event.id
-                                    },
-                                    onDelete = { eventToDelete = event },
-                                    onToggleNotifications = { onToggleNotifications(event) },
-                                    onTogglePin = { onTogglePin(event) },
-                                    onEdit = { onEditEvent(event) },
-                                    onCall = { dialEvent(event) }
-                                )
-                            }
-                            item {
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    "Все события",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                        }
-
-                        val others = sorted.filter { !it.isPinned }
-                        items(others, key = { it.id }) { event ->
-                            EventRow(
-                                event = event,
-                                swipesEnabled = swipesEnabled && !selectionMode,
-                                swipeLeftAction = swipeLeftAction,
-                                swipeRightAction = swipeRightAction,
-                                isSelected = event.id in selectedIds,
-                                selectionMode = selectionMode,
-                                showNotificationsIcon = showNotificationsIcon,
-                                showPinIcon = showPinIcon,
-                                onClick = {
-                                    if (selectionMode) {
-                                        selectedIds = if (event.id in selectedIds)
-                                            selectedIds - event.id else selectedIds + event.id
-                                    } else onEventClick(event)
-                                },
-                                onLongClick = {
-                                    selectedIds = if (event.id in selectedIds)
-                                        selectedIds - event.id else selectedIds + event.id
-                                },
-                                onDelete = { eventToDelete = event },
-                                onToggleNotifications = { onToggleNotifications(event) },
-                                onTogglePin = { onTogglePin(event) },
-                                onEdit = { onEditEvent(event) },
-                                onCall = { dialEvent(event) }
-                            )
                         }
                     }
                 }
             }
         }
+    }
+
+    // === ДИАЛОГ ДНЯ ИЗ КАЛЕНДАРЯ ===
+    showDayDialog?.let { date ->
+        val fmt = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("ru"))
+        val eventsForDay = events.filter { e ->
+            val d = runCatching {
+                LocalDate.of(date.year, e.month, e.dayOfMonth)
+            }.getOrNull()
+            d == date
+        }
+
+        AlertDialog(
+            onDismissRequest = { showDayDialog = null },
+            title = { Text(date.format(fmt)) },
+            text = {
+                if (eventsForDay.isEmpty()) {
+                    Text("Нет событий в этот день")
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        eventsForDay.forEach { e ->
+                            Text("• ${e.name}",
+                                style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDayDialog = null }) { Text("Закрыть") }
+            }
+        )
     }
 
     eventToDelete?.let { ev ->
