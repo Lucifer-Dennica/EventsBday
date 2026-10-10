@@ -2,8 +2,11 @@ package ru.yourname.events.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -99,8 +102,8 @@ fun EventCard(
                     GroupChip(event.group, accentOnCard)
                 }
             }
-            Spacer(Modifier.width(8.dp))
-            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Spacer(Modifier.width(6.dp))
+            Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = if (days == 0L) "сегодня" else "$days",
                     style = MaterialTheme.typography.titleLarge,
@@ -110,34 +113,49 @@ fun EventCard(
                 if (days > 0L) {
                     Text("дн.", style = MaterialTheme.typography.labelSmall, color = subTextColor)
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
-                    IconButton(
-                        onClick = onToggleNotifications,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (event.notificationsEnabled)
-                                Icons.Default.Notifications else Icons.Default.NotificationsOff,
-                            contentDescription = if (event.notificationsEnabled)
-                                "Уведомления включены" else "Уведомления выключены",
-                            tint = if (event.notificationsEnabled) accentOnCard else subTextColor,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    IconButton(
-                        onClick = onTogglePin,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PushPin,
-                            contentDescription = if (event.isPinned) "Открепить" else "Закрепить",
-                            tint = if (event.isPinned) accentOnCard else subTextColor,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                Spacer(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    SmallIconTap(
+                        icon = if (event.notificationsEnabled)
+                            Icons.Default.Notifications else Icons.Default.NotificationsOff,
+                        contentDescription = if (event.notificationsEnabled)
+                            "Уведомления включены" else "Уведомления выключены",
+                        tint = if (event.notificationsEnabled) accentOnCard else subTextColor,
+                        onClick = onToggleNotifications
+                    )
+                    SmallIconTap(
+                        icon = Icons.Default.PushPin,
+                        contentDescription = if (event.isPinned) "Открепить" else "Закрепить",
+                        tint = if (event.isPinned) accentOnCard else subTextColor,
+                        onClick = onTogglePin
+                    )
                 }
             }
         }
+    }
+}
+
+/** Маленькая иконка-кнопка без лишней тактильной отдачи и риппла на весь размер. */
+@Composable
+private fun SmallIconTap(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    tint: Color,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(30.dp)
+            .clip(CircleShape)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = tint,
+            modifier = Modifier.size(18.dp)
+        )
     }
 }
 
