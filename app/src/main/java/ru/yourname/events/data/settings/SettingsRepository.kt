@@ -28,6 +28,12 @@ object SettingsRepository {
     private val KEY_CAL_MARK = stringPreferencesKey("calendar_mark_style")
     private val KEY_APP_ICON = stringPreferencesKey("app_icon")
 
+    // Анимации
+    private val KEY_ANIM_ENABLED = booleanPreferencesKey("anim_enabled")
+    private val KEY_ANIM_BATTERY_SAVER = booleanPreferencesKey("anim_battery_saver")
+    private val KEY_ANIM_RESPECT_SYSTEM = booleanPreferencesKey("anim_respect_system")
+    private val KEY_ANIM_MODE = stringPreferencesKey("anim_mode")
+
     private val KEY_NOTIF_ENABLED = booleanPreferencesKey("notif_enabled")
     private val KEY_NOTIF_MODE = stringPreferencesKey("notif_mode")
     private val KEY_NOTIF_FREQ = stringPreferencesKey("notif_frequency")
@@ -52,6 +58,33 @@ object SettingsRepository {
     }
     suspend fun setAppIcon(ctx: Context, icon: AppIcon) {
         ctx.settingsStore.edit { it[KEY_APP_ICON] = icon.name }
+    }
+
+    // === АНИМАЦИИ ===
+    fun animEnabledFlow(ctx: Context): Flow<Boolean> =
+        ctx.settingsStore.data.map { it[KEY_ANIM_ENABLED] ?: true }
+    suspend fun setAnimEnabled(ctx: Context, v: Boolean) {
+        ctx.settingsStore.edit { it[KEY_ANIM_ENABLED] = v }
+    }
+
+    fun animBatterySaverFlow(ctx: Context): Flow<Boolean> =
+        ctx.settingsStore.data.map { it[KEY_ANIM_BATTERY_SAVER] ?: false }
+    suspend fun setAnimBatterySaver(ctx: Context, v: Boolean) {
+        ctx.settingsStore.edit { it[KEY_ANIM_BATTERY_SAVER] = v }
+    }
+
+    fun animRespectSystemFlow(ctx: Context): Flow<Boolean> =
+        ctx.settingsStore.data.map { it[KEY_ANIM_RESPECT_SYSTEM] ?: true }
+    suspend fun setAnimRespectSystem(ctx: Context, v: Boolean) {
+        ctx.settingsStore.edit { it[KEY_ANIM_RESPECT_SYSTEM] = v }
+    }
+
+    fun animModeFlow(ctx: Context): Flow<AnimationMode> = ctx.settingsStore.data.map { prefs ->
+        prefs[KEY_ANIM_MODE]?.let { runCatching { AnimationMode.valueOf(it) }.getOrNull() }
+            ?: AnimationMode.ALL_VISIBLE
+    }
+    suspend fun setAnimMode(ctx: Context, mode: AnimationMode) {
+        ctx.settingsStore.edit { it[KEY_ANIM_MODE] = mode.name }
     }
 
     // === ПОВЕДЕНИЕ ===
@@ -214,4 +247,10 @@ enum class AppTheme(val label: String) {
     BERRY("Ягодный милкшейк"),
     MINIMAL("Минимал"),
     HIGH_CONTRAST("Высокий контраст")
+}
+
+enum class AnimationMode(val label: String) {
+    ALL_VISIBLE("Все видимые карточки"),
+    FIRST_ONLY("Только первая видимая"),
+    OFF("Отключить анимации")
 }
