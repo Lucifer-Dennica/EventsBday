@@ -22,9 +22,14 @@ class EventViewModel(app: Application) : AndroidViewModel(app) {
 
     fun addOrUpdate(event: Event) = viewModelScope.launch { repo.upsert(event) }
     fun delete(event: Event) = viewModelScope.launch { repo.delete(event) }
+    fun deleteMany(list: List<Event>) = viewModelScope.launch { list.forEach { repo.delete(it) } }
 
-    fun deleteMany(list: List<Event>) = viewModelScope.launch {
-        list.forEach { repo.delete(it) }
+    fun toggleNotifications(event: Event) = viewModelScope.launch {
+        repo.upsert(event.copy(notificationsEnabled = !event.notificationsEnabled))
+    }
+
+    fun togglePin(event: Event) = viewModelScope.launch {
+        repo.upsert(event.copy(isPinned = !event.isPinned))
     }
 
     fun importFromContacts(onDone: (Int) -> Unit) = viewModelScope.launch {
