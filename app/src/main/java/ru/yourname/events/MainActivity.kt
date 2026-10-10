@@ -11,9 +11,13 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import ru.yourname.events.data.settings.AppTheme
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.nav.NavGraph
+import ru.yourname.events.notif.NotificationHelper
+import ru.yourname.events.notif.NotificationScheduler
 import ru.yourname.events.ui.theme.EventsTheme
 import ru.yourname.events.vm.EventViewModel
 
@@ -32,6 +36,13 @@ class MainActivity : ComponentActivity() {
                 != PackageManager.PERMISSION_GRANTED) {
                 notifPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
+        }
+
+        NotificationHelper.ensureChannel(this)
+
+        lifecycleScope.launch {
+            SettingsRepository.ensureFirstLaunch(this@MainActivity)
+            NotificationScheduler.schedule(this@MainActivity)
         }
 
         setContent {
