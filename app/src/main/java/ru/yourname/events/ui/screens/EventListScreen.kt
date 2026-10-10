@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -39,6 +40,7 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.model.SocialPlatform
+import ru.yourname.events.data.settings.CalendarMarkStyle
 import ru.yourname.events.data.settings.SortMode
 import ru.yourname.events.data.settings.SwipeAction
 import ru.yourname.events.data.settings.ViewMode
@@ -59,6 +61,7 @@ fun EventListScreen(
     swipeToSettingsEnabled: Boolean,
     sortMode: SortMode,
     viewMode: ViewMode,
+    calendarMarkStyle: CalendarMarkStyle,
     onToggleViewMode: () -> Unit,
     onAddClick: () -> Unit,
     onEventClick: (Event) -> Unit,
@@ -78,7 +81,13 @@ fun EventListScreen(
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var eventToDelete by remember { mutableStateOf<Event?>(null) }
     var showBulkDeleteConfirm by remember { mutableStateOf(false) }
-    var showDayDialog by remember { mutableStateOf<LocalDate?>(null) }
+    var selectedCalendarDate by remember { mutableStateOf<LocalDate?>(null) }
+
+    // BackHandler: в календаре кнопка "назад" возвращает к списку, не закрывает приложение
+    BackHandler(enabled = viewMode == ViewMode.CALENDAR) {
+        selectedCalendarDate = null
+        onToggleViewMode()
+    }
 
     val showNotificationsIcon = swipeLeftAction != SwipeAction.NOTIFICATIONS &&
             swipeRightAction != SwipeAction.NOTIFICATIONS
@@ -154,8 +163,13 @@ fun EventListScreen(
 
     val selectionMode = selectedIds.isNotEmpty()
 
+    // В календаре навигационный свайп отключён
+    val navigationSwipeEnabled = swipeToSettingsEnabled &&
+            !selectionMode &&
+            viewMode == ViewMode.LIST
+
     SwipeNavigationBox(
-        onSwipeLeft = if (swipeToSettingsEnabled && !selectionMode) {
+        onSwipeLeft = if (navigationSwipeEnabled) {
             { onOpenSettings() }
         } else null,
         modifier = Modifier.fillMaxSize()
@@ -221,10 +235,81 @@ fun EventListScreen(
                 if (viewMode == ViewMode.CALENDAR) {
                     CalendarView(
                         events = events,
-                        onDayClick = { showDayDialog = it }
+                        selectedDate = selectedCalendarDate,
+                        markStyle = calendarMarkStyle,
+                        onDayClick = { date ->
+                            selectedCalendarDate = if (selectedCalendarDate == date) null else date
+                        }
                     )
+
+                    HorizontalDivider(Modifier.padding(vertical = 8.dp))
+
+                    // Карточки выбранного дня
+                    val dayEvents = selectedCalendarDate?.let { date ->
+                        events.filter { e ->
+                            runCatching {
+                                LocalDate.of(date.year, e.month, e.dayOfMonth) == date
+                            }.getOrDefault(false)
+                        }
+                    }.orEmpty()
+
+                    if (selectedCalendarDate == null) {
+                        Box(
+                            Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Выберите день в календаре",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else if (dayEvents.isEmpty()) {
+                        Box(
+                            Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Нет событий в этот день",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        val dateHeader = selectedCalendarDate!!.format(
+                            DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("ru"))
+                        )
+                        Column {
+                            Text(
+                                dateHeader,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                            )
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                items(dayEvents, key = { "cal_${it.id}" }) { event ->
+                                    EventCard(
+                                        event = event,
+                                        isSelected = false,
+                                        selectionMode = false,
+                                        showNotificationsIcon = showNotificationsIcon,
+                                        showPinIcon = showPinIcon,
+                                        onClick = { onEventClick(event) },
+                                        onLongClick = {},
+                                        onToggleNotifications = { onToggleNotifications(event) },
+                                        onTogglePin = { onTogglePin(event) }
+                                    )
+                                }
+                            }
+                        }
+                    }
                 } else {
-                    // === СПИСОК (как было) ===
+                    // === СПИСОК ===
                     OutlinedTextField(
                         value = query,
                         onValueChange = { query = it },
@@ -387,37 +472,6 @@ fun EventListScreen(
                 }
             }
         }
-    }
-
-    // === ДИАЛОГ ДНЯ ИЗ КАЛЕНДАРЯ ===
-    showDayDialog?.let { date ->
-        val fmt = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("ru"))
-        val eventsForDay = events.filter { e ->
-            val d = runCatching {
-                LocalDate.of(date.year, e.month, e.dayOfMonth)
-            }.getOrNull()
-            d == date
-        }
-
-        AlertDialog(
-            onDismissRequest = { showDayDialog = null },
-            title = { Text(date.format(fmt)) },
-            text = {
-                if (eventsForDay.isEmpty()) {
-                    Text("Нет событий в этот день")
-                } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        eventsForDay.forEach { e ->
-                            Text("• ${e.name}",
-                                style = MaterialTheme.typography.bodyLarge)
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showDayDialog = null }) { Text("Закрыть") }
-            }
-        )
     }
 
     eventToDelete?.let { ev ->
