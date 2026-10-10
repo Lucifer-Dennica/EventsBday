@@ -33,12 +33,6 @@ private fun PlaceholderScaffold(title: String, text: String, onBack: () -> Unit)
 }
 
 @Composable
-fun NotificationsSettingsScreen(onBack: () -> Unit) =
-    PlaceholderScaffold("Уведомления",
-        "Здесь будут: режим «Все/Выборочно», частота, время напоминаний.",
-        onBack)
-
-@Composable
 fun BehaviorSettingsScreen(onBack: () -> Unit) =
     PlaceholderScaffold("Поведение",
         "Здесь будут: свайпы, сортировка, вид списка (список/календарь).",
@@ -53,5 +47,5 @@ fun DataSettingsScreen(onBack: () -> Unit) =
 @Composable
 fun AboutScreen(onBack: () -> Unit) =
     PlaceholderScaffold("О приложении",
-        "Мои События\nВерсия 1.3.0\n\nНе является официальным продуктом.\n\nПриложение для напоминаний о днях рождения и событиях.",
+        "Мои События\nВерсия 1.5.0\n\nНе является официальным продуктом.\n\nПриложение для напоминаний о днях рождения и событиях.",
         onBack)
