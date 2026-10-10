@@ -48,8 +48,6 @@ import ru.yourname.events.ui.components.CalendarView
 import ru.yourname.events.ui.components.EventCard
 import ru.yourname.events.ui.components.SwipeNavigationBox
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -83,7 +81,6 @@ fun EventListScreen(
     var showBulkDeleteConfirm by remember { mutableStateOf(false) }
     var selectedCalendarDate by remember { mutableStateOf<LocalDate?>(null) }
 
-    // BackHandler: в календаре кнопка "назад" возвращает к списку, не закрывает приложение
     BackHandler(enabled = viewMode == ViewMode.CALENDAR) {
         selectedCalendarDate = null
         onToggleViewMode()
@@ -163,7 +160,6 @@ fun EventListScreen(
 
     val selectionMode = selectedIds.isNotEmpty()
 
-    // В календаре навигационный свайп отключён
     val navigationSwipeEnabled = swipeToSettingsEnabled &&
             !selectionMode &&
             viewMode == ViewMode.LIST
@@ -233,77 +229,71 @@ fun EventListScreen(
             Column(Modifier.fillMaxSize().padding(padding)) {
 
                 if (viewMode == ViewMode.CALENDAR) {
-                    CalendarView(
-                        events = events,
-                        selectedDate = selectedCalendarDate,
-                        markStyle = calendarMarkStyle,
-                        onDayClick = { date ->
-                            selectedCalendarDate = if (selectedCalendarDate == date) null else date
-                        }
-                    )
-
-                    HorizontalDivider(Modifier.padding(vertical = 8.dp))
-
-                    // Карточки выбранного дня
-                    val dayEvents = selectedCalendarDate?.let { date ->
-                        events.filter { e ->
-                            runCatching {
-                                LocalDate.of(date.year, e.month, e.dayOfMonth) == date
-                            }.getOrDefault(false)
-                        }
-                    }.orEmpty()
-
-                    if (selectedCalendarDate == null) {
-                        Box(
-                            Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "Выберите день в календаре",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    } else if (dayEvents.isEmpty()) {
-                        Box(
-                            Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "Нет событий в этот день",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    } else {
-                        val dateHeader = selectedCalendarDate!!.format(
-                            DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("ru"))
+                    // === КАЛЕНДАРЬ + КАРТОЧКИ ПОД НИМ ===
+                    Column(Modifier.fillMaxSize()) {
+                        CalendarView(
+                            events = events,
+                            selectedDate = selectedCalendarDate,
+                            markStyle = calendarMarkStyle,
+                            onDayClick = { date ->
+                                selectedCalendarDate = if (selectedCalendarDate == date) null else date
+                            }
                         )
-                        Column {
-                            Text(
-                                dateHeader,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                            )
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                items(dayEvents, key = { "cal_${it.id}" }) { event ->
-                                    EventCard(
-                                        event = event,
-                                        isSelected = false,
-                                        selectionMode = false,
-                                        showNotificationsIcon = showNotificationsIcon,
-                                        showPinIcon = showPinIcon,
-                                        onClick = { onEventClick(event) },
-                                        onLongClick = {},
-                                        onToggleNotifications = { onToggleNotifications(event) },
-                                        onTogglePin = { onTogglePin(event) }
+
+                        HorizontalDivider(Modifier.padding(vertical = 10.dp))
+
+                        val dayEvents = selectedCalendarDate?.let { date ->
+                            events.filter { e ->
+                                runCatching {
+                                    LocalDate.of(date.year, e.month, e.dayOfMonth) == date
+                                }.getOrDefault(false)
+                            }
+                        }.orEmpty()
+
+                        when {
+                            selectedCalendarDate == null -> {
+                                Box(
+                                    Modifier.weight(1f).fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "Выберите день в календаре",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                }
+                            }
+                            dayEvents.isEmpty() -> {
+                                Box(
+                                    Modifier.weight(1f).fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "Нет событий в этот день",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            else -> {
+                                LazyColumn(
+                                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                                    contentPadding = PaddingValues(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    items(dayEvents, key = { "cal_${it.id}" }) { event ->
+                                        EventCard(
+                                            event = event,
+                                            isSelected = false,
+                                            selectionMode = false,
+                                            showNotificationsIcon = showNotificationsIcon,
+                                            showPinIcon = showPinIcon,
+                                            onClick = { onEventClick(event) },
+                                            onLongClick = {},
+                                            onToggleNotifications = { onToggleNotifications(event) },
+                                            onTogglePin = { onTogglePin(event) }
+                                        )
+                                    }
                                 }
                             }
                         }
