@@ -18,6 +18,7 @@ import ru.yourname.events.ads.InterstitialManager
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.data.settings.SortMode
 import ru.yourname.events.data.settings.SwipeAction
+import ru.yourname.events.data.settings.ViewMode
 import ru.yourname.events.ui.screens.AboutScreen
 import ru.yourname.events.ui.screens.AddEventScreen
 import ru.yourname.events.ui.screens.BehaviorSettingsScreen
@@ -56,6 +57,7 @@ fun NavGraph(vm: EventViewModel) {
     val swipeLeft by SettingsRepository.swipeLeftActionFlow(ctx).collectAsState(initial = SwipeAction.DELETE)
     val swipeRight by SettingsRepository.swipeRightActionFlow(ctx).collectAsState(initial = SwipeAction.NOTHING)
     val sortMode by SettingsRepository.sortModeFlow(ctx).collectAsState(initial = SortMode.BY_DATE)
+    val viewMode by SettingsRepository.viewModeFlow(ctx).collectAsState(initial = ViewMode.LIST)
 
     LaunchedEffect(Unit) {
         InterstitialManager.preload(ctx)
@@ -71,6 +73,15 @@ fun NavGraph(vm: EventViewModel) {
                 swipeRightAction = swipeRight,
                 swipeToSettingsEnabled = swipeToSettings,
                 sortMode = sortMode,
+                viewMode = viewMode,
+                onToggleViewMode = {
+                    scope.launch {
+                        SettingsRepository.setViewMode(
+                            ctx,
+                            if (viewMode == ViewMode.LIST) ViewMode.CALENDAR else ViewMode.LIST
+                        )
+                    }
+                },
                 onAddClick = { nav.navigate(Routes.ADD) },
                 onEventClick = { event ->
                     scope.launch {
@@ -132,9 +143,7 @@ fun NavGraph(vm: EventViewModel) {
 
         composable(Routes.SETTINGS_DESIGN) { DesignSettingsScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.SETTINGS_NOTIF) { NotificationsSettingsScreen(onBack = { nav.popBackStack() }) }
-        composable(Routes.SETTINGS_BEHAVIOR) {
-            BehaviorSettingsScreen(onBack = { nav.popBackStack() })
-        }
+        composable(Routes.SETTINGS_BEHAVIOR) { BehaviorSettingsScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.SETTINGS_DATA) { DataSettingsScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.SETTINGS_ABOUT) { AboutScreen(onBack = { nav.popBackStack() }) }
     }
