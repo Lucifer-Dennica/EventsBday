@@ -221,7 +221,12 @@ private fun SectionHeader(text: String) {
 }
 
 @Composable
-private fun Modifier.clickableRow(block: () -> Unit): Modifier =
-    this.then(Modifier).let {
-        androidx.compose.foundation.clickable(it) { block() }.let { _ -> it }
-    }
+private fun SectionHeader(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
+    )
+}
