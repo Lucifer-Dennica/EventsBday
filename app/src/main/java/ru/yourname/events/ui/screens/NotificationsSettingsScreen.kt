@@ -1,6 +1,7 @@
 package ru.yourname.events.ui.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -15,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -44,48 +46,80 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
         scope.launch { NotificationScheduler.schedule(ctx) }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Уведомления") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
-            )
-        }
-    ) { p ->
-        Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
-
-            ListItem(
-                headlineContent = { Text("Включить уведомления",
-                    style = MaterialTheme.typography.titleMedium) },
-                supportingContent = { Text("Напоминать о предстоящих событиях") },
-                trailingContent = {
-                    Switch(
-                        checked = enabled,
-                        onCheckedChange = {
-                            scope.launch {
-                                SettingsRepository.setNotifEnabled(ctx, it)
-                                if (it) reschedule() else NotificationScheduler.cancel(ctx)
-                            }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                var totalDrag = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { totalDrag = 0f },
+                    onDragEnd = {
+                        // Свайп влево в настройках → назад
+                        if (totalDrag < -150f) {
+                            onBack()
                         }
-                    )
+                    }
+                ) { _, dragAmount ->
+                    totalDrag += dragAmount
                 }
-            )
+            }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Уведомления") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                )
+            }
+        ) { p ->
+            Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
 
-            if (!enabled) return@Column
+                ListItem(
+                    headlineContent = {
+                        Text("Включить уведомления",
+                            style = MaterialTheme.typography.titleMedium)
+                    },
+                    supportingContent = { Text("Напоминать о предстоящих событиях") },
+                    trailingContent = {
+                        Switch(
+                            checked = enabled,
+                            onCheckedChange = {
+                                scope.launch {
+                                    SettingsRepository.setNotifEnabled(ctx, it)
+                                    if (it) reschedule() else NotificationScheduler.cancel(ctx)
+                                }
+                            }
+                        )
+                    }
+                )
 
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+                if (!enabled) return@Column
 
-            SectionHeader("О каких событиях уведомлять")
-            NotificationMode.entries.forEach { m ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .selectable(
+                HorizontalDivider(Modifier.padding(vertical = 12.dp))
+
+                SectionHeader("О каких событиях уведомлять")
+                NotificationMode.entries.forEach { m ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = mode == m,
+                                onClick = {
+                                    scope.launch {
+                                        SettingsRepository.setNotifMode(ctx, m)
+                                        reschedule()
+                                    }
+                                }
+                            )
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
                             selected = mode == m,
                             onClick = {
                                 scope.launch {
@@ -94,108 +128,112 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
                                 }
                             }
                         )
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = mode == m,
-                        onClick = { scope.launch { SettingsRepository.setNotifMode(ctx, m); reschedule() } }
-                    )
-                    Spacer(Modifier.width(14.dp))
-                    Column {
-                        Text(m.label, style = MaterialTheme.typography.bodyLarge)
-                        if (m == NotificationMode.CUSTOM) {
-                            Text("Уведомления по событиям с включённым тумблером",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.width(14.dp))
+                        Column {
+                            Text(m.label, style = MaterialTheme.typography.bodyLarge)
+                            if (m == NotificationMode.CUSTOM) {
+                                Text("Уведомления по событиям с включённым тумблером",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
                     }
                 }
-            }
 
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+                HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
-            SectionHeader("За сколько дней начинать напоминать")
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                FilledIconButton(
-                    onClick = {
-                        scope.launch {
-                            SettingsRepository.setNotifDaysBefore(ctx, (daysBefore - 1).coerceAtLeast(0))
-                            reschedule()
-                        }
-                    },
-                    shape = CircleShape
-                ) { Icon(Icons.Default.Remove, contentDescription = "Меньше") }
-
-                Text(
-                    text = daysBefore.toString(),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 28.dp)
-                )
-
-                FilledIconButton(
-                    onClick = {
-                        scope.launch {
-                            SettingsRepository.setNotifDaysBefore(ctx, (daysBefore + 1).coerceAtMost(30))
-                            reschedule()
-                        }
-                    },
-                    shape = CircleShape
-                ) { Icon(Icons.Default.Add, contentDescription = "Больше") }
-            }
-            Text(
-                text = "дней",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
-
-            // === ВРЕМЯ — ПО ЦЕНТРУ ===
-            SectionHeader("Время уведомлений")
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .clickable { showTimePicker = true }
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 18.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                SectionHeader("За сколько дней начинать напоминать")
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    FilledIconButton(
+                        onClick = {
+                            scope.launch {
+                                SettingsRepository.setNotifDaysBefore(ctx, (daysBefore - 1).coerceAtLeast(0))
+                                reschedule()
+                            }
+                        },
+                        shape = CircleShape
+                    ) { Icon(Icons.Default.Remove, contentDescription = "Меньше") }
+
                     Text(
-                        "Показывать в",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        String.format(Locale.US, "%02d:%02d", time.first, time.second),
+                        text = daysBefore.toString(),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 28.dp)
                     )
+
+                    FilledIconButton(
+                        onClick = {
+                            scope.launch {
+                                SettingsRepository.setNotifDaysBefore(ctx, (daysBefore + 1).coerceAtMost(30))
+                                reschedule()
+                            }
+                        },
+                        shape = CircleShape
+                    ) { Icon(Icons.Default.Add, contentDescription = "Больше") }
                 }
-            }
+                Text(
+                    text = "дней",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
 
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
-
-            SectionHeader("Частота напоминаний")
-            NotificationFrequency.entries.forEach { f ->
-                Row(
+                SectionHeader("Время уведомлений")
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .selectable(
+                        .padding(horizontal = 16.dp)
+                        .clickable { showTimePicker = true }
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 18.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Показывать в",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            String.format(Locale.US, "%02d:%02d", time.first, time.second),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                HorizontalDivider(Modifier.padding(vertical = 12.dp))
+
+                SectionHeader("Частота напоминаний")
+                NotificationFrequency.entries.forEach { f ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = freq == f,
+                                onClick = {
+                                    scope.launch {
+                                        SettingsRepository.setNotifFrequency(ctx, f)
+                                        reschedule()
+                                    }
+                                }
+                            )
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
                             selected = freq == f,
                             onClick = {
                                 scope.launch {
@@ -204,19 +242,13 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
                                 }
                             }
                         )
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = freq == f,
-                        onClick = { scope.launch { SettingsRepository.setNotifFrequency(ctx, f); reschedule() } }
-                    )
-                    Spacer(Modifier.width(14.dp))
-                    Text(f.label, style = MaterialTheme.typography.bodyLarge)
+                        Spacer(Modifier.width(14.dp))
+                        Text(f.label, style = MaterialTheme.typography.bodyLarge)
+                    }
                 }
-            }
 
-            Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(24.dp))
+            }
         }
     }
 
