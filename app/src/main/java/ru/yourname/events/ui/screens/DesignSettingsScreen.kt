@@ -5,7 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -17,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ru.yourname.events.R
@@ -40,6 +38,8 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
     val appIcon by SettingsRepository.appIconFlow(ctx).collectAsState(initial = AppIcon.MAIN)
 
     var themeExpanded by remember { mutableStateOf(false) }
+    var sortExpanded by remember { mutableStateOf(false) }
+    var markExpanded by remember { mutableStateOf(false) }
 
     SwipeNavigationBox(
         onSwipeRight = { onBack() },
@@ -58,7 +58,12 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                 )
             }
         ) { p ->
-            Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .padding(p)
+                    .verticalScroll(rememberScrollState())
+            ) {
 
                 // === ТЕМА ===
                 SectionHeader("Тема оформления")
@@ -95,26 +100,99 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     }
                 }
 
-                HorizontalDivider(Modifier.padding(vertical = 16.dp))
+                Spacer(Modifier.height(16.dp))
 
-                // === ИКОНКА ПРИЛОЖЕНИЯ ===
+                // === СОРТИРОВКА ===
+                SectionHeader("Сортировка списка")
+                ExposedDropdownMenuBox(
+                    expanded = sortExpanded,
+                    onExpandedChange = { sortExpanded = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    OutlinedTextField(
+                        value = sortMode.label,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Сортировка") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = sortExpanded)
+                        },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = sortExpanded,
+                        onDismissRequest = { sortExpanded = false }
+                    ) {
+                        SortMode.entries.forEach { s ->
+                            DropdownMenuItem(
+                                text = { Text(s.label) },
+                                onClick = {
+                                    scope.launch { SettingsRepository.setSortMode(ctx, s) }
+                                    sortExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // === ОТМЕТКИ КАЛЕНДАРЯ ===
+                SectionHeader("Отметки в календаре")
+                ExposedDropdownMenuBox(
+                    expanded = markExpanded,
+                    onExpandedChange = { markExpanded = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    OutlinedTextField(
+                        value = markStyle.label,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Стиль отметок") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = markExpanded)
+                        },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = markExpanded,
+                        onDismissRequest = { markExpanded = false }
+                    ) {
+                        CalendarMarkStyle.entries.forEach { m ->
+                            DropdownMenuItem(
+                                text = { Text(m.label) },
+                                onClick = {
+                                    scope.launch { SettingsRepository.setCalendarMarkStyle(ctx, m) }
+                                    markExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(32.dp))
+
+                // === ИКОНКА ПРИЛОЖЕНИЯ (в самом низу) ===
                 SectionHeader("Иконка приложения")
                 Text(
-                    "Рабочий стол может обновиться не сразу — иногда требуется перезагрузка",
+                    "Рабочий стол может обновляться не сразу",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
                 )
 
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     IconTile(
                         iconRes = R.mipmap.ic_launcher_main,
-                        label = "Торт",
                         selected = appIcon == AppIcon.MAIN,
                         modifier = Modifier.weight(1f),
                         onClick = {
@@ -124,7 +202,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     )
                     IconTile(
                         iconRes = R.mipmap.ic_launcher_cake,
-                        label = "Свечи",
                         selected = appIcon == AppIcon.CAKE,
                         modifier = Modifier.weight(1f),
                         onClick = {
@@ -133,15 +210,15 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                         }
                     )
                 }
+
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                        .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     IconTile(
                         iconRes = R.mipmap.ic_launcher_calendar,
-                        label = "Календарь",
                         selected = appIcon == AppIcon.CALENDAR,
                         modifier = Modifier.weight(1f),
                         onClick = {
@@ -151,7 +228,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     )
                     IconTile(
                         iconRes = R.mipmap.ic_launcher_gift,
-                        label = "Подарок",
                         selected = appIcon == AppIcon.GIFT,
                         modifier = Modifier.weight(1f),
                         onClick = {
@@ -161,55 +237,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     )
                 }
 
-                HorizontalDivider(Modifier.padding(vertical = 16.dp))
-
-                // === СОРТИРОВКА ===
-                SectionHeader("Сортировка списка")
-                SortMode.entries.forEach { s ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = sortMode == s,
-                                onClick = { scope.launch { SettingsRepository.setSortMode(ctx, s) } }
-                            )
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = sortMode == s,
-                            onClick = { scope.launch { SettingsRepository.setSortMode(ctx, s) } }
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(s.label, style = MaterialTheme.typography.bodyLarge)
-                    }
-                }
-
-                HorizontalDivider(Modifier.padding(vertical = 16.dp))
-
-                // === ОТМЕТКИ КАЛЕНДАРЯ ===
-                SectionHeader("Отметки в календаре")
-                CalendarMarkStyle.entries.forEach { m ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = markStyle == m,
-                                onClick = { scope.launch { SettingsRepository.setCalendarMarkStyle(ctx, m) } }
-                            )
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = markStyle == m,
-                            onClick = { scope.launch { SettingsRepository.setCalendarMarkStyle(ctx, m) } }
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(m.label, style = MaterialTheme.typography.bodyLarge)
-                    }
-                }
-
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(32.dp))
             }
         }
     }
@@ -218,7 +246,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 @Composable
 private fun IconTile(
     iconRes: Int,
-    label: String,
     selected: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
@@ -227,31 +254,17 @@ private fun IconTile(
                       else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
     val borderWidth = if (selected) 3.dp else 1.dp
 
-    Column(
-        modifier = modifier.clickable { onClick() },
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier = modifier
+            .aspectRatio(1f)
+            .clip(RoundedCornerShape(16.dp))
+            .border(borderWidth, borderColor, RoundedCornerShape(16.dp))
+            .clickable { onClick() }
     ) {
-        Box(
-            modifier = Modifier
-                .aspectRatio(1f)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .border(borderWidth, borderColor, RoundedCornerShape(16.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(iconRes),
-                contentDescription = label,
-                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))
-            )
-        }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (selected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+        Image(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))
         )
     }
 }
@@ -262,7 +275,6 @@ private fun SectionHeader(text: String) {
         text,
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+        modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
     )
 }
