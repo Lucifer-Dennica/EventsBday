@@ -60,6 +60,7 @@ fun AddEventScreen(
     var socials by remember { mutableStateOf(editing?.socialLinks ?: emptyList()) }
     var notifications by remember { mutableStateOf(editing?.notificationsEnabled ?: true) }
     var cardColor by remember { mutableStateOf(editing?.cardColor ?: 0) }
+    var isPinned by remember { mutableStateOf(editing?.isPinned ?: false) }
     var showDatePicker by remember { mutableStateOf(false) }
 
     val photoPicker = rememberLauncherForActivityResult(
@@ -227,14 +228,15 @@ fun AddEventScreen(
 
             SocialLinksEditor(links = socials, onChange = { socials = it })
 
+            // Только закрепление — уведомления теперь на карточке
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Уведомления", style = MaterialTheme.typography.titleMedium)
-                    Text("Напоминать об этом событии",
+                    Text("Закрепить событие", style = MaterialTheme.typography.titleMedium)
+                    Text("Всегда сверху списка",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Switch(checked = notifications, onCheckedChange = { notifications = it })
+                Switch(checked = isPinned, onCheckedChange = { isPinned = it })
             }
 
             Spacer(Modifier.height(8.dp))
@@ -257,7 +259,8 @@ fun AddEventScreen(
                             isFromContacts = editing?.isFromContacts ?: false,
                             socialLinks = socials,
                             notificationsEnabled = notifications,
-                            cardColor = cardColor
+                            cardColor = cardColor,
+                            isPinned = isPinned
                         )
                     )
                 },
