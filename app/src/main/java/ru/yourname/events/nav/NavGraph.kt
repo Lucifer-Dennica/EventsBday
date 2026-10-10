@@ -1,6 +1,9 @@
 package ru.yourname.events.nav
 
 import android.app.Activity
+import android.content.Context
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -15,6 +18,7 @@ import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
 import ru.yourname.events.ads.AdsConfig
 import ru.yourname.events.ads.InterstitialManager
+import ru.yourname.events.data.settings.AnimationMode
 import ru.yourname.events.data.settings.CalendarMarkStyle
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.data.settings.SortMode
@@ -61,6 +65,35 @@ fun NavGraph(vm: EventViewModel) {
     val viewMode by SettingsRepository.viewModeFlow(ctx).collectAsState(initial = ViewMode.LIST)
     val calMark by SettingsRepository.calendarMarkStyleFlow(ctx).collectAsState(initial = CalendarMarkStyle.FILLED_SQUARE)
 
+    val animEnabled by SettingsRepository.animEnabledFlow(ctx).collectAsState(initial = true)
+    val animBatterySaver by SettingsRepository.animBatterySaverFlow(ctx).collectAsState(initial = false)
+    val animRespectSystem by SettingsRepository.animRespectSystemFlow(ctx).collectAsState(initial = true)
+    val animMode by SettingsRepository.animModeFlow(ctx).collectAsState(initial = AnimationMode.ALL_VISIBLE)
+
+    // Финальное решение: разрешены ли анимации на этом устройстве прямо сейчас
+    val animationsAllowed = remember(animEnabled, animBatterySaver, animRespectSystem, animMode) {
+        if (!animEnabled || animMode == AnimationMode.OFF) {
+            false
+        } else {
+            val inPowerSave = (ctx.getSystemService(Context.POWER_SERVICE) as PowerManager).isPowerSaveMode
+            val systemAnimationsDisabled = if (animRespectSystem) {
+                runCatching {
+                    Settings.Global.getFloat(
+                        ctx.contentResolver,
+                        Settings.Global.ANIMATOR_DURATION_SCALE,
+                        1f
+                    ) == 0f
+                }.getOrDefault(false)
+            } else false
+
+            when {
+                systemAnimationsDisabled -> false
+                inPowerSave && !animBatterySaver -> false
+                else -> true
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         InterstitialManager.preload(ctx)
     }
@@ -77,6 +110,7 @@ fun NavGraph(vm: EventViewModel) {
                 sortMode = sortMode,
                 viewMode = viewMode,
                 calendarMarkStyle = calMark,
+                animationsAllowed = animationsAllowed,
                 onToggleViewMode = {
                     scope.launch {
                         SettingsRepository.setViewMode(
