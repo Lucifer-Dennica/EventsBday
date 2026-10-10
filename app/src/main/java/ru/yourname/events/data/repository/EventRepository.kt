@@ -23,7 +23,8 @@ class EventRepository(private val dao: EventDao) {
         contactId = contactId, isFromContacts = isFromContacts,
         socialLinks = parseSocials(socialLinksRaw),
         notificationsEnabled = notificationsEnabled,
-        cardColor = cardColor
+        cardColor = cardColor,
+        isPinned = isPinned
     )
 
     private fun Event.toEntity() = EventEntity(
@@ -32,7 +33,8 @@ class EventRepository(private val dao: EventDao) {
         contactId = contactId, isFromContacts = isFromContacts,
         socialLinksRaw = serializeSocials(socialLinks),
         notificationsEnabled = notificationsEnabled,
-        cardColor = cardColor
+        cardColor = cardColor,
+        isPinned = isPinned
     )
 
     private fun parseSocials(raw: String): List<SocialLink> {
