@@ -68,8 +68,7 @@ fun EventListScreen(
     val today = LocalDate.now()
     val sorted = remember(filtered) {
         filtered.sortedWith(
-            compareByDescending<Event> { it.isPinned }
-                .thenBy { it.daysUntil(today) }
+            compareByDescending<Event> { it.isPinned }.thenBy { it.daysUntil(today) }
         )
     }
     val todayEvents = remember(sorted) {
@@ -199,7 +198,6 @@ fun EventListScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Закреплённые
                     val pinned = sorted.filter { it.isPinned }
                     if (pinned.isNotEmpty() && selectedGroup == null && query.isBlank()) {
                         item {
@@ -234,7 +232,6 @@ fun EventListScreen(
                         item { Spacer(Modifier.height(4.dp)) }
                     }
 
-                    // Сегодня
                     if (todayEvents.isNotEmpty() && selectedGroup == null && query.isBlank()) {
                         item {
                             Text(
@@ -276,7 +273,6 @@ fun EventListScreen(
                         }
                     }
 
-                    // Остальные
                     val others = sorted.filter { !it.isPinned }
                     items(others, key = { it.id }) { event ->
                         SwipeableEventRow(
@@ -354,13 +350,16 @@ private fun SwipeableEventRow(
     onToggleNotifications: () -> Unit,
     onTogglePin: () -> Unit
 ) {
+    // positionalThreshold = 55% ширины карточки — свайп требует явного движения,
+    // чтобы случайные горизонтальные микродвижения при скролле не срабатывали
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart) {
                 onSwipeDelete()
             }
             false
-        }
+        },
+        positionalThreshold = { totalDistance -> totalDistance * 0.55f }
     )
 
     SwipeToDismissBox(
