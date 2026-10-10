@@ -60,6 +60,7 @@ fun EventListScreen(
     sortMode: SortMode,
     viewMode: ViewMode,
     calendarMarkStyle: CalendarMarkStyle,
+    animationsAllowed: Boolean,
     onToggleViewMode: () -> Unit,
     onAddClick: () -> Unit,
     onEventClick: (Event) -> Unit,
@@ -229,7 +230,6 @@ fun EventListScreen(
             Column(Modifier.fillMaxSize().padding(padding)) {
 
                 if (viewMode == ViewMode.CALENDAR) {
-                    // === КАЛЕНДАРЬ + КАРТОЧКИ ПОД НИМ ===
                     Column(Modifier.fillMaxSize()) {
                         CalendarView(
                             events = events,
@@ -252,27 +252,19 @@ fun EventListScreen(
 
                         when {
                             selectedCalendarDate == null -> {
-                                Box(
-                                    Modifier.weight(1f).fillMaxWidth(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        "Выберите день в календаре",
+                                Box(Modifier.weight(1f).fillMaxWidth(),
+                                    contentAlignment = Alignment.Center) {
+                                    Text("Выберите день в календаре",
                                         style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                             dayEvents.isEmpty() -> {
-                                Box(
-                                    Modifier.weight(1f).fillMaxWidth(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        "Нет событий в этот день",
+                                Box(Modifier.weight(1f).fillMaxWidth(),
+                                    contentAlignment = Alignment.Center) {
+                                    Text("Нет событий в этот день",
                                         style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                             else -> {
@@ -288,6 +280,7 @@ fun EventListScreen(
                                             selectionMode = false,
                                             showNotificationsIcon = showNotificationsIcon,
                                             showPinIcon = showPinIcon,
+                                            animationsAllowed = animationsAllowed,
                                             onClick = { onEventClick(event) },
                                             onLongClick = {},
                                             onToggleNotifications = { onToggleNotifications(event) },
@@ -299,7 +292,6 @@ fun EventListScreen(
                         }
                     }
                 } else {
-                    // === СПИСОК ===
                     OutlinedTextField(
                         value = query,
                         onValueChange = { query = it },
@@ -366,6 +358,7 @@ fun EventListScreen(
                                         selectionMode = selectionMode,
                                         showNotificationsIcon = showNotificationsIcon,
                                         showPinIcon = showPinIcon,
+                                        animationsAllowed = animationsAllowed,
                                         onClick = {
                                             if (selectionMode) {
                                                 selectedIds = if (event.id in selectedIds)
@@ -403,6 +396,7 @@ fun EventListScreen(
                                         selectionMode = selectionMode,
                                         showNotificationsIcon = showNotificationsIcon,
                                         showPinIcon = showPinIcon,
+                                        animationsAllowed = animationsAllowed,
                                         onClick = {
                                             if (selectionMode) {
                                                 selectedIds = if (event.id in selectedIds)
@@ -440,6 +434,7 @@ fun EventListScreen(
                                     selectionMode = selectionMode,
                                     showNotificationsIcon = showNotificationsIcon,
                                     showPinIcon = showPinIcon,
+                                    animationsAllowed = animationsAllowed,
                                     onClick = {
                                         if (selectionMode) {
                                             selectedIds = if (event.id in selectedIds)
@@ -512,6 +507,7 @@ private fun EventRow(
     selectionMode: Boolean,
     showNotificationsIcon: Boolean,
     showPinIcon: Boolean,
+    animationsAllowed: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onDelete: () -> Unit,
@@ -584,6 +580,7 @@ private fun EventRow(
             selectionMode = selectionMode,
             showNotificationsIcon = showNotificationsIcon,
             showPinIcon = showPinIcon,
+            animationsAllowed = animationsAllowed,
             onClick = onClick,
             onLongClick = onLongClick,
             onToggleNotifications = onToggleNotifications,
