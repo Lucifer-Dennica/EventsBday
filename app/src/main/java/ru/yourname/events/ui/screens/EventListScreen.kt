@@ -31,8 +31,6 @@ import kotlinx.coroutines.launch
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.ui.components.EventCard
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -43,7 +41,9 @@ fun EventListScreen(
     onEventClick: (Event) -> Unit,
     onImportContacts: () -> Unit,
     onOpenSettings: () -> Unit,
-    onDeleteMany: (List<Event>) -> Unit
+    onDeleteMany: (List<Event>) -> Unit,
+    onToggleNotifications: (Event) -> Unit,
+    onTogglePin: (Event) -> Unit
 ) {
     val ctx = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
@@ -55,7 +55,9 @@ fun EventListScreen(
     var eventToDelete by remember { mutableStateOf<Event?>(null) }
     var showBulkDeleteConfirm by remember { mutableStateOf(false) }
 
-    val allGroups = remember(events) { events.map { it.group }.filter { it.isNotBlank() }.distinct().sorted() }
+    val allGroups = remember(events) {
+        events.map { it.group }.filter { it.isNotBlank() }.distinct().sorted()
+    }
 
     val filtered = remember(events, query, selectedGroup) {
         events
@@ -64,8 +66,15 @@ fun EventListScreen(
     }
 
     val today = LocalDate.now()
-    val sorted = remember(filtered) { filtered.sortedBy { it.daysUntil(today) } }
-    val todayEvents = remember(sorted) { sorted.filter { it.daysUntil(today) == 0L } }
+    val sorted = remember(filtered) {
+        filtered.sortedWith(
+            compareByDescending<Event> { it.isPinned }
+                .thenBy { it.daysUntil(today) }
+        )
+    }
+    val todayEvents = remember(sorted) {
+        sorted.filter { it.daysUntil(today) == 0L && !it.isPinned }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -142,7 +151,6 @@ fun EventListScreen(
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
 
-            // Поиск
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
@@ -161,7 +169,6 @@ fun EventListScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            // Фильтр по группам
             if (allGroups.isNotEmpty()) {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
@@ -192,6 +199,42 @@ fun EventListScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    // Закреплённые
+                    val pinned = sorted.filter { it.isPinned }
+                    if (pinned.isNotEmpty() && selectedGroup == null && query.isBlank()) {
+                        item {
+                            Text(
+                                "Закреплённые",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        items(pinned, key = { "pin_${it.id}" }) { event ->
+                            SwipeableEventRow(
+                                event = event,
+                                swipesEnabled = swipesEnabled && !selectionMode,
+                                isSelected = event.id in selectedIds,
+                                selectionMode = selectionMode,
+                                onClick = {
+                                    if (selectionMode) {
+                                        selectedIds = if (event.id in selectedIds)
+                                            selectedIds - event.id else selectedIds + event.id
+                                    } else onEventClick(event)
+                                },
+                                onLongClick = {
+                                    selectedIds = if (event.id in selectedIds)
+                                        selectedIds - event.id else selectedIds + event.id
+                                },
+                                onSwipeDelete = { eventToDelete = event },
+                                onToggleNotifications = { onToggleNotifications(event) },
+                                onTogglePin = { onTogglePin(event) }
+                            )
+                        }
+                        item { Spacer(Modifier.height(4.dp)) }
+                    }
+
+                    // Сегодня
                     if (todayEvents.isNotEmpty() && selectedGroup == null && query.isBlank()) {
                         item {
                             Text(
@@ -217,7 +260,9 @@ fun EventListScreen(
                                     selectedIds = if (event.id in selectedIds)
                                         selectedIds - event.id else selectedIds + event.id
                                 },
-                                onSwipeDelete = { eventToDelete = event }
+                                onSwipeDelete = { eventToDelete = event },
+                                onToggleNotifications = { onToggleNotifications(event) },
+                                onTogglePin = { onTogglePin(event) }
                             )
                         }
                         item {
@@ -231,7 +276,9 @@ fun EventListScreen(
                         }
                     }
 
-                    items(sorted, key = { it.id }) { event ->
+                    // Остальные
+                    val others = sorted.filter { !it.isPinned }
+                    items(others, key = { it.id }) { event ->
                         SwipeableEventRow(
                             event = event,
                             swipesEnabled = swipesEnabled && !selectionMode,
@@ -247,7 +294,9 @@ fun EventListScreen(
                                 selectedIds = if (event.id in selectedIds)
                                     selectedIds - event.id else selectedIds + event.id
                             },
-                            onSwipeDelete = { eventToDelete = event }
+                            onSwipeDelete = { eventToDelete = event },
+                            onToggleNotifications = { onToggleNotifications(event) },
+                            onTogglePin = { onTogglePin(event) }
                         )
                     }
                 }
@@ -255,7 +304,6 @@ fun EventListScreen(
         }
     }
 
-    // Подтверждение одиночного удаления
     eventToDelete?.let { ev ->
         AlertDialog(
             onDismissRequest = { eventToDelete = null },
@@ -273,7 +321,6 @@ fun EventListScreen(
         )
     }
 
-    // Подтверждение массового удаления
     if (showBulkDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showBulkDeleteConfirm = false },
@@ -303,14 +350,16 @@ private fun SwipeableEventRow(
     selectionMode: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    onSwipeDelete: () -> Unit
+    onSwipeDelete: () -> Unit,
+    onToggleNotifications: () -> Unit,
+    onTogglePin: () -> Unit
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart) {
                 onSwipeDelete()
             }
-            false // всегда откатываем, реальное удаление — через диалог
+            false
         }
     )
 
@@ -342,7 +391,9 @@ private fun SwipeableEventRow(
             isSelected = isSelected,
             selectionMode = selectionMode,
             onClick = onClick,
-            onLongClick = onLongClick
+            onLongClick = onLongClick,
+            onToggleNotifications = onToggleNotifications,
+            onTogglePin = onTogglePin
         )
     }
 }
