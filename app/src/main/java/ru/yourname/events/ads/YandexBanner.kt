@@ -47,8 +47,6 @@ fun YandexBanner(
                             override fun onAdClicked() {
                                 Log.d("AdsDebug", "Banner clicked")
                             }
-                            override fun onLeftApplication() {}
-                            override fun onReturnedToApplication() {}
                             override fun onImpression(impressionData: ImpressionData?) {}
                         })
                         loadAd(AdRequest.Builder(adUnitId).build())
