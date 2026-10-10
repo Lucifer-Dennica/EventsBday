@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ru.yourname.events.ads.YandexBanner
 
@@ -70,17 +71,18 @@ fun SettingsScreen(
             HorizontalDivider()
             Spacer(Modifier.height(8.dp))
 
-            NavItem("ℹ️", "О приложении", "Версия 1.4.0", onOpenAbout)
+            NavItem("ℹ️", "О приложении", "Версия 1.6.0", onOpenAbout)
 
-            // Рекламный баннер Yandex — только в настройках, ненавязчиво
-            Spacer(Modifier.height(12.dp))
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                YandexBanner()
-            }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
+
+            // === РЕКЛАМНЫЙ БАННЕР В САМОМ НИЗУ ===
+            YandexBanner(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+            )
+
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
@@ -96,13 +98,14 @@ private fun NavItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(emoji, style = MaterialTheme.typography.titleLarge)
+        Text(emoji, style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(2.dp))
             Text(subtitle, style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
