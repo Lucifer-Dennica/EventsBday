@@ -39,6 +39,7 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.model.SocialPlatform
+import ru.yourname.events.data.settings.SortMode
 import ru.yourname.events.data.settings.SwipeAction
 import ru.yourname.events.ui.components.EventCard
 import java.time.LocalDate
@@ -50,6 +51,8 @@ fun EventListScreen(
     swipesEnabled: Boolean,
     swipeLeftAction: SwipeAction,
     swipeRightAction: SwipeAction,
+    swipeToSettingsEnabled: Boolean,
+    sortMode: SortMode,
     onAddClick: () -> Unit,
     onEventClick: (Event) -> Unit,
     onImportContacts: () -> Unit,
@@ -69,7 +72,6 @@ fun EventListScreen(
     var eventToDelete by remember { mutableStateOf<Event?>(null) }
     var showBulkDeleteConfirm by remember { mutableStateOf(false) }
 
-    // Если действие назначено на любой жест — прячем соответствующую иконку с карточки
     val showNotificationsIcon = swipeLeftAction != SwipeAction.NOTIFICATIONS &&
             swipeRightAction != SwipeAction.NOTIFICATIONS
     val showPinIcon = swipeLeftAction != SwipeAction.PIN &&
@@ -106,10 +108,16 @@ fun EventListScreen(
     }
 
     val today = LocalDate.now()
-    val sorted = remember(filtered) {
-        filtered.sortedWith(
-            compareByDescending<Event> { it.isPinned }.thenBy { it.daysUntil(today) }
-        )
+    val sorted = remember(filtered, sortMode) {
+        val base = when (sortMode) {
+            SortMode.BY_DATE -> filtered.sortedBy { it.daysUntil(today) }
+            SortMode.BY_NAME -> filtered.sortedBy { it.name.lowercase() }
+            SortMode.BY_GROUP -> filtered.sortedWith(
+                compareBy<Event> { it.group.lowercase() }.thenBy { it.daysUntil(today) }
+            )
+        }
+        // Закреплённые всегда сверху
+        base.sortedByDescending { it.isPinned }
     }
     val todayEvents = remember(sorted) {
         sorted.filter { it.daysUntil(today) == 0L && !it.isPinned }
@@ -142,20 +150,24 @@ fun EventListScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(Unit) {
-                // Свайп вправо по пустому месту → открыть настройки
-                var totalDrag = 0f
-                detectHorizontalDragGestures(
-                    onDragStart = { totalDrag = 0f },
-                    onDragEnd = {
-                        if (totalDrag > 150f) {
-                            onOpenSettings()
+            .then(
+                if (swipeToSettingsEnabled) {
+                    Modifier.pointerInput(Unit) {
+                        var totalDrag = 0f
+                        detectHorizontalDragGestures(
+                            onDragStart = { totalDrag = 0f },
+                            onDragEnd = {
+                                // Свайп вправо по пустому месту → настройки
+                                if (totalDrag > 150f) {
+                                    onOpenSettings()
+                                }
+                            }
+                        ) { _, dragAmount ->
+                            totalDrag += dragAmount
                         }
                     }
-                ) { _, dragAmount ->
-                    totalDrag += dragAmount
-                }
-            }
+                } else Modifier
+            )
     ) {
         Scaffold(
             snackbarHost = { SnackbarHost(snackbar) },
@@ -296,7 +308,7 @@ fun EventListScreen(
                             item { Spacer(Modifier.height(4.dp)) }
                         }
 
-                        if (todayEvents.isNotEmpty() && selectedGroup == null && query.isBlank()) {
+                        if (todayEvents.isNotEmpty() && selectedGroup == null && query.isBlank() && sortMode == SortMode.BY_DATE) {
                             item {
                                 Text(
                                     "Сегодня",
