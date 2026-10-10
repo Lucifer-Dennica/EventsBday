@@ -15,6 +15,7 @@ import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
 import ru.yourname.events.ads.AdsConfig
 import ru.yourname.events.ads.InterstitialManager
+import ru.yourname.events.data.settings.CalendarMarkStyle
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.data.settings.SortMode
 import ru.yourname.events.data.settings.SwipeAction
@@ -58,6 +59,7 @@ fun NavGraph(vm: EventViewModel) {
     val swipeRight by SettingsRepository.swipeRightActionFlow(ctx).collectAsState(initial = SwipeAction.NOTHING)
     val sortMode by SettingsRepository.sortModeFlow(ctx).collectAsState(initial = SortMode.BY_DATE)
     val viewMode by SettingsRepository.viewModeFlow(ctx).collectAsState(initial = ViewMode.LIST)
+    val calMark by SettingsRepository.calendarMarkStyleFlow(ctx).collectAsState(initial = CalendarMarkStyle.DOTS)
 
     LaunchedEffect(Unit) {
         InterstitialManager.preload(ctx)
@@ -74,6 +76,7 @@ fun NavGraph(vm: EventViewModel) {
                 swipeToSettingsEnabled = swipeToSettings,
                 sortMode = sortMode,
                 viewMode = viewMode,
+                calendarMarkStyle = calMark,
                 onToggleViewMode = {
                     scope.launch {
                         SettingsRepository.setViewMode(
@@ -87,7 +90,12 @@ fun NavGraph(vm: EventViewModel) {
                     scope.launch {
                         val count = SettingsRepository.incrementCardOpens(ctx)
                         if (count % AdsConfig.INTERSTITIAL_EVERY_N_OPENS == 0) {
-                            (ctx as? Activity)?.let { InterstitialManager.showIfReady(it) }
+                            val activity = ctx as? Activity
+                            if (activity != null) {
+                                InterstitialManager.showIfReady(activity) {
+                                    InterstitialManager.preload(ctx)
+                                }
+                            }
                         }
                     }
                     nav.navigate(Routes.detail(event.id))
