@@ -11,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -65,7 +64,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     .verticalScroll(rememberScrollState())
             ) {
 
-                // === ТЕМА ===
                 SectionHeader("Тема оформления")
                 ExposedDropdownMenuBox(
                     expanded = themeExpanded,
@@ -102,7 +100,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 Spacer(Modifier.height(16.dp))
 
-                // === СОРТИРОВКА ===
                 SectionHeader("Сортировка списка")
                 ExposedDropdownMenuBox(
                     expanded = sortExpanded,
@@ -139,7 +136,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 Spacer(Modifier.height(16.dp))
 
-                // === ОТМЕТКИ КАЛЕНДАРЯ ===
                 SectionHeader("Отметки в календаре")
                 ExposedDropdownMenuBox(
                     expanded = markExpanded,
@@ -176,7 +172,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 Spacer(Modifier.height(32.dp))
 
-                // === ИКОНКА ПРИЛОЖЕНИЯ (в самом низу) ===
                 SectionHeader("Иконка приложения")
                 Text(
                     "Рабочий стол может обновляться не сразу",
@@ -185,11 +180,12 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
                 )
 
+                // Иконки в один ряд 1×4
                 Row(
                     Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     IconTile(
                         iconRes = R.mipmap.ic_launcher_main,
@@ -209,14 +205,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                             IconSwitcher.switchTo(ctx, AppIcon.CAKE)
                         }
                     )
-                }
-
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
                     IconTile(
                         iconRes = R.mipmap.ic_launcher_calendar,
                         selected = appIcon == AppIcon.CALENDAR,
