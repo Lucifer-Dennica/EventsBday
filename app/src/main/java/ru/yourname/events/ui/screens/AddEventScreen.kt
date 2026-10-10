@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import ru.yourname.events.data.model.CardAnimation
 import ru.yourname.events.data.model.CardColors
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.ui.components.AllPresetAvatars
@@ -61,6 +62,7 @@ fun AddEventScreen(
     var notifications by remember { mutableStateOf(editing?.notificationsEnabled ?: true) }
     var cardColor by remember { mutableStateOf(editing?.cardColor ?: 0) }
     var isPinned by remember { mutableStateOf(editing?.isPinned ?: false) }
+    var animation by remember { mutableStateOf(editing?.animation ?: CardAnimation.NONE) }
     var showDatePicker by remember { mutableStateOf(false) }
 
     val photoPicker = rememberLauncherForActivityResult(
@@ -218,6 +220,23 @@ fun AddEventScreen(
                 }
             }
 
+            // === АНИМАЦИЯ ===
+            Text("Анимация карточки", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Может немного нагружать устройство. Если не нужно — оставьте «Без анимации».",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(CardAnimation.entries.toList()) { a ->
+                    FilterChip(
+                        selected = animation == a,
+                        onClick = { animation = a },
+                        label = { Text("${a.emoji} ${a.label}") }
+                    )
+                }
+            }
+
             OutlinedTextField(
                 value = note,
                 onValueChange = { note = it },
@@ -228,7 +247,6 @@ fun AddEventScreen(
 
             SocialLinksEditor(links = socials, onChange = { socials = it })
 
-            // Только закрепление — уведомления теперь на карточке
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("Закрепить событие", style = MaterialTheme.typography.titleMedium)
@@ -260,7 +278,8 @@ fun AddEventScreen(
                             socialLinks = socials,
                             notificationsEnabled = notifications,
                             cardColor = cardColor,
-                            isPinned = isPinned
+                            isPinned = isPinned,
+                            animation = animation
                         )
                     )
                 },
