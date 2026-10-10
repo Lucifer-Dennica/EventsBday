@@ -59,7 +59,7 @@ fun NavGraph(vm: EventViewModel) {
     val swipeRight by SettingsRepository.swipeRightActionFlow(ctx).collectAsState(initial = SwipeAction.NOTHING)
     val sortMode by SettingsRepository.sortModeFlow(ctx).collectAsState(initial = SortMode.BY_DATE)
     val viewMode by SettingsRepository.viewModeFlow(ctx).collectAsState(initial = ViewMode.LIST)
-    val calMark by SettingsRepository.calendarMarkStyleFlow(ctx).collectAsState(initial = CalendarMarkStyle.DOTS)
+    val calMark by SettingsRepository.calendarMarkStyleFlow(ctx).collectAsState(initial = CalendarMarkStyle.FILLED_SQUARE)
 
     LaunchedEffect(Unit) {
         InterstitialManager.preload(ctx)
