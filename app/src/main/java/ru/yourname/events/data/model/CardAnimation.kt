@@ -1,13 +1,18 @@
 package ru.yourname.events.data.model
 
-enum class CardAnimation(val label: String, val emoji: String) {
-    NONE("Без анимации", "🚫"),
-    BUBBLES("Пузырьки", "🫧"),
-    FIRE("Огонь", "🔥"),
-    SNOW("Снег", "❄️"),
-    STARS("Звёзды", "✨"),
-    PETALS("Лепестки", "🌸"),
-    WAVES("Волны", "🌊");
+enum class CardAnimation(
+    val label: String,
+    val emoji: String,
+    val backgroundOverride: Long? = null
+) {
+    NONE("Без анимации", "🚫", null),
+    BUBBLES("Пузырьки", "🫧", null),
+    FIRE("Огонь", "🔥", 0xFF1A0A00),
+    SNOW("Снег", "❄️", null),
+    STARS("Звёзды", "✨", 0xFF0A0F2C),
+    PETALS("Лепестки", "🌸", null),
+    WAVES("Волны", "🌊", null),
+    WAVES_FOAM("Волны с пеной", "🌊", null);
 
     companion object {
         fun fromName(n: String): CardAnimation =
