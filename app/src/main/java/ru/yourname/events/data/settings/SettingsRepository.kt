@@ -28,11 +28,12 @@ object SettingsRepository {
     private val KEY_CAL_MARK = stringPreferencesKey("calendar_mark_style")
     private val KEY_APP_ICON = stringPreferencesKey("app_icon")
 
-    // Анимации
     private val KEY_ANIM_ENABLED = booleanPreferencesKey("anim_enabled")
     private val KEY_ANIM_BATTERY_SAVER = booleanPreferencesKey("anim_battery_saver")
     private val KEY_ANIM_RESPECT_SYSTEM = booleanPreferencesKey("anim_respect_system")
     private val KEY_ANIM_MODE = stringPreferencesKey("anim_mode")
+
+    private val KEY_RECENT_COLORS = stringPreferencesKey("recent_colors")
 
     private val KEY_NOTIF_ENABLED = booleanPreferencesKey("notif_enabled")
     private val KEY_NOTIF_MODE = stringPreferencesKey("notif_mode")
@@ -44,7 +45,7 @@ object SettingsRepository {
     private val KEY_FIRST_LAUNCH = stringPreferencesKey("first_launch_iso")
     private val KEY_ACHIEVEMENTS_SHOWN = stringPreferencesKey("achievements_shown")
 
-    // === ТЕМА ===
+    // ТЕМА
     fun themeFlow(ctx: Context): Flow<AppTheme> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_THEME]?.let { runCatching { AppTheme.valueOf(it) }.getOrNull() } ?: AppTheme.SYSTEM
     }
@@ -52,7 +53,7 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_THEME] = theme.name }
     }
 
-    // === ИКОНКА ===
+    // ИКОНКА
     fun appIconFlow(ctx: Context): Flow<AppIcon> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_APP_ICON]?.let { runCatching { AppIcon.valueOf(it) }.getOrNull() } ?: AppIcon.MAIN
     }
@@ -60,25 +61,22 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_APP_ICON] = icon.name }
     }
 
-    // === АНИМАЦИИ ===
+    // АНИМАЦИИ
     fun animEnabledFlow(ctx: Context): Flow<Boolean> =
         ctx.settingsStore.data.map { it[KEY_ANIM_ENABLED] ?: true }
     suspend fun setAnimEnabled(ctx: Context, v: Boolean) {
         ctx.settingsStore.edit { it[KEY_ANIM_ENABLED] = v }
     }
-
     fun animBatterySaverFlow(ctx: Context): Flow<Boolean> =
         ctx.settingsStore.data.map { it[KEY_ANIM_BATTERY_SAVER] ?: false }
     suspend fun setAnimBatterySaver(ctx: Context, v: Boolean) {
         ctx.settingsStore.edit { it[KEY_ANIM_BATTERY_SAVER] = v }
     }
-
     fun animRespectSystemFlow(ctx: Context): Flow<Boolean> =
         ctx.settingsStore.data.map { it[KEY_ANIM_RESPECT_SYSTEM] ?: true }
     suspend fun setAnimRespectSystem(ctx: Context, v: Boolean) {
         ctx.settingsStore.edit { it[KEY_ANIM_RESPECT_SYSTEM] = v }
     }
-
     fun animModeFlow(ctx: Context): Flow<AnimationMode> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_ANIM_MODE]?.let { runCatching { AnimationMode.valueOf(it) }.getOrNull() }
             ?: AnimationMode.ALL_VISIBLE
@@ -87,19 +85,32 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_ANIM_MODE] = mode.name }
     }
 
-    // === ПОВЕДЕНИЕ ===
+    // ИСТОРИЯ ЦВЕТОВ
+    fun recentColorsFlow(ctx: Context): Flow<List<String>> = ctx.settingsStore.data.map { prefs ->
+        (prefs[KEY_RECENT_COLORS] ?: "").split("|").filter { it.isNotBlank() }
+    }
+    suspend fun addRecentColor(ctx: Context, hex: String) {
+        ctx.settingsStore.edit { prefs ->
+            val current = (prefs[KEY_RECENT_COLORS] ?: "")
+                .split("|").filter { it.isNotBlank() }.toMutableList()
+            current.remove(hex)
+            current.add(0, hex)
+            while (current.size > 8) current.removeAt(current.size - 1)
+            prefs[KEY_RECENT_COLORS] = current.joinToString("|")
+        }
+    }
+
+    // ПОВЕДЕНИЕ
     fun swipesEnabledFlow(ctx: Context): Flow<Boolean> =
         ctx.settingsStore.data.map { it[KEY_SWIPES] ?: true }
     suspend fun setSwipesEnabled(ctx: Context, enabled: Boolean) {
         ctx.settingsStore.edit { it[KEY_SWIPES] = enabled }
     }
-
     fun swipeToSettingsEnabledFlow(ctx: Context): Flow<Boolean> =
         ctx.settingsStore.data.map { it[KEY_SWIPE_TO_SETTINGS] ?: true }
     suspend fun setSwipeToSettingsEnabled(ctx: Context, enabled: Boolean) {
         ctx.settingsStore.edit { it[KEY_SWIPE_TO_SETTINGS] = enabled }
     }
-
     fun swipeLeftActionFlow(ctx: Context): Flow<SwipeAction> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_SWIPE_LEFT]?.let { runCatching { SwipeAction.valueOf(it) }.getOrNull() }
             ?: SwipeAction.DELETE
@@ -107,7 +118,6 @@ object SettingsRepository {
     suspend fun setSwipeLeftAction(ctx: Context, action: SwipeAction) {
         ctx.settingsStore.edit { it[KEY_SWIPE_LEFT] = action.name }
     }
-
     fun swipeRightActionFlow(ctx: Context): Flow<SwipeAction> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_SWIPE_RIGHT]?.let { runCatching { SwipeAction.valueOf(it) }.getOrNull() }
             ?: SwipeAction.NOTHING
@@ -116,7 +126,7 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_SWIPE_RIGHT] = action.name }
     }
 
-    // === СОРТИРОВКА ===
+    // СОРТИРОВКА
     fun sortModeFlow(ctx: Context): Flow<SortMode> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_SORT]?.let { runCatching { SortMode.valueOf(it) }.getOrNull() } ?: SortMode.BY_DATE
     }
@@ -124,7 +134,7 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_SORT] = mode.name }
     }
 
-    // === ВИД ===
+    // ВИД
     fun viewModeFlow(ctx: Context): Flow<ViewMode> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_VIEW_MODE]?.let { runCatching { ViewMode.valueOf(it) }.getOrNull() } ?: ViewMode.LIST
     }
@@ -132,7 +142,7 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_VIEW_MODE] = mode.name }
     }
 
-    // === ОТМЕТКИ КАЛЕНДАРЯ ===
+    // ОТМЕТКИ КАЛЕНДАРЯ
     fun calendarMarkStyleFlow(ctx: Context): Flow<CalendarMarkStyle> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_CAL_MARK]?.let { runCatching { CalendarMarkStyle.valueOf(it) }.getOrNull() }
             ?: CalendarMarkStyle.FILLED_SQUARE
@@ -150,7 +160,6 @@ object SettingsRepository {
         }
         return newValue
     }
-
     suspend fun incrementEventsCreated(ctx: Context): Int {
         var newValue = 0
         ctx.settingsStore.edit { prefs ->
@@ -160,17 +169,15 @@ object SettingsRepository {
         }
         return newValue
     }
-
     fun eventsCreatedFlow(ctx: Context): Flow<Int> =
         ctx.settingsStore.data.map { it[KEY_EVENTS_CREATED] ?: 0 }
 
-    // === УВЕДОМЛЕНИЯ ===
+    // УВЕДОМЛЕНИЯ
     fun notifEnabledFlow(ctx: Context): Flow<Boolean> =
         ctx.settingsStore.data.map { it[KEY_NOTIF_ENABLED] ?: true }
     suspend fun setNotifEnabled(ctx: Context, enabled: Boolean) {
         ctx.settingsStore.edit { it[KEY_NOTIF_ENABLED] = enabled }
     }
-
     fun notifModeFlow(ctx: Context): Flow<NotificationMode> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_NOTIF_MODE]?.let { runCatching { NotificationMode.valueOf(it) }.getOrNull() }
             ?: NotificationMode.ALL
@@ -178,7 +185,6 @@ object SettingsRepository {
     suspend fun setNotifMode(ctx: Context, mode: NotificationMode) {
         ctx.settingsStore.edit { it[KEY_NOTIF_MODE] = mode.name }
     }
-
     fun notifFrequencyFlow(ctx: Context): Flow<NotificationFrequency> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_NOTIF_FREQ]?.let { runCatching { NotificationFrequency.valueOf(it) }.getOrNull() }
             ?: NotificationFrequency.EVERY_DAY
@@ -186,13 +192,11 @@ object SettingsRepository {
     suspend fun setNotifFrequency(ctx: Context, f: NotificationFrequency) {
         ctx.settingsStore.edit { it[KEY_NOTIF_FREQ] = f.name }
     }
-
     fun notifDaysBeforeFlow(ctx: Context): Flow<Int> =
         ctx.settingsStore.data.map { it[KEY_NOTIF_DAYS_BEFORE] ?: 7 }
     suspend fun setNotifDaysBefore(ctx: Context, days: Int) {
         ctx.settingsStore.edit { it[KEY_NOTIF_DAYS_BEFORE] = days }
     }
-
     fun notifTimeFlow(ctx: Context): Flow<Pair<Int, Int>> = ctx.settingsStore.data.map { prefs ->
         (prefs[KEY_NOTIF_HOUR] ?: 9) to (prefs[KEY_NOTIF_MINUTE] ?: 0)
     }
@@ -203,10 +207,9 @@ object SettingsRepository {
         }
     }
 
-    // === ПЕРВЫЙ ЗАПУСК ===
+    // ПЕРВЫЙ ЗАПУСК
     fun firstLaunchFlow(ctx: Context): Flow<String?> =
         ctx.settingsStore.data.map { it[KEY_FIRST_LAUNCH] }
-
     suspend fun ensureFirstLaunch(ctx: Context): String {
         var iso = ""
         ctx.settingsStore.edit { prefs ->
@@ -221,11 +224,10 @@ object SettingsRepository {
         return iso
     }
 
-    // === ДОСТИЖЕНИЯ ===
+    // ДОСТИЖЕНИЯ
     fun achievementsShownFlow(ctx: Context): Flow<Set<String>> = ctx.settingsStore.data.map { prefs ->
         (prefs[KEY_ACHIEVEMENTS_SHOWN] ?: "").split(",").filter { it.isNotBlank() }.toSet()
     }
-
     suspend fun markAchievementShown(ctx: Context, key: String) {
         ctx.settingsStore.edit { prefs ->
             val current = (prefs[KEY_ACHIEVEMENTS_SHOWN] ?: "")
