@@ -1,23 +1,30 @@
 package ru.yourname.events.ui.screens
 
+import android.content.Context
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ru.yourname.events.R
+import ru.yourname.events.data.settings.AnimationMode
 import ru.yourname.events.data.settings.AppIcon
 import ru.yourname.events.data.settings.AppTheme
 import ru.yourname.events.data.settings.CalendarMarkStyle
@@ -35,6 +42,16 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
     val sortMode by SettingsRepository.sortModeFlow(ctx).collectAsState(initial = SortMode.BY_DATE)
     val markStyle by SettingsRepository.calendarMarkStyleFlow(ctx).collectAsState(initial = CalendarMarkStyle.FILLED_SQUARE)
     val appIcon by SettingsRepository.appIconFlow(ctx).collectAsState(initial = AppIcon.MAIN)
+
+    val animEnabled by SettingsRepository.animEnabledFlow(ctx).collectAsState(initial = true)
+    val animBatterySaver by SettingsRepository.animBatterySaverFlow(ctx).collectAsState(initial = false)
+    val animRespectSystem by SettingsRepository.animRespectSystemFlow(ctx).collectAsState(initial = true)
+    val animMode by SettingsRepository.animModeFlow(ctx).collectAsState(initial = AnimationMode.ALL_VISIBLE)
+
+    val inPowerSave = remember {
+        val pm = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager
+        pm.isPowerSaveMode
+    }
 
     var themeExpanded by remember { mutableStateOf(false) }
     var sortExpanded by remember { mutableStateOf(false) }
@@ -64,6 +81,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     .verticalScroll(rememberScrollState())
             ) {
 
+                // === ТЕМА ===
                 SectionHeader("Тема оформления")
                 ExposedDropdownMenuBox(
                     expanded = themeExpanded,
@@ -100,6 +118,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 Spacer(Modifier.height(16.dp))
 
+                // === СОРТИРОВКА ===
                 SectionHeader("Сортировка списка")
                 ExposedDropdownMenuBox(
                     expanded = sortExpanded,
@@ -136,6 +155,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 Spacer(Modifier.height(16.dp))
 
+                // === ОТМЕТКИ КАЛЕНДАРЯ ===
                 SectionHeader("Отметки в календаре")
                 ExposedDropdownMenuBox(
                     expanded = markExpanded,
@@ -170,8 +190,116 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     }
                 }
 
-                Spacer(Modifier.height(32.dp))
+                HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
+                // === АНИМАЦИИ КАРТОЧЕК ===
+                SectionHeader("Анимации карточек")
+                Text(
+                    "Выбираются в каждой карточке отдельно. Здесь — общие настройки.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+                )
+
+                ListItem(
+                    headlineContent = {
+                        Text("Разрешить анимации",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold)
+                    },
+                    supportingContent = { Text("Главный выключатель всех анимаций") },
+                    trailingContent = {
+                        Switch(
+                            checked = animEnabled,
+                            onCheckedChange = {
+                                scope.launch { SettingsRepository.setAnimEnabled(ctx, it) }
+                            }
+                        )
+                    }
+                )
+
+                if (animEnabled) {
+                    Text(
+                        "Режим отображения",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
+                    )
+
+                    AnimationMode.entries.forEach { m ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = animMode == m,
+                                    onClick = {
+                                        scope.launch { SettingsRepository.setAnimMode(ctx, m) }
+                                    }
+                                )
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = animMode == m,
+                                onClick = { scope.launch { SettingsRepository.setAnimMode(ctx, m) } }
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(m.label, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+
+                    ListItem(
+                        headlineContent = {
+                            Text("Уважать системную настройку",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold)
+                        },
+                        supportingContent = {
+                            Text("Если в Android отключены анимации доступности — они не будут показываться")
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = animRespectSystem,
+                                onCheckedChange = {
+                                    scope.launch { SettingsRepository.setAnimRespectSystem(ctx, it) }
+                                }
+                            )
+                        }
+                    )
+
+                    ListItem(
+                        headlineContent = {
+                            Text("Анимации в режиме экономии",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold)
+                        },
+                        supportingContent = {
+                            Text(
+                                if (inPowerSave)
+                                    "⚡ Режим экономии включён. " +
+                                            (if (animBatterySaver) "Анимации продолжают работать."
+                                            else "Анимации приостановлены.")
+                                else if (animBatterySaver)
+                                    "Анимации продолжают работать в режиме экономии"
+                                else
+                                    "По умолчанию анимации приостанавливаются в режиме экономии"
+                            )
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = animBatterySaver,
+                                onCheckedChange = {
+                                    scope.launch { SettingsRepository.setAnimBatterySaver(ctx, it) }
+                                }
+                            )
+                        }
+                    )
+                }
+
+                HorizontalDivider(Modifier.padding(vertical = 20.dp))
+
+                // === ИКОНКА ПРИЛОЖЕНИЯ ===
                 SectionHeader("Иконка приложения")
                 Text(
                     "Рабочий стол может обновляться не сразу",
@@ -180,7 +308,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
                 )
 
-                // Иконки в один ряд 1×4
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -263,6 +390,7 @@ private fun SectionHeader(text: String) {
         text,
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
     )
 }
