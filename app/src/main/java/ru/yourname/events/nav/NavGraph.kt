@@ -71,7 +71,6 @@ fun NavGraph(vm: EventViewModel) {
     val animRespectSystem by SettingsRepository.animRespectSystemFlow(ctx).collectAsState(initial = true)
     val animMode by SettingsRepository.animModeFlow(ctx).collectAsState(initial = AnimationMode.ALL_VISIBLE)
 
-    // Финальное решение: разрешены ли анимации на этом устройстве прямо сейчас
     val animationsAllowed = remember(animEnabled, animBatterySaver, animRespectSystem, animMode) {
         if (!animEnabled || animMode == AnimationMode.OFF) {
             false
@@ -167,10 +166,13 @@ fun NavGraph(vm: EventViewModel) {
             val id = entry.arguments?.getLong("id") ?: return@composable
             val event = events.find { it.id == id }
             if (event == null) { LaunchedEffect(Unit) { nav.popBackStack() }; return@composable }
-            EventDetailScreen(event = event,
+            EventDetailScreen(
+                event = event,
                 onEdit = { nav.navigate(Routes.edit(event.id)) },
                 onDelete = { vm.delete(event); nav.popBackStack() },
-                onBack = { nav.popBackStack() })
+                onUpdate = { vm.addOrUpdate(it) },
+                onBack = { nav.popBackStack() }
+            )
         }
 
         composable(Routes.SETTINGS) {
