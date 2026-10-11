@@ -7,8 +7,7 @@ enum class CardAnimation(
 ) {
     NONE("Без анимации", "🚫", null),
     BUBBLES("Пузырьки", "🫧", null),
-    FIRE("Огонь", "🔥", 0xFF000000),
-    FIRE_CANDLES("Свечи", "🕯️", 0xFF1A0A00),
+    FIRE("Огонь", "🔥", 0xFF1A0A00),
     SNOW("Снег", "❄️", null),
     STARS("Звёзды", "✨", 0xFF0A0F2C),
     LEAVES("Осенние листья", "🍂", null),
