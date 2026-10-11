@@ -45,23 +45,61 @@ fun EventCard(
     val days = event.daysUntil(today)
     val accent = MaterialTheme.colorScheme.primary
 
+    val hasCustomColor = !event.customColorHex.isNullOrBlank()
     val hasCustomBg = event.cardColor != 0
-    val bgColor = if (hasCustomBg) cardColorAt(event.cardColor) else MaterialTheme.colorScheme.surface
-    val textColor = if (hasCustomBg) Color(0xFF1A1C22) else MaterialTheme.colorScheme.onSurface
-    val subTextColor = if (hasCustomBg) Color(0xFF5B6478) else MaterialTheme.colorScheme.onSurfaceVariant
-    val accentOnCard = if (hasCustomBg) Color(0xFF394099) else accent
+    val playAnimation = animationsAllowed && event.animation.name != "NONE"
+    val animOverride = if (playAnimation) event.animation.backgroundOverride else null
+    val hasAnimOverride = animOverride != null
+
+    // Верхний приоритет: анимация с override > пользовательский цвет > preset-цвет > тема
+    val customBrush = if (hasCustomColor) customColorBrush(event.customColorHex) else null
+    val customPrimary = if (hasCustomColor) customColorPrimary(event.customColorHex) else null
+
+    val solidBgColor = when {
+        hasAnimOverride -> Color(animOverride!!)
+        hasCustomColor && customPrimary != null -> customPrimary
+        hasCustomBg -> cardColorAt(event.cardColor)
+        else -> MaterialTheme.colorScheme.surface
+    }
+
+    // Текст: если фон тёмный — светлый, иначе тёмный/по теме
+    val isDarkBg = when {
+        hasAnimOverride -> true
+        hasCustomColor && customPrimary != null -> !customPrimary.isLight()
+        hasCustomBg -> false
+        else -> MaterialTheme.colorScheme.surface.isLight().not()
+    }
+
+    val textColor = when {
+        hasAnimOverride -> Color(0xFFF2F3FF)
+        hasCustomColor -> if (isDarkBg) Color(0xFFF2F3FF) else Color(0xFF1A1C22)
+        hasCustomBg -> Color(0xFF1A1C22)
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+    val subTextColor = when {
+        hasAnimOverride -> Color(0xFFB0B5CC)
+        hasCustomColor -> if (isDarkBg) Color(0xFFB0B5CC) else Color(0xFF5B6478)
+        hasCustomBg -> Color(0xFF5B6478)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val accentOnCard = when {
+        hasAnimOverride -> Color(0xFFB8C2FF)
+        hasCustomColor -> if (isDarkBg) Color(0xFFD0D8FF) else Color(0xFF394099)
+        hasCustomBg -> Color(0xFF394099)
+        else -> accent
+    }
     val borderColor = when {
         isSelected -> accent
         event.isPinned -> accent.copy(alpha = 0.6f)
-        hasCustomBg -> Color(0xFFB8BEC9)
+        hasAnimOverride || (hasCustomColor && isDarkBg) -> Color(0x33FFFFFF)
+        hasCustomBg || hasCustomColor -> Color(0xFFB8BEC9)
         else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
     }
 
     val cardShape = RoundedCornerShape(18.dp)
-    val playAnimation = animationsAllowed && event.animation.name != "NONE"
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = bgColor),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = cardShape,
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = BorderStroke(width = if (isSelected || event.isPinned) 2.dp else 1.dp, color = borderColor),
@@ -69,7 +107,14 @@ fun EventCard(
             .fillMaxWidth()
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = customBrush ?: androidx.compose.ui.graphics.SolidColor(solidBgColor),
+                    shape = cardShape
+                )
+        ) {
             if (playAnimation) {
                 AnimatedBackground(
                     type = event.animation.name,
@@ -187,7 +232,7 @@ private fun SmallIconTap(
 private fun GroupChip(group: String, color: Color) {
     Surface(
         shape = RoundedCornerShape(50),
-        color = color.copy(alpha = 0.12f)
+        color = color.copy(alpha = 0.18f)
     ) {
         Text(
             text = group,
