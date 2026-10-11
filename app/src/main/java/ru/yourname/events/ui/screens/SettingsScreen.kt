@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
@@ -33,7 +34,8 @@ fun SettingsScreen(
     onOpenNotifications: () -> Unit,
     onOpenBehavior: () -> Unit,
     onOpenData: () -> Unit,
-    onOpenAbout: () -> Unit
+    onOpenAbout: () -> Unit,
+    onOpenStats: () -> Unit
 ) {
     val ctx = LocalContext.current
     fun open(url: String) {
@@ -60,11 +62,13 @@ fun SettingsScreen(
             Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
 
                 NavItemVector(Icons.Default.Palette, "Дизайн",
-                    "Тема, сортировка, иконка приложения", onOpenDesign)
+                    "Тема, сортировка, анимации, иконка приложения", onOpenDesign)
                 NavItemVector(Icons.Default.Notifications, "Уведомления",
                     "Частота, время, выбор событий", onOpenNotifications)
                 NavItemVector(Icons.Default.TouchApp, "Поведение",
                     "Свайпы и жесты", onOpenBehavior)
+                NavItemVector(Icons.Default.BarChart, "Статистика",
+                    "Цифры о ваших событиях", onOpenStats)
                 NavItemVector(Icons.Default.Storage, "Данные",
                     "Экспорт и импорт, резервная копия", onOpenData)
 
