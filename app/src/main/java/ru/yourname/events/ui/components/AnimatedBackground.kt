@@ -34,8 +34,7 @@ fun AnimatedBackground(
     if (type == "NONE") return
 
     val duration = when (type) {
-        "FIRE" -> 2400
-        "FIRE_CANDLES" -> 3000
+        "FIRE" -> 3000
         "STARS" -> 10000
         "FISH" -> 8000
         "BUTTERFLIES" -> 9000
@@ -63,7 +62,7 @@ fun AnimatedBackground(
                 y = rnd.nextFloat(),
                 size = 5f + rnd.nextFloat() * 8f,
                 phase = rnd.nextFloat() * 2f * PI.toFloat(),
-                speed = 0.8f + rnd.nextFloat() * 0.6f,
+                speed = 1f,
                 rotation = rnd.nextFloat() * 360f,
                 rotSpeed = 20f + rnd.nextFloat() * 60f
             )
@@ -77,7 +76,7 @@ fun AnimatedBackground(
                 y = rnd.nextFloat(),
                 size = 16f + rnd.nextFloat() * 10f,
                 phase = rnd.nextFloat() * 2f * PI.toFloat(),
-                speed = 0.7f + rnd.nextFloat() * 0.5f,
+                speed = 1f,
                 rotation = rnd.nextFloat() * 360f,
                 rotSpeed = 15f + rnd.nextFloat() * 30f
             )
@@ -87,8 +86,7 @@ fun AnimatedBackground(
     Canvas(modifier = modifier.fillMaxSize()) {
         when (type) {
             "BUBBLES" -> drawBubbles(smallParticles, progress, tint)
-            "FIRE" -> drawFireRealistic(progress)
-            "FIRE_CANDLES" -> drawFireCandles(progress)
+            "FIRE" -> drawFireImproved(progress)
             "SNOW" -> drawSnowVariety(smallParticles + bigParticles, progress)
             "STARS" -> drawStars(smallParticles, progress)
             "LEAVES" -> drawLeaves(smallParticles + bigParticles, progress)
@@ -111,15 +109,35 @@ private data class Particle(
     val rotSpeed: Float
 )
 
+/**
+ * Универсальный приём для бесконечного падения/подъёма:
+ * рисуем одну и ту же частицу в текущей позиции и в позиции −1 экран выше.
+ * Тогда при переходе цикла (progress 1 → 0) частица не подпрыгивает —
+ * просто одна копия уходит за низ, другая в это же время уже видна сверху.
+ */
+private inline fun DrawScope.drawRepeatingVertical(
+    progress: Float,
+    p: Particle,
+    drawAt: (x: Float, y: Float, extra: Float) -> Unit
+) {
+    val raw = p.y + progress * p.speed
+    for (k in 0..1) {
+        val yNorm = raw - k.toFloat()
+        val yPx = yNorm * size.height
+        if (yPx < -60f || yPx > size.height + 60f) continue
+        val x = p.x * size.width
+        drawAt(x, yPx, p.phase)
+    }
+}
+
 // ============ ПУЗЫРЬКИ ============
 private fun DrawScope.drawBubbles(particles: List<Particle>, progress: Float, tint: Color) {
     particles.forEach { p ->
-        // Полный цикл: y = p.y + progress (без mod, чтобы не было прыжка)
-        // Рисуем только те, что в видимой зоне
-        for (cycle in 0..1) {
-            val rawY = p.y + progress + cycle.toFloat()
-            val y = (1f - rawY) * size.height  // снизу вверх
-            if (y < -30f || y > size.height + 30f) continue
+        val raw = p.y + progress * p.speed
+        for (k in 0..1) {
+            val yNorm = raw - k.toFloat()
+            val y = (1f - yNorm) * size.height
+            if (y < -40f || y > size.height + 40f) continue
             val x = p.x * size.width + sin(progress * 6.28f + p.phase) * 14f
             drawCircle(
                 color = tint.copy(alpha = 0.18f),
@@ -136,157 +154,64 @@ private fun DrawScope.drawBubbles(particles: List<Particle>, progress: Float, ti
     }
 }
 
-// ============ ОГОНЬ (реалистичная стена) ============
-private fun DrawScope.drawFireRealistic(progress: Float) {
+// ============ ОГОНЬ (переработанный) ============
+private fun DrawScope.drawFireImproved(progress: Float) {
     val baseY = size.height
+    val flameCount = 5
 
-    // Общее тёплое свечение снизу
+    // Тёплое свечение снизу
     drawRect(
         brush = Brush.verticalGradient(
             colors = listOf(
                 Color.Transparent,
-                Color(0x1AFF2200),
-                Color(0x44FF5500),
-                Color(0x66FF6600)
+                Color(0x44FF4400),
+                Color(0x77FF5500)
             ),
-            startY = baseY - size.height * 0.85f,
+            startY = baseY - size.height * 0.65f,
             endY = baseY
         ),
-        topLeft = Offset(0f, baseY - size.height * 0.85f),
-        size = Size(size.width, size.height * 0.85f)
-    )
-
-    // 3 слоя мелких языков
-    drawFireLayer(progress, layer = 0, count = 26, maxHeightFrac = 0.85f,
-        colorTop = 0x00FF1100, colorMid = 0xAAFF3300, colorBottom = 0xFFFF4400)
-    drawFireLayer(progress, layer = 1, count = 22, maxHeightFrac = 0.60f,
-        colorTop = 0x00FF7700, colorMid = 0xBBFF9900, colorBottom = 0xFFFFAA00)
-    drawFireLayer(progress, layer = 2, count = 16, maxHeightFrac = 0.35f,
-        colorTop = 0x00FFDD00, colorMid = 0xCCFFEE00, colorBottom = 0xFFFFF499)
-
-    // Искры-точки на самом низу
-    val sparks = 14
-    for (i in 0 until sparks) {
-        val xFrac = (i + 0.5f) / sparks
-        val sx = xFrac * size.width + sin(progress * 6.28f * 2 + i) * 6f
-        val phase = i * 1.3f
-        val bounce = sin(progress * 6.28f * 4f + phase)
-        val sy = baseY - 6f - 5f * bounce.coerceAtLeast(0f)
-        val alpha = 0.4f + 0.5f * bounce.coerceAtLeast(0f)
-        drawCircle(
-            color = Color(0xFFFFEE66).copy(alpha = alpha),
-            radius = 1.8f + bounce.coerceAtLeast(0f),
-            center = Offset(sx, sy)
-        )
-    }
-}
-
-private fun DrawScope.drawFireLayer(
-    progress: Float,
-    layer: Int,
-    count: Int,
-    maxHeightFrac: Float,
-    colorTop: Long,
-    colorMid: Long,
-    colorBottom: Long
-) {
-    val baseY = size.height
-    val maxHeight = size.height * maxHeightFrac
-
-    for (i in 0 until count) {
-        // Каждый язычок имеет свою x-позицию с небольшим перекрытием
-        val xFrac = (i + 0.5f) / count
-        // Разная высота для каждого язычка
-        val heightSeed = sin(i * 12.9898f) * 43758.5453f
-        val heightNorm = (heightSeed - heightSeed.toInt() + 1f) % 1f
-        val baseHeight = maxHeight * (0.55f + 0.45f * heightNorm)
-        // Фазы для анимации
-        val p1 = i * 0.7f + layer * 1.3f
-        val p2 = i * 1.1f + layer * 0.7f
-        // Колебания
-        val flicker = sin(progress * 6.28f * 3f + p1)
-        val sway = sin(progress * 6.28f * 1.8f + p2) * (8f + layer * 2f)
-        val height = baseHeight * (0.9f + 0.1f * flicker)
-
-        val cx = xFrac * size.width
-        val halfWidth = size.width / (count * 0.7f)
-
-        // Форма язычка — плавная капля, заострённая сверху
-        val path = Path().apply {
-            moveTo(cx - halfWidth, baseY)
-            cubicTo(
-                cx - halfWidth * 0.6f + sway * 0.3f, baseY - height * 0.4f,
-                cx - halfWidth * 0.3f + sway * 0.7f, baseY - height * 0.75f,
-                cx + sway, baseY - height
-            )
-            cubicTo(
-                cx + halfWidth * 0.3f + sway * 0.7f, baseY - height * 0.75f,
-                cx + halfWidth * 0.6f + sway * 0.3f, baseY - height * 0.4f,
-                cx + halfWidth, baseY
-            )
-            close()
-        }
-        drawPath(
-            path = path,
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    Color(colorTop),
-                    Color(colorMid),
-                    Color(colorBottom)
-                ),
-                startY = baseY - height,
-                endY = baseY
-            )
-        )
-    }
-}
-
-// ============ ОГОНЬ — свечи (старый вариант) ============
-private fun DrawScope.drawFireCandles(progress: Float) {
-    val flameCount = 4
-    val baseY = size.height
-
-    drawRect(
-        brush = Brush.verticalGradient(
-            colors = listOf(
-                Color.Transparent,
-                Color(0x33FF4400),
-                Color(0x66FF2200)
-            ),
-            startY = baseY - size.height * 0.7f,
-            endY = baseY
-        ),
-        topLeft = Offset(0f, baseY - size.height * 0.7f),
-        size = Size(size.width, size.height * 0.7f)
+        topLeft = Offset(0f, baseY - size.height * 0.65f),
+        size = Size(size.width, size.height * 0.65f)
     )
 
     for (i in 0 until flameCount) {
         val cx = size.width * (i + 0.5f) / flameCount
-        val phase = i * 1.3f
-        val flicker = sin(progress * 6.28f * 3 + phase)
-        val wave = sin(progress * 6.28f * 2 + phase) * 12f
-        val height = size.height * (0.45f + 0.18f * flicker)
+        val phase = i * 1.7f
+        // Двойное колебание — низкая и высокая частота для органичности
+        val flick1 = sin(progress * 6.28f * 3f + phase)
+        val flick2 = sin(progress * 6.28f * 5.5f + phase * 1.9f)
+        val flick = flick1 * 0.7f + flick2 * 0.3f
+        val sway = sin(progress * 6.28f * 2.2f + phase) * 14f
+        val sway2 = sin(progress * 6.28f * 3.7f + phase * 1.4f) * 6f
+        val totalSway = sway + sway2
+        val height = size.height * (0.55f + 0.15f * flick)
 
-        val outerPath = Path().apply {
-            moveTo(cx - 22f, baseY)
+        // Внешний язык — тёплый красно-оранжевый
+        val outer = Path().apply {
+            moveTo(cx - 26f, baseY)
             cubicTo(
-                cx - 30f + wave, baseY - height * 0.35f,
-                cx - 12f + wave, baseY - height * 0.7f,
-                cx + wave, baseY - height
+                cx - 38f + totalSway * 0.3f, baseY - height * 0.25f,
+                cx - 22f + totalSway * 0.6f, baseY - height * 0.55f,
+                cx + totalSway * 0.5f, baseY - height * 0.75f
             )
             cubicTo(
-                cx + 12f + wave, baseY - height * 0.7f,
-                cx + 30f + wave, baseY - height * 0.35f,
-                cx + 22f, baseY
+                cx - 8f + totalSway, baseY - height * 0.9f,
+                cx + 8f + totalSway, baseY - height * 0.9f,
+                cx + totalSway * 0.5f, baseY - height
+            )
+            cubicTo(
+                cx + 22f + totalSway * 0.6f, baseY - height * 0.55f,
+                cx + 38f + totalSway * 0.3f, baseY - height * 0.25f,
+                cx + 26f, baseY
             )
             close()
         }
         drawPath(
-            path = outerPath,
+            outer,
             brush = Brush.verticalGradient(
                 colors = listOf(
                     Color(0x00FF2200),
-                    Color(0xAAFF3300),
+                    Color(0x99FF3300),
                     Color(0xEEFF5500)
                 ),
                 startY = baseY - height,
@@ -294,76 +219,89 @@ private fun DrawScope.drawFireCandles(progress: Float) {
             )
         )
 
-        val innerPath = Path().apply {
-            moveTo(cx - 12f, baseY)
+        // Средний — оранжевый
+        val mid = Path().apply {
+            moveTo(cx - 16f, baseY)
             cubicTo(
-                cx - 16f + wave * 0.7f, baseY - height * 0.35f,
-                cx - 6f + wave * 0.7f, baseY - height * 0.6f,
-                cx + wave * 0.7f, baseY - height * 0.8f
+                cx - 24f + totalSway * 0.4f, baseY - height * 0.25f,
+                cx - 12f + totalSway * 0.7f, baseY - height * 0.5f,
+                cx + totalSway * 0.6f, baseY - height * 0.7f
             )
             cubicTo(
-                cx + 6f + wave * 0.7f, baseY - height * 0.6f,
-                cx + 16f + wave * 0.7f, baseY - height * 0.35f,
-                cx + 12f, baseY
+                cx - 4f + totalSway * 0.9f, baseY - height * 0.85f,
+                cx + 4f + totalSway * 0.9f, baseY - height * 0.85f,
+                cx + totalSway * 0.6f, baseY - height * 0.85f
+            )
+            cubicTo(
+                cx + 12f + totalSway * 0.7f, baseY - height * 0.5f,
+                cx + 24f + totalSway * 0.4f, baseY - height * 0.25f,
+                cx + 16f, baseY
             )
             close()
         }
         drawPath(
-            path = innerPath,
+            mid,
             brush = Brush.verticalGradient(
                 colors = listOf(
-                    Color(0x00FFD700),
-                    Color(0xBBFFAA00),
-                    Color(0xFFFFDD33)
+                    Color(0x00FF8800),
+                    Color(0xCCFFAA00),
+                    Color(0xFFFFBB33)
                 ),
-                startY = baseY - height * 0.8f,
+                startY = baseY - height * 0.85f,
                 endY = baseY
             )
         )
 
-        val corePath = Path().apply {
-            moveTo(cx - 5f, baseY)
+        // Ядро — жёлто-белое
+        val core = Path().apply {
+            moveTo(cx - 7f, baseY)
             cubicTo(
-                cx - 7f + wave * 0.4f, baseY - height * 0.25f,
-                cx - 2f + wave * 0.4f, baseY - height * 0.4f,
-                cx + wave * 0.4f, baseY - height * 0.5f
+                cx - 12f + totalSway * 0.5f, baseY - height * 0.2f,
+                cx - 5f + totalSway * 0.7f, baseY - height * 0.35f,
+                cx + totalSway * 0.5f, baseY - height * 0.5f
             )
             cubicTo(
-                cx + 2f + wave * 0.4f, baseY - height * 0.4f,
-                cx + 7f + wave * 0.4f, baseY - height * 0.25f,
-                cx + 5f, baseY
+                cx + 5f + totalSway * 0.7f, baseY - height * 0.35f,
+                cx + 12f + totalSway * 0.5f, baseY - height * 0.2f,
+                cx + 7f, baseY
             )
             close()
         }
         drawPath(
-            path = corePath,
-            color = Color(0xFFFFEE88).copy(alpha = 0.7f)
+            core,
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    Color(0x00FFDD00),
+                    Color(0xCCFFEE66),
+                    Color(0xFFFFF8CC)
+                ),
+                startY = baseY - height * 0.5f,
+                endY = baseY
+            )
         )
     }
 }
 
-// ============ СНЕГ (3 вида снежинок) ============
+// ============ СНЕГ ============
 private fun DrawScope.drawSnowVariety(particles: List<Particle>, progress: Float) {
     particles.forEachIndexed { idx, p ->
-        // Непрерывное падение — рисуем 2 копии, чтобы не было прыжка
-        for (cycle in 0..1) {
-            val rawY = p.y + progress * p.speed + cycle.toFloat()
-            val y = rawY * size.height
+        val raw = p.y + progress * p.speed
+        for (k in 0..1) {
+            val yNorm = raw - k.toFloat()
+            val y = yNorm * size.height
             if (y < -40f || y > size.height + 40f) continue
             val x = p.x * size.width + sin(progress * 4f + p.phase) * 14f
             val rot = (p.rotation + progress * p.rotSpeed) % 360f
             val color = Color.White.copy(alpha = 0.85f)
-            // Выбираем узор по индексу
             when (idx % 3) {
-                0 -> drawSnowflake6(cx = x, cy = y, radius = p.size, rotation = rot, color = color)
-                1 -> drawSnowflakeStar(cx = x, cy = y, radius = p.size, rotation = rot, color = color)
-                else -> drawSnowflakeSimple(cx = x, cy = y, radius = p.size, rotation = rot, color = color)
+                0 -> drawSnowflake6(x, y, p.size, rot, color)
+                1 -> drawSnowflakeStar(x, y, p.size, rot, color)
+                else -> drawSnowflakeSimple(x, y, p.size, rot, color)
             }
         }
     }
 }
 
-// Классическая 6-лучевая
 private fun DrawScope.drawSnowflake6(cx: Float, cy: Float, radius: Float, rotation: Float, color: Color) {
     rotate(rotation, Offset(cx, cy)) {
         val strokeW = (radius / 8f).coerceAtLeast(1.2f)
@@ -382,7 +320,6 @@ private fun DrawScope.drawSnowflake6(cx: Float, cy: Float, radius: Float, rotati
     }
 }
 
-// Звёздочка — 6 ромбов
 private fun DrawScope.drawSnowflakeStar(cx: Float, cy: Float, radius: Float, rotation: Float, color: Color) {
     rotate(rotation, Offset(cx, cy)) {
         val path = Path()
@@ -401,7 +338,6 @@ private fun DrawScope.drawSnowflakeStar(cx: Float, cy: Float, radius: Float, rot
     }
 }
 
-// Простая — просто 6 точек
 private fun DrawScope.drawSnowflakeSimple(cx: Float, cy: Float, radius: Float, rotation: Float, color: Color) {
     rotate(rotation, Offset(cx, cy)) {
         for (i in 0 until 6) {
@@ -491,11 +427,11 @@ private fun DrawScope.drawLeaves(particles: List<Particle>, progress: Float) {
         Color(0xFFFFB300), Color(0xFFBF360C), Color(0xFFF57C00)
     )
     particles.forEachIndexed { idx, p ->
-        // Двойное рисование для плавности
-        for (cycle in 0..1) {
-            val rawY = p.y + progress * p.speed + cycle.toFloat()
-            val y = rawY * size.height
-            if (y < -50f || y > size.height + 50f) continue
+        val raw = p.y + progress * p.speed
+        for (k in 0..1) {
+            val yNorm = raw - k.toFloat()
+            val y = yNorm * size.height
+            if (y < -60f || y > size.height + 60f) continue
             val x = p.x * size.width + cos(progress * 5f + p.phase) * 26f
             val rot = (p.rotation + progress * p.rotSpeed) % 360f
             val color = autumnColors[idx % autumnColors.size]
@@ -531,17 +467,18 @@ private fun DrawScope.drawLeaf(cx: Float, cy: Float, size: Float, rotation: Floa
     }
 }
 
-// ============ ЦВЕТЫ (переделаны) ============
+// ============ ЦВЕТЫ ============
 private fun DrawScope.drawFlowers(particles: List<Particle>, progress: Float) {
     val flowerColors = listOf(
         Color(0xFFE91E63), Color(0xFFF06292), Color(0xFF9C27B0),
         Color(0xFFFF5722), Color(0xFFE1BEE7), Color(0xFFFF7043)
     )
     particles.forEachIndexed { idx, p ->
-        for (cycle in 0..1) {
-            val rawY = p.y + progress * p.speed + cycle.toFloat()
-            val y = rawY * size.height
-            if (y < -50f || y > size.height + 50f) continue
+        val raw = p.y + progress * p.speed
+        for (k in 0..1) {
+            val yNorm = raw - k.toFloat()
+            val y = yNorm * size.height
+            if (y < -60f || y > size.height + 60f) continue
             val x = p.x * size.width + cos(progress * 5f + p.phase) * 26f
             val rot = (p.rotation + progress * p.rotSpeed * 0.5f) % 360f
             val color = flowerColors[idx % flowerColors.size]
@@ -555,20 +492,16 @@ private fun DrawScope.drawFlowerRealistic(cx: Float, cy: Float, size: Float, rot
         val petalCount = 6
         val petalDistance = size * 0.65f
         val petalRadius = size * 0.55f
-        // Лепестки-кружки вокруг центра
         for (i in 0 until petalCount) {
             val angle = i * (360f / petalCount) * PI.toFloat() / 180f
             val px = cx + cos(angle) * petalDistance
             val py = cy + sin(angle) * petalDistance
             drawCircle(petalColor, petalRadius, Offset(px, py))
-            // Блик на лепестке
             drawCircle(Color.White.copy(alpha = 0.25f),
                 petalRadius * 0.4f,
                 Offset(px - petalRadius * 0.2f, py - petalRadius * 0.2f))
         }
-        // Серединка
         drawCircle(Color(0xFFFFEB3B), size * 0.42f, Offset(cx, cy))
-        // Крапинки на серединке
         for (i in 0 until 5) {
             val a = i * 72f * PI.toFloat() / 180f
             val dx = cos(a) * size * 0.18f
@@ -578,119 +511,90 @@ private fun DrawScope.drawFlowerRealistic(cx: Float, cy: Float, size: Float, rot
     }
 }
 
-// ============ РЫБКИ ============
+// ============ РЫБКИ (увеличены) ============
 private fun DrawScope.drawFish(particles: List<Particle>, progress: Float) {
-    // Фон — подводный градиент
     drawRect(
         brush = Brush.verticalGradient(
-            colors = listOf(
-                Color(0xFF0A2A4A),
-                Color(0xFF041A33),
-                Color(0xFF001024)
-            )
+            colors = listOf(Color(0xFF0A2A4A), Color(0xFF041A33), Color(0xFF001024))
         )
     )
 
     particles.forEachIndexed { idx, p ->
-        // Плывут слева направо, с покачиванием
-        val xBase = p.x * size.width
-        val xOffset = (progress * p.speed + p.phase / 6.28f) % 1f
-        val x = ((xBase + xOffset * size.width) % (size.width + 100f)) - 50f
-        val y = p.y * size.height + sin(progress * 6.28f * 2 + p.phase) * 6f
-        val color = when (idx % 4) {
-            0 -> Color(0xFFFF7043)
-            1 -> Color(0xFFFFCA28)
-            2 -> Color(0xFF42A5F5)
-            else -> Color(0xFFAB47BC)
+        // Горизонтальное движение с двумя копиями, чтобы не было прыжка
+        val startOffset = p.phase / 6.28f
+        val rawX = startOffset + progress * p.speed
+        // Ширина зоны больше экрана, чтобы рыба не появлялась резко
+        val spanW = size.width + 120f
+        for (k in 0..1) {
+            val xNorm = rawX - k.toFloat()
+            val x = xNorm * spanW - 60f
+            if (x < -100f || x > size.width + 100f) continue
+            val y = p.y * size.height + sin(progress * 6.28f * 2 + p.phase) * 8f
+            val color = when (idx % 4) {
+                0 -> Color(0xFFFF7043)
+                1 -> Color(0xFFFFCA28)
+                2 -> Color(0xFF42A5F5)
+                else -> Color(0xFFAB47BC)
+            }
+            // Увеличили в 2.2 раза
+            drawFishShape(x, y, p.size * 2.2f, color.copy(alpha = 0.85f))
         }
-        val facingRight = true
-        drawFishShape(x, y, p.size, color.copy(alpha = 0.85f), facingRight)
     }
 }
 
-private fun DrawScope.drawFishShape(cx: Float, cy: Float, size: Float, color: Color, facingRight: Boolean) {
-    // Тело — овал
+private fun DrawScope.drawFishShape(cx: Float, cy: Float, size: Float, color: Color) {
     val bodyW = size * 1.6f
     val bodyH = size * 0.9f
-    // Хвост — треугольник
-    if (facingRight) {
-        drawOval(color, topLeft = Offset(cx - bodyW * 0.5f, cy - bodyH * 0.5f),
-            size = Size(bodyW, bodyH))
-        // Хвост
-        val path = Path().apply {
-            moveTo(cx - bodyW * 0.5f, cy)
-            lineTo(cx - bodyW * 0.5f - size * 0.7f, cy - size * 0.5f)
-            lineTo(cx - bodyW * 0.5f - size * 0.7f, cy + size * 0.5f)
-            close()
-        }
-        drawPath(path, color)
-        // Глаз
-        drawCircle(Color.White, size * 0.14f, Offset(cx + bodyW * 0.25f, cy - size * 0.1f))
-        drawCircle(Color.Black, size * 0.07f, Offset(cx + bodyW * 0.27f, cy - size * 0.1f))
-    } else {
-        drawOval(color, topLeft = Offset(cx - bodyW * 0.5f, cy - bodyH * 0.5f),
-            size = Size(bodyW, bodyH))
-        val path = Path().apply {
-            moveTo(cx + bodyW * 0.5f, cy)
-            lineTo(cx + bodyW * 0.5f + size * 0.7f, cy - size * 0.5f)
-            lineTo(cx + bodyW * 0.5f + size * 0.7f, cy + size * 0.5f)
-            close()
-        }
-        drawPath(path, color)
-        drawCircle(Color.White, size * 0.14f, Offset(cx - bodyW * 0.25f, cy - size * 0.1f))
-        drawCircle(Color.Black, size * 0.07f, Offset(cx - bodyW * 0.27f, cy - size * 0.1f))
+
+    drawOval(color, topLeft = Offset(cx - bodyW * 0.5f, cy - bodyH * 0.5f),
+        size = Size(bodyW, bodyH))
+    val path = Path().apply {
+        moveTo(cx - bodyW * 0.5f, cy)
+        lineTo(cx - bodyW * 0.5f - size * 0.7f, cy - size * 0.5f)
+        lineTo(cx - bodyW * 0.5f - size * 0.7f, cy + size * 0.5f)
+        close()
     }
+    drawPath(path, color)
+    drawCircle(Color.White, size * 0.14f, Offset(cx + bodyW * 0.25f, cy - size * 0.1f))
+    drawCircle(Color.Black, size * 0.07f, Offset(cx + bodyW * 0.27f, cy - size * 0.1f))
 }
 
-// ============ БАБОЧКИ ============
+// ============ БАБОЧКИ (увеличены) ============
 private fun DrawScope.drawButterflies(particles: List<Particle>, progress: Float) {
     val butterflyColors = listOf(
         Color(0xFFE91E63), Color(0xFF9C27B0), Color(0xFFFF9800),
         Color(0xFF3F51B5), Color(0xFF00BCD4), Color(0xFFFFC107)
     )
     particles.forEachIndexed { idx, p ->
-        // Плавно летают по кругу/эллипсу
         val baseX = p.x * size.width
         val baseY = p.y * size.height
         val angle = progress * 6.28f * p.speed + p.phase
-        val radiusX = 30f + p.size * 1.5f
-        val radiusY = 20f + p.size * 1.2f
+        val radiusX = 40f + p.size * 2f
+        val radiusY = 25f + p.size * 1.5f
         val x = baseX + cos(angle) * radiusX
         val y = baseY + sin(angle * 1.3f) * radiusY
-        // Взмах крыльев — периодический
         val flap = (sin(progress * 6.28f * 6f + p.phase) + 1f) / 2f
         val color = butterflyColors[idx % butterflyColors.size]
-        drawButterfly(x, y, p.size, flap, color.copy(alpha = 0.9f))
+        // Увеличили в 1.8 раза
+        drawButterfly(x, y, p.size * 1.8f, flap, color.copy(alpha = 0.9f))
     }
 }
 
 private fun DrawScope.drawButterfly(cx: Float, cy: Float, size: Float, flap: Float, color: Color) {
-    // flap = 0 — крылья раскрыты, flap = 1 — сложены
     val wingScale = 1f - flap * 0.7f
     val wingH = size * 1.2f * wingScale
     val wingW = size * 1.0f
 
-    // Левое верхнее крыло
-    drawOval(color,
-        topLeft = Offset(cx - wingW * 0.9f, cy - wingH * 0.6f),
+    drawOval(color, topLeft = Offset(cx - wingW * 0.9f, cy - wingH * 0.6f),
         size = Size(wingW, wingH * 0.9f))
-    // Правое верхнее
-    drawOval(color,
-        topLeft = Offset(cx - wingW * 0.1f, cy - wingH * 0.6f),
+    drawOval(color, topLeft = Offset(cx - wingW * 0.1f, cy - wingH * 0.6f),
         size = Size(wingW, wingH * 0.9f))
-    // Левое нижнее (поменьше)
-    drawOval(color.copy(alpha = 0.85f),
-        topLeft = Offset(cx - wingW * 0.75f, cy - wingH * 0.1f),
+    drawOval(color.copy(alpha = 0.85f), topLeft = Offset(cx - wingW * 0.75f, cy - wingH * 0.1f),
         size = Size(wingW * 0.85f, wingH * 0.7f))
-    // Правое нижнее
-    drawOval(color.copy(alpha = 0.85f),
-        topLeft = Offset(cx - wingW * 0.1f, cy - wingH * 0.1f),
+    drawOval(color.copy(alpha = 0.85f), topLeft = Offset(cx - wingW * 0.1f, cy - wingH * 0.1f),
         size = Size(wingW * 0.85f, wingH * 0.7f))
-    // Тело
-    drawOval(Color(0xFF2C1810),
-        topLeft = Offset(cx - size * 0.08f, cy - size * 0.55f),
+    drawOval(Color(0xFF2C1810), topLeft = Offset(cx - size * 0.08f, cy - size * 0.55f),
         size = Size(size * 0.16f, size * 1.1f))
-    // Усики
     drawLine(Color(0xFF2C1810), Offset(cx, cy - size * 0.55f),
         Offset(cx - size * 0.25f, cy - size * 1.0f), 1.2f)
     drawLine(Color(0xFF2C1810), Offset(cx, cy - size * 0.55f),
@@ -699,7 +603,6 @@ private fun DrawScope.drawButterfly(cx: Float, cy: Float, size: Float, flap: Flo
 
 // ============ ВОЛНЫ ============
 private fun DrawScope.drawWavesSimple(progress: Float, tint: Color) {
-    // Периодическая функция — при progress=0 и progress=1 значения совпадают
     for (layer in 0..2) {
         val amplitude = 8f + layer * 5f
         val yBase = size.height - (size.height * 0.20f) + layer * 12f
@@ -708,7 +611,6 @@ private fun DrawScope.drawWavesSimple(progress: Float, tint: Color) {
         path.moveTo(0f, yBase)
         var x = 0f
         while (x <= size.width) {
-            // 4 полных периода за цикл → совпадение в начале и конце
             val y = yBase + sin((x / size.width) * 4f * PI.toFloat() + progress * 6.28f + layer) * amplitude
             path.lineTo(x, y)
             x += 8f
