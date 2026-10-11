@@ -20,5 +20,6 @@ data class EventEntity(
     val notificationsEnabled: Boolean,
     val cardColor: Int,
     val isPinned: Boolean = false,
-    val animation: String = "NONE"
+    val animation: String = "NONE",
+    val customColorHex: String? = null
 )
