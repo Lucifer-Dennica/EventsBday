@@ -15,7 +15,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.*
@@ -33,6 +35,7 @@ import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 import ru.yourname.events.data.model.CardAnimation
 import ru.yourname.events.data.model.CardColors
+import ru.yourname.events.data.model.ChecklistItem
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.ui.components.AllPresetAvatars
@@ -71,6 +74,8 @@ fun AddEventScreen(
     var isPinned by remember { mutableStateOf(editing?.isPinned ?: false) }
     var animation by remember { mutableStateOf(editing?.animation ?: CardAnimation.NONE) }
     var customColorHex by remember { mutableStateOf(editing?.customColorHex) }
+    var checklist by remember { mutableStateOf(editing?.checklist ?: emptyList()) }
+    var newItemText by remember { mutableStateOf("") }
     var showDatePicker by remember { mutableStateOf(false) }
     var showColorDialog by remember { mutableStateOf(false) }
 
@@ -89,6 +94,7 @@ fun AddEventScreen(
     }
 
     val groupPresets = listOf("Семья", "Друзья", "Родственники", "Знакомые", "Работа", "Прочее")
+    val checklistPresets = listOf("Купить подарок", "Отправить открытку", "Позвонить", "Написать в мессенджер")
 
     Scaffold(
         topBar = {
@@ -209,8 +215,8 @@ fun AddEventScreen(
                 }
             }
 
+            // ЦВЕТ КАРТОЧКИ
             Text("Цвет карточки", style = MaterialTheme.typography.titleMedium)
-
             LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(CardColors.indices.toList()) { i ->
                     val selected = cardColor == i && customColorHex == null
@@ -231,7 +237,6 @@ fun AddEventScreen(
                             }
                     )
                 }
-
                 item {
                     val active = customColorHex != null
                     val brush: Brush = customColorBrush(customColorHex)
@@ -266,6 +271,7 @@ fun AddEventScreen(
                 }
             }
 
+            // АНИМАЦИЯ
             Text("Анимация карточки", style = MaterialTheme.typography.titleMedium)
             Text(
                 "Может немного нагружать устройство. Если не нужно — оставьте «Без анимации».",
@@ -289,6 +295,83 @@ fun AddEventScreen(
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2
             )
+
+            // === ЧЕК-ЛИСТ ===
+            Text("Чек-лист", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Полезно для подготовки: «Купить подарок», «Позвонить» и т.д.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            if (checklist.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    checklist.forEachIndexed { i, item ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = item.done,
+                                onCheckedChange = { checked ->
+                                    checklist = checklist.toMutableList().also {
+                                        it[i] = item.copy(done = checked)
+                                    }
+                                }
+                            )
+                            Text(
+                                item.text,
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            IconButton(onClick = {
+                                checklist = checklist.toMutableList().also { it.removeAt(i) }
+                            }) {
+                                Icon(Icons.Default.Close, contentDescription = "Удалить")
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Добавление нового пункта
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = newItemText,
+                    onValueChange = { newItemText = it },
+                    placeholder = { Text("Новый пункт") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(8.dp))
+                FilledIconButton(
+                    onClick = {
+                        if (newItemText.isNotBlank()) {
+                            checklist = checklist + ChecklistItem(newItemText.trim())
+                            newItemText = ""
+                        }
+                    }
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Добавить")
+                }
+            }
+
+            // Быстрые пресеты
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(checklistPresets) { preset ->
+                    AssistChip(
+                        onClick = {
+                            if (checklist.none { it.text == preset }) {
+                                checklist = checklist + ChecklistItem(preset)
+                            }
+                        },
+                        label = { Text("+ $preset") }
+                    )
+                }
+            }
 
             SocialLinksEditor(links = socials, onChange = { socials = it })
 
@@ -325,7 +408,8 @@ fun AddEventScreen(
                             cardColor = cardColor,
                             isPinned = isPinned,
                             animation = animation,
-                            customColorHex = customColorHex
+                            customColorHex = customColorHex,
+                            checklist = checklist
                         )
                     )
                 },
@@ -367,7 +451,6 @@ fun AddEventScreen(
                 customColorHex = result
                 if (result != null) {
                     cardColor = 0
-                    // Сохраняем в историю
                     scope.launch { SettingsRepository.addRecentColor(ctx, result) }
                 }
                 showColorDialog = false
