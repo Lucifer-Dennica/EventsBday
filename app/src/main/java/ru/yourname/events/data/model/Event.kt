@@ -24,7 +24,9 @@ data class Event(
     val notificationsEnabled: Boolean = true,
     val cardColor: Int = 0,
     val isPinned: Boolean = false,
-    val animation: CardAnimation = CardAnimation.NONE
+    val animation: CardAnimation = CardAnimation.NONE,
+    /** Пользовательский цвет: "#RRGGBB" для сплошного, "#RRGGBB,#RRGGBB" для градиента */
+    val customColorHex: String? = null
 ) {
     fun nextOccurrence(from: LocalDate): LocalDate {
         var date = LocalDate.of(from.year, month, dayOfMonth)
