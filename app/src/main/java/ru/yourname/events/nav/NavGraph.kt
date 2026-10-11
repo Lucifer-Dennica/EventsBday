@@ -34,6 +34,7 @@ import ru.yourname.events.ui.screens.EventDetailScreen
 import ru.yourname.events.ui.screens.EventListScreen
 import ru.yourname.events.ui.screens.NotificationsSettingsScreen
 import ru.yourname.events.ui.screens.SettingsScreen
+import ru.yourname.events.ui.screens.StatsScreen
 import ru.yourname.events.vm.EventViewModel
 
 object Routes {
@@ -45,6 +46,7 @@ object Routes {
     const val SETTINGS_DESIGN = "settings/design"
     const val SETTINGS_NOTIF = "settings/notif"
     const val SETTINGS_BEHAVIOR = "settings/behavior"
+    const val SETTINGS_STATS = "settings/stats"
     const val SETTINGS_DATA = "settings/data"
     const val SETTINGS_ABOUT = "settings/about"
     fun edit(id: Long) = "edit/$id"
@@ -182,13 +184,20 @@ fun NavGraph(vm: EventViewModel) {
                 onOpenNotifications = { nav.navigate(Routes.SETTINGS_NOTIF) },
                 onOpenBehavior = { nav.navigate(Routes.SETTINGS_BEHAVIOR) },
                 onOpenData = { nav.navigate(Routes.SETTINGS_DATA) },
-                onOpenAbout = { nav.navigate(Routes.SETTINGS_ABOUT) }
+                onOpenAbout = { nav.navigate(Routes.SETTINGS_ABOUT) },
+                onOpenStats = { nav.navigate(Routes.SETTINGS_STATS) }
             )
         }
 
         composable(Routes.SETTINGS_DESIGN) { DesignSettingsScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.SETTINGS_NOTIF) { NotificationsSettingsScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.SETTINGS_BEHAVIOR) { BehaviorSettingsScreen(onBack = { nav.popBackStack() }) }
+        composable(Routes.SETTINGS_STATS) {
+            StatsScreen(
+                events = events,
+                onBack = { nav.popBackStack() }
+            )
+        }
         composable(Routes.SETTINGS_DATA) { DataSettingsScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.SETTINGS_ABOUT) { AboutScreen(onBack = { nav.popBackStack() }) }
     }
