@@ -6,6 +6,7 @@ import org.json.JSONObject
 import ru.yourname.events.data.db.EventDao
 import ru.yourname.events.data.db.EventEntity
 import ru.yourname.events.data.model.CardAnimation
+import ru.yourname.events.data.model.ChecklistItem
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.model.SocialLink
 import ru.yourname.events.data.model.SocialPlatform
@@ -27,7 +28,8 @@ class EventRepository(private val dao: EventDao) {
         cardColor = cardColor,
         isPinned = isPinned,
         animation = CardAnimation.fromName(animation),
-        customColorHex = customColorHex
+        customColorHex = customColorHex,
+        checklist = parseChecklist(checklistRaw)
     )
 
     private fun Event.toEntity() = EventEntity(
@@ -39,7 +41,8 @@ class EventRepository(private val dao: EventDao) {
         cardColor = cardColor,
         isPinned = isPinned,
         animation = animation.name,
-        customColorHex = customColorHex
+        customColorHex = customColorHex,
+        checklistRaw = serializeChecklist(checklist)
     )
 
     private fun parseSocials(raw: String): List<SocialLink> {
@@ -63,6 +66,32 @@ class EventRepository(private val dao: EventDao) {
             arr.put(JSONObject().apply {
                 put("p", it.platform.key)
                 put("v", it.value)
+            })
+        }
+        return arr.toString()
+    }
+
+    private fun parseChecklist(raw: String): List<ChecklistItem> {
+        if (raw.isBlank()) return emptyList()
+        return try {
+            val arr = JSONArray(raw)
+            (0 until arr.length()).map { i ->
+                val o = arr.getJSONObject(i)
+                ChecklistItem(
+                    text = o.optString("text", ""),
+                    done = o.optBoolean("done", false)
+                )
+            }.filter { it.text.isNotBlank() }
+        } catch (_: Exception) { emptyList() }
+    }
+
+    private fun serializeChecklist(list: List<ChecklistItem>): String {
+        if (list.isEmpty()) return ""
+        val arr = JSONArray()
+        list.forEach {
+            arr.put(JSONObject().apply {
+                put("text", it.text)
+                put("done", it.done)
             })
         }
         return arr.toString()
