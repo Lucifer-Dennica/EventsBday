@@ -16,12 +16,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -32,7 +34,9 @@ import ru.yourname.events.data.model.CardAnimation
 import ru.yourname.events.data.model.CardColors
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.ui.components.AllPresetAvatars
+import ru.yourname.events.ui.components.CustomColorDialog
 import ru.yourname.events.ui.components.SocialLinksEditor
+import ru.yourname.events.ui.components.customColorBrush
 import ru.yourname.events.ui.components.presetAvatarRes
 import java.time.LocalDate
 
@@ -63,7 +67,9 @@ fun AddEventScreen(
     var cardColor by remember { mutableStateOf(editing?.cardColor ?: 0) }
     var isPinned by remember { mutableStateOf(editing?.isPinned ?: false) }
     var animation by remember { mutableStateOf(editing?.animation ?: CardAnimation.NONE) }
+    var customColorHex by remember { mutableStateOf(editing?.customColorHex) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var showColorDialog by remember { mutableStateOf(false) }
 
     val photoPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
@@ -200,10 +206,12 @@ fun AddEventScreen(
                 }
             }
 
+            // === ЦВЕТ КАРТОЧКИ ===
             Text("Цвет карточки", style = MaterialTheme.typography.titleMedium)
+
             LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(CardColors.indices.toList()) { i ->
-                    val selected = cardColor == i
+                    val selected = cardColor == i && customColorHex == null
                     Box(
                         modifier = Modifier
                             .size(44.dp)
@@ -215,8 +223,45 @@ fun AddEventScreen(
                                         else MaterialTheme.colorScheme.outline,
                                 shape = RoundedCornerShape(12.dp)
                             )
-                            .clickable { cardColor = i }
+                            .clickable {
+                                cardColor = i
+                                customColorHex = null
+                            }
                     )
+                }
+
+                // Кнопка "Свой цвет"
+                item {
+                    val active = customColorHex != null
+                    val brush: Brush = customColorBrush(customColorHex)
+                        ?: Brush.verticalGradient(
+                            listOf(
+                                Color(0xFFFF9A9E),
+                                Color(0xFFFAD0C4),
+                                Color(0xFFA18CD1)
+                            )
+                        )
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(brush)
+                            .border(
+                                width = if (active) 3.dp else 1.dp,
+                                color = if (active) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.outline,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .clickable { showColorDialog = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.ColorLens,
+                            contentDescription = "Свой цвет",
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
             }
 
@@ -279,7 +324,8 @@ fun AddEventScreen(
                             notificationsEnabled = notifications,
                             cardColor = cardColor,
                             isPinned = isPinned,
-                            animation = animation
+                            animation = animation,
+                            customColorHex = customColorHex
                         )
                     )
                 },
@@ -311,5 +357,17 @@ fun AddEventScreen(
         ) {
             DatePicker(state = state)
         }
+    }
+
+    if (showColorDialog) {
+        CustomColorDialog(
+            initial = customColorHex,
+            onDismiss = { showColorDialog = false },
+            onSave = { result ->
+                customColorHex = result
+                if (result != null) cardColor = 0
+                showColorDialog = false
+            }
+        )
     }
 }
