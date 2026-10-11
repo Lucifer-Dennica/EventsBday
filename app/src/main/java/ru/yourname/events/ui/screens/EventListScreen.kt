@@ -116,9 +116,19 @@ fun EventListScreen(
         events.map { it.group }.filter { it.isNotBlank() }.distinct().sorted()
     }
 
+    // Расширенный поиск: имя + заметки + группа + пункты чек-листа
     val filtered = remember(events, query, selectedGroup) {
+        val q = query.trim()
         events
-            .filter { query.isBlank() || it.name.contains(query, ignoreCase = true) }
+            .filter { e ->
+                if (q.isBlank()) true
+                else {
+                    e.name.contains(q, ignoreCase = true) ||
+                            e.note.contains(q, ignoreCase = true) ||
+                            e.group.contains(q, ignoreCase = true) ||
+                            e.checklist.any { it.text.contains(q, ignoreCase = true) }
+                }
+            }
             .filter { selectedGroup == null || it.group == selectedGroup }
     }
 
@@ -239,9 +249,7 @@ fun EventListScreen(
                                 selectedCalendarDate = if (selectedCalendarDate == date) null else date
                             }
                         )
-
                         HorizontalDivider(Modifier.padding(vertical = 10.dp))
-
                         val dayEvents = selectedCalendarDate?.let { date ->
                             events.filter { e ->
                                 runCatching {
@@ -249,7 +257,6 @@ fun EventListScreen(
                                 }.getOrDefault(false)
                             }
                         }.orEmpty()
-
                         when {
                             selectedCalendarDate == null -> {
                                 Box(Modifier.weight(1f).fillMaxWidth(),
@@ -295,7 +302,7 @@ fun EventListScreen(
                     OutlinedTextField(
                         value = query,
                         onValueChange = { query = it },
-                        placeholder = { Text("Поиск по имени") },
+                        placeholder = { Text("Поиск: имя, заметка, группа, чек-лист") },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                         trailingIcon = {
                             if (query.isNotEmpty()) {
@@ -333,7 +340,7 @@ fun EventListScreen(
                     }
 
                     if (sorted.isEmpty()) {
-                        EmptyState(Modifier.fillMaxSize())
+                        EmptyState(Modifier.fillMaxSize(), query)
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
@@ -619,15 +626,22 @@ private fun actionFg(action: SwipeAction): Color = when (action) {
 }
 
 @Composable
-private fun EmptyState(modifier: Modifier = Modifier) {
+private fun EmptyState(modifier: Modifier = Modifier, query: String = "") {
     Box(modifier, contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("🎂", style = MaterialTheme.typography.headlineMedium)
+            Text(
+                if (query.isBlank()) "🎂" else "🔍",
+                style = MaterialTheme.typography.headlineMedium
+            )
             Spacer(Modifier.height(8.dp))
-            Text("Пока нет событий", style = MaterialTheme.typography.titleMedium)
+            Text(
+                if (query.isBlank()) "Пока нет событий" else "Ничего не найдено",
+                style = MaterialTheme.typography.titleMedium
+            )
             Spacer(Modifier.height(4.dp))
             Text(
-                "Импортируйте из контактов или добавьте вручную",
+                if (query.isBlank()) "Импортируйте из контактов или добавьте вручную"
+                else "Попробуйте изменить запрос",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
