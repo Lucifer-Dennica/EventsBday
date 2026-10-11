@@ -22,7 +22,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import ru.yourname.events.data.model.ChecklistItem
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.model.SocialPlatform
 import ru.yourname.events.data.social.SocialUrlParser
@@ -38,6 +40,7 @@ fun EventDetailScreen(
     event: Event,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onUpdate: (Event) -> Unit,
     onBack: () -> Unit
 ) {
     val ctx = LocalContext.current
@@ -49,7 +52,6 @@ fun EventDetailScreen(
 
     var confirmDelete by remember { mutableStateOf(false) }
 
-    // Телефон для звонка — телефон, WhatsApp или Viber
     val phoneLink = event.socialLinks.firstOrNull {
         it.platform == SocialPlatform.PHONE ||
                 it.platform == SocialPlatform.WHATSAPP ||
@@ -59,9 +61,6 @@ fun EventDetailScreen(
         ?.filter { it.isDigit() || it == '+' }
         ?.takeIf { it.isNotBlank() }
 
-    // Ссылка для SMS — берём телефон же
-    val smsLink = phoneDigits
-
     fun dial() {
         if (phoneDigits == null) return
         runCatching {
@@ -70,10 +69,17 @@ fun EventDetailScreen(
     }
 
     fun sendSms() {
-        if (smsLink == null) return
+        if (phoneDigits == null) return
         runCatching {
-            ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("sms:$smsLink")))
+            ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("sms:$phoneDigits")))
         }
+    }
+
+    fun toggleChecklistItem(index: Int) {
+        val newList = event.checklist.toMutableList().also {
+            it[index] = it[index].copy(done = !it[index].done)
+        }
+        onUpdate(event.copy(checklist = newList))
     }
 
     Scaffold(
@@ -100,7 +106,6 @@ fun EventDetailScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // === ШАПКА ===
             EventAvatar(event, size = 96.dp, accentColor = MaterialTheme.colorScheme.primary)
             Text(event.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text(
@@ -112,7 +117,6 @@ fun EventDetailScreen(
                 Text("Исполнится $age лет", style = MaterialTheme.typography.titleLarge)
             }
 
-            // === БЫСТРЫЕ ДЕЙСТВИЯ ===
             if (phoneDigits != null) {
                 Row(
                     Modifier.fillMaxWidth(),
@@ -137,10 +141,42 @@ fun EventDetailScreen(
                 }
             }
 
-            // === 1. АСТРОЛОГИЯ ===
+            // ЧЕК-ЛИСТ
+            if (event.checklist.isNotEmpty()) {
+                HorizontalDivider()
+                Column(
+                    Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        "Чек-лист",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    event.checklist.forEachIndexed { i, item ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = item.done,
+                                onCheckedChange = { toggleChecklistItem(i) }
+                            )
+                            Text(
+                                item.text,
+                                style = MaterialTheme.typography.bodyLarge,
+                                textDecoration = if (item.done) TextDecoration.LineThrough
+                                                 else TextDecoration.None,
+                                color = if (item.done) MaterialTheme.colorScheme.onSurfaceVariant
+                                        else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+
             ZodiacBlock(event)
 
-            // === 2. ЗАМЕТКА ===
             if (event.note.isNotBlank()) {
                 Column(Modifier.fillMaxWidth()) {
                     Text("Заметка", style = MaterialTheme.typography.labelSmall,
@@ -151,7 +187,6 @@ fun EventDetailScreen(
                 HorizontalDivider()
             }
 
-            // === 3. ГРУППА И ГОД ===
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     Text("Группа", style = MaterialTheme.typography.labelSmall,
@@ -167,7 +202,6 @@ fun EventDetailScreen(
                 }
             }
 
-            // === 4. КОНТАКТЫ ===
             if (event.socialLinks.isNotEmpty()) {
                 HorizontalDivider()
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
