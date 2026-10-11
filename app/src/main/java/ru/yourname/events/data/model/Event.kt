@@ -25,8 +25,8 @@ data class Event(
     val cardColor: Int = 0,
     val isPinned: Boolean = false,
     val animation: CardAnimation = CardAnimation.NONE,
-    /** Пользовательский цвет: "#RRGGBB" для сплошного, "#RRGGBB,#RRGGBB" для градиента */
-    val customColorHex: String? = null
+    val customColorHex: String? = null,
+    val checklist: List<ChecklistItem> = emptyList()
 ) {
     fun nextOccurrence(from: LocalDate): LocalDate {
         var date = LocalDate.of(from.year, month, dayOfMonth)
