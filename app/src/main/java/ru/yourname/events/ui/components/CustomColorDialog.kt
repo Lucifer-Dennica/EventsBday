@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,8 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import ru.yourname.events.data.settings.SettingsRepository
 
 private val PRESET_COLORS = listOf(
     "#FFFFFF", "#FCE4EC", "#F8BBD0", "#F48FB1", "#E91E63",
@@ -31,21 +35,11 @@ private val PRESET_COLORS = listOf(
 )
 
 private val PRESET_GRADIENTS = listOf(
-    "#FF9A9E,#FAD0C4",
-    "#A18CD1,#FBC2EB",
-    "#FAD0C4,#FFD1FF",
-    "#FFECD2,#FCB69F",
-    "#A1C4FD,#C2E9FB",
-    "#D4FC79,#96E6A1",
-    "#84FAB0,#8FD3F4",
-    "#F093FB,#F5576C",
-    "#4FACFE,#00F2FE",
-    "#43E97B,#38F9D7",
-    "#FA709A,#FEE140",
-    "#30CFD0,#330867",
-    "#000000,#434343",
-    "#1A2A6C,#B21F1F",
-    "#0F2027,#203A43"
+    "#FF9A9E,#FAD0C4", "#A18CD1,#FBC2EB", "#FAD0C4,#FFD1FF",
+    "#FFECD2,#FCB69F", "#A1C4FD,#C2E9FB", "#D4FC79,#96E6A1",
+    "#84FAB0,#8FD3F4", "#F093FB,#F5576C", "#4FACFE,#00F2FE",
+    "#43E97B,#38F9D7", "#FA709A,#FEE140", "#30CFD0,#330867",
+    "#000000,#434343", "#1A2A6C,#B21F1F", "#0F2027,#203A43"
 )
 
 @Composable
@@ -54,6 +48,10 @@ fun CustomColorDialog(
     onDismiss: () -> Unit,
     onSave: (String?) -> Unit
 ) {
+    val ctx = LocalContext.current
+    val recentColors by SettingsRepository.recentColorsFlow(ctx)
+        .collectAsState(initial = emptyList())
+
     var hex1 by remember {
         mutableStateOf(initial?.split(",")?.getOrNull(0)?.trim() ?: "#FFFFFF")
     }
@@ -64,7 +62,6 @@ fun CustomColorDialog(
         mutableStateOf(initial?.contains(",") == true)
     }
 
-    // Валидация: чистим и нормализуем
     fun normalize(input: String): String {
         val clean = input.trim().removePrefix("#").uppercase()
         val filtered = clean.filter { it in "0123456789ABCDEF" }.take(6)
@@ -82,25 +79,23 @@ fun CustomColorDialog(
         title = { Text("Свой цвет карточки") },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 520.dp)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
 
-                // Превью
                 val previewBrush: Brush = if (gradient && valid1 && valid2) {
-                    Brush.verticalGradient(
-                        listOf(
-                            parseCustomColor(normalized1).first(),
-                            parseCustomColor(normalized2).first()
-                        )
-                    )
+                    Brush.verticalGradient(listOf(
+                        parseCustomColor(normalized1).first(),
+                        parseCustomColor(normalized2).first()
+                    ))
                 } else if (valid1) {
-                    Brush.verticalGradient(
-                        listOf(
-                            parseCustomColor(normalized1).first(),
-                            parseCustomColor(normalized1).first()
-                        )
-                    )
+                    Brush.verticalGradient(listOf(
+                        parseCustomColor(normalized1).first(),
+                        parseCustomColor(normalized1).first()
+                    ))
                 } else {
                     Brush.verticalGradient(listOf(Color.Gray, Color.Gray))
                 }
@@ -122,14 +117,12 @@ fun CustomColorDialog(
                     )
                 }
 
-                // Тумблер "градиент"
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Switch(checked = gradient, onCheckedChange = { gradient = it })
                     Spacer(Modifier.width(12.dp))
                     Text("Градиент (2 цвета)")
                 }
 
-                // Основной цвет
                 OutlinedTextField(
                     value = hex1,
                     onValueChange = { hex1 = it },
@@ -154,6 +147,53 @@ fun CustomColorDialog(
                     )
                 }
 
+                // === НЕДАВНИЕ ===
+                if (recentColors.isNotEmpty()) {
+                    Text("Недавние", style = MaterialTheme.typography.titleSmall)
+
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(6),
+                        modifier = Modifier.fillMaxWidth().height(80.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        userScrollEnabled = false
+                    ) {
+                        items(recentColors) { c ->
+                            val isGrad = c.contains(",")
+                            val parts = c.split(",")
+                            val brush: Brush = if (isGrad) {
+                                Brush.verticalGradient(listOf(
+                                    parseCustomColor(parts[0]).first(),
+                                    parseCustomColor(parts[1]).first()
+                                ))
+                            } else {
+                                Brush.verticalGradient(listOf(
+                                    parseCustomColor(c).first(),
+                                    parseCustomColor(c).first()
+                                ))
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .aspectRatio(1f)
+                                    .clip(if (isGrad) RoundedCornerShape(8.dp) else CircleShape)
+                                    .background(brush)
+                                    .border(1.dp, MaterialTheme.colorScheme.outline,
+                                        if (isGrad) RoundedCornerShape(8.dp) else CircleShape)
+                                    .clickable {
+                                        if (isGrad) {
+                                            gradient = true
+                                            hex1 = parts[0]
+                                            hex2 = parts[1]
+                                        } else {
+                                            gradient = false
+                                            hex1 = c
+                                        }
+                                    }
+                            )
+                        }
+                    }
+                }
+
                 Text("Палитра", style = MaterialTheme.typography.titleSmall)
 
                 LazyVerticalGrid(
@@ -171,9 +211,7 @@ fun CustomColorDialog(
                                 .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
                                 .clickable {
                                     if (gradient) {
-                                        // если градиент — заливка по очереди: сначала цвет 1, потом цвет 2
                                         val cur1 = normalize(hex1)
-                                        val cur2 = normalize(hex2)
                                         if (cur1 == "#FFFFFF") hex1 = c else hex2 = c
                                     } else {
                                         hex1 = c
@@ -198,15 +236,12 @@ fun CustomColorDialog(
                                 modifier = Modifier
                                     .aspectRatio(1f)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(
-                                        Brush.verticalGradient(
-                                            listOf(
-                                                parseCustomColor(parts[0]).first(),
-                                                parseCustomColor(parts[1]).first()
-                                            )
-                                        )
-                                    )
-                                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
+                                    .background(Brush.verticalGradient(listOf(
+                                        parseCustomColor(parts[0]).first(),
+                                        parseCustomColor(parts[1]).first()
+                                    )))
+                                    .border(1.dp, MaterialTheme.colorScheme.outline,
+                                        RoundedCornerShape(8.dp))
                                     .clickable {
                                         hex1 = parts[0]
                                         hex2 = parts[1]
