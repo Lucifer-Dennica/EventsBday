@@ -26,7 +26,8 @@ class EventRepository(private val dao: EventDao) {
         notificationsEnabled = notificationsEnabled,
         cardColor = cardColor,
         isPinned = isPinned,
-        animation = CardAnimation.fromName(animation)
+        animation = CardAnimation.fromName(animation),
+        customColorHex = customColorHex
     )
 
     private fun Event.toEntity() = EventEntity(
@@ -37,7 +38,8 @@ class EventRepository(private val dao: EventDao) {
         notificationsEnabled = notificationsEnabled,
         cardColor = cardColor,
         isPinned = isPinned,
-        animation = animation.name
+        animation = animation.name,
+        customColorHex = customColorHex
     )
 
     private fun parseSocials(raw: String): List<SocialLink> {
