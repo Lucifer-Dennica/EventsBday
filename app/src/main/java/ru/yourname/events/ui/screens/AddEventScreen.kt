@@ -30,9 +30,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
 import ru.yourname.events.data.model.CardAnimation
 import ru.yourname.events.data.model.CardColors
 import ru.yourname.events.data.model.Event
+import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.ui.components.AllPresetAvatars
 import ru.yourname.events.ui.components.CustomColorDialog
 import ru.yourname.events.ui.components.SocialLinksEditor
@@ -48,6 +50,7 @@ fun AddEventScreen(
     onBack: () -> Unit
 ) {
     val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     var name by remember { mutableStateOf(editing?.name ?: "") }
     var date by remember {
@@ -206,7 +209,6 @@ fun AddEventScreen(
                 }
             }
 
-            // === ЦВЕТ КАРТОЧКИ ===
             Text("Цвет карточки", style = MaterialTheme.typography.titleMedium)
 
             LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -230,7 +232,6 @@ fun AddEventScreen(
                     )
                 }
 
-                // Кнопка "Свой цвет"
                 item {
                     val active = customColorHex != null
                     val brush: Brush = customColorBrush(customColorHex)
@@ -265,7 +266,6 @@ fun AddEventScreen(
                 }
             }
 
-            // === АНИМАЦИЯ ===
             Text("Анимация карточки", style = MaterialTheme.typography.titleMedium)
             Text(
                 "Может немного нагружать устройство. Если не нужно — оставьте «Без анимации».",
@@ -365,7 +365,11 @@ fun AddEventScreen(
             onDismiss = { showColorDialog = false },
             onSave = { result ->
                 customColorHex = result
-                if (result != null) cardColor = 0
+                if (result != null) {
+                    cardColor = 0
+                    // Сохраняем в историю
+                    scope.launch { SettingsRepository.addRecentColor(ctx, result) }
+                }
                 showColorDialog = false
             }
         )
