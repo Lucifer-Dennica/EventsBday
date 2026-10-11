@@ -21,5 +21,6 @@ data class EventEntity(
     val cardColor: Int,
     val isPinned: Boolean = false,
     val animation: String = "NONE",
-    val customColorHex: String? = null
+    val customColorHex: String? = null,
+    val checklistRaw: String = ""
 )
