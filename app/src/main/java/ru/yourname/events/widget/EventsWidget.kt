@@ -1,6 +1,5 @@
 package ru.yourname.events.widget
 
-import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -10,6 +9,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.Image
+import androidx.glance.ImageProvider
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -33,8 +34,6 @@ class EventsWidget : GlanceAppWidget() {
         val photoSize = WidgetSettings.photoSizeFlow(context).first()
         val showHeader = WidgetSettings.showHeaderFlow(context).first()
         val showDate = WidgetSettings.showDateFlow(context).first()
-        val showGroup = WidgetSettings.showGroupFlow(context).first()
-        val showAge = WidgetSettings.showAgeFlow(context).first()
         val bgMode = WidgetSettings.bgModeFlow(context).first()
 
         val openAppIntent = Intent(Intent.ACTION_VIEW).apply {
@@ -44,15 +43,12 @@ class EventsWidget : GlanceAppWidget() {
 
         provideContent {
             WidgetContent(
-                context = context,
                 events = events,
                 fontScale = fontScale,
                 opacity = opacity,
                 photoSize = photoSize,
                 showHeader = showHeader,
                 showDate = showDate,
-                showGroup = showGroup,
-                showAge = showAge,
                 bgMode = bgMode,
                 openAppIntent = openAppIntent
             )
@@ -62,46 +58,44 @@ class EventsWidget : GlanceAppWidget() {
 
 @Composable
 private fun WidgetContent(
-    context: Context,
     events: List<WidgetEvent>,
     fontScale: Int,
     opacity: Int,
     photoSize: Int,
     showHeader: Boolean,
     showDate: Boolean,
-    showGroup: Boolean,
-    showAge: Boolean,
     bgMode: WidgetBgMode,
     openAppIntent: Intent
 ) {
     val baseAlpha = opacity / 100f
-
-    val (bgColor, textColor, subColor) = when (bgMode) {
-        WidgetBgMode.SYSTEM -> Triple(
+    val (bgColor, textColor, subColor, accentColor, cardColor) = when (bgMode) {
+        WidgetBgMode.LIGHT -> listOf(
             Color(0xFFF8F9FC).copy(alpha = baseAlpha),
             Color(0xFF1A1C22),
-            Color(0xFF5B6478)
+            Color(0xFF5B6478),
+            Color(0xFF5B6BC0),
+            Color(0xFFFFFFFF).copy(alpha = baseAlpha)
         )
-        WidgetBgMode.LIGHT -> Triple(
-            Color.White.copy(alpha = baseAlpha),
-            Color(0xFF1A1C22),
-            Color(0xFF5B6478)
-        )
-        WidgetBgMode.DARK -> Triple(
+        WidgetBgMode.DARK -> listOf(
             Color(0xFF121318).copy(alpha = baseAlpha),
             Color(0xFFE4E6EE),
-            Color(0xFFB0B6C4)
+            Color(0xFFB0B6C4),
+            Color(0xFFB8C2FF),
+            Color(0xFF1C1E24).copy(alpha = baseAlpha)
         )
-        WidgetBgMode.TRANSPARENT -> Triple(
+        WidgetBgMode.TRANSPARENT -> listOf(
             Color.Transparent,
             Color(0xFF1A1C22),
-            Color(0xFF5B6478)
+            Color(0xFF5B6478),
+            Color(0xFF5B6BC0),
+            Color(0x40FFFFFF)
         )
     }
 
     val scale = fontScale / 100f
-    val nameSize = (15f * scale).sp
-    val subSize = (12f * scale).sp
+    val nameSize = (14f * scale).sp
+    val subSize = (11f * scale).sp
+    val daysSize = (16f * scale).sp
     val headerSize = (13f * scale).sp
 
     Column(
@@ -109,18 +103,18 @@ private fun WidgetContent(
             .fillMaxSize()
             .background(bgColor)
             .clickable(actionStartActivity(openAppIntent))
-            .padding(12.dp)
+            .padding(10.dp)
     ) {
         if (showHeader) {
             Text(
-                text = "🎂 Мои события",
+                text = "🎂 Ближайшие события",
                 style = TextStyle(
                     color = ColorProvider(textColor),
                     fontSize = headerSize,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Bold
                 )
             )
-            Spacer(GlanceModifier.height(8.dp))
+            Spacer(GlanceModifier.height(6.dp))
         }
 
         if (events.isEmpty()) {
@@ -134,13 +128,17 @@ private fun WidgetContent(
         } else {
             events.forEachIndexed { idx, ev ->
                 Row(
-                    modifier = GlanceModifier.fillMaxWidth().padding(vertical = 6.dp),
+                    modifier = GlanceModifier
+                        .fillMaxWidth()
+                        .background(cardColor)
+                        .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Фото или инициал
                     val photoRes = ev.presetAvatar?.let { presetAvatarDrawable(it) }
                     if (photoRes != null) {
-                        androidx.glance.Image(
-                            provider = androidx.glance.ImageProvider(photoRes),
+                        Image(
+                            provider = ImageProvider(photoRes),
                             contentDescription = null,
                             modifier = GlanceModifier.size(photoSize.dp)
                         )
@@ -161,10 +159,11 @@ private fun WidgetContent(
                             )
                         }
                     }
-                    Spacer(GlanceModifier.width(12.dp))
+                    Spacer(GlanceModifier.width(10.dp))
                     Column(modifier = GlanceModifier.defaultWeight()) {
                         Text(
                             text = ev.name,
+                            maxLines = 1,
                             style = TextStyle(
                                 color = ColorProvider(textColor),
                                 fontSize = nameSize,
@@ -172,19 +171,9 @@ private fun WidgetContent(
                             )
                         )
                         if (showDate) {
-                            val line = buildString {
-                                append(ev.dayMonth)
-                                if (showAge && ev.age != null) {
-                                    append(" • исполнится ")
-                                    append(ev.age)
-                                }
-                                if (showGroup && ev.group.isNotBlank()) {
-                                    append(" • ")
-                                    append(ev.group)
-                                }
-                            }
                             Text(
-                                text = line,
+                                text = ev.dayMonth,
+                                maxLines = 1,
                                 style = TextStyle(
                                     color = ColorProvider(subColor),
                                     fontSize = subSize
@@ -192,18 +181,33 @@ private fun WidgetContent(
                             )
                         }
                     }
-                    Spacer(GlanceModifier.width(8.dp))
-                    Text(
-                        text = if (ev.daysLeft == 0L) "сегодня" else "${ev.daysLeft} дн.",
-                        style = TextStyle(
-                            color = ColorProvider(Color(0xFF5B6BC0)),
-                            fontSize = nameSize,
-                            fontWeight = FontWeight.Bold
+                    Spacer(GlanceModifier.width(6.dp))
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = when (ev.daysLeft) {
+                                0L -> "сегодня"
+                                1L -> "1"
+                                else -> ev.daysLeft.toString()
+                            },
+                            style = TextStyle(
+                                color = ColorProvider(accentColor),
+                                fontSize = daysSize,
+                                fontWeight = FontWeight.Bold
+                            )
                         )
-                    )
+                        if (ev.daysLeft > 0L) {
+                            Text(
+                                text = "дн.",
+                                style = TextStyle(
+                                    color = ColorProvider(subColor),
+                                    fontSize = (10f * scale).sp
+                                )
+                            )
+                        }
+                    }
                 }
                 if (idx < events.size - 1) {
-                    Spacer(GlanceModifier.height(2.dp))
+                    Spacer(GlanceModifier.height(4.dp))
                 }
             }
         }
