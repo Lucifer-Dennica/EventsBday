@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.glance.appwidget.updateAll
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -37,6 +38,8 @@ import ru.yourname.events.ui.screens.SettingsScreen
 import ru.yourname.events.ui.screens.StatsScreen
 import ru.yourname.events.ui.screens.WidgetSettingsScreen
 import ru.yourname.events.vm.EventViewModel
+import ru.yourname.events.widget.EventsWidget
+import ru.yourname.events.widget.EventsWidgetMini
 
 object Routes {
     const val LIST = "list"
@@ -100,6 +103,12 @@ fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
 
     LaunchedEffect(Unit) {
         InterstitialManager.preload(ctx)
+    }
+
+    // Автообновление виджетов при любом изменении событий (добавление/удаление/редактирование)
+    LaunchedEffect(events) {
+        runCatching { EventsWidget().updateAll(ctx) }
+        runCatching { EventsWidgetMini().updateAll(ctx) }
     }
 
     NavHost(navController = nav, startDestination = startRoute) {
@@ -195,7 +204,12 @@ fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
         composable(Routes.SETTINGS_DESIGN) { DesignSettingsScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.SETTINGS_NOTIF) { NotificationsSettingsScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.SETTINGS_BEHAVIOR) { BehaviorSettingsScreen(onBack = { nav.popBackStack() }) }
-        composable(Routes.SETTINGS_WIDGETS) { WidgetSettingsScreen(onBack = { nav.popBackStack() }) }
+        composable(Routes.SETTINGS_WIDGETS) {
+            WidgetSettingsScreen(
+                events = events,
+                onBack = { nav.popBackStack() }
+            )
+        }
         composable(Routes.SETTINGS_STATS) {
             StatsScreen(
                 events = events,
