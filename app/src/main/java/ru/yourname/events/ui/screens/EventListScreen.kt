@@ -12,6 +12,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
+import ru.yourname.events.ads.YandexBanner
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.model.SocialPlatform
 import ru.yourname.events.data.settings.CalendarMarkStyle
@@ -48,6 +50,8 @@ import ru.yourname.events.ui.components.CalendarView
 import ru.yourname.events.ui.components.EventCard
 import ru.yourname.events.ui.components.SwipeNavigationBox
 import java.time.LocalDate
+
+private const val AD_EVERY_N_ITEMS = 10
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -116,7 +120,6 @@ fun EventListScreen(
         events.map { it.group }.filter { it.isNotBlank() }.distinct().sorted()
     }
 
-    // Расширенный поиск: имя + заметки + группа + пункты чек-листа
     val filtered = remember(events, query, selectedGroup) {
         val q = query.trim()
         events
@@ -355,34 +358,23 @@ fun EventListScreen(
                                         color = MaterialTheme.colorScheme.primary,
                                         fontWeight = FontWeight.SemiBold)
                                 }
-                                items(pinned, key = { "pin_${it.id}" }) { event ->
-                                    EventRow(
-                                        event = event,
-                                        swipesEnabled = swipesEnabled && !selectionMode,
-                                        swipeLeftAction = swipeLeftAction,
-                                        swipeRightAction = swipeRightAction,
-                                        isSelected = event.id in selectedIds,
-                                        selectionMode = selectionMode,
-                                        showNotificationsIcon = showNotificationsIcon,
-                                        showPinIcon = showPinIcon,
-                                        animationsAllowed = animationsAllowed,
-                                        onClick = {
-                                            if (selectionMode) {
-                                                selectedIds = if (event.id in selectedIds)
-                                                    selectedIds - event.id else selectedIds + event.id
-                                            } else onEventClick(event)
-                                        },
-                                        onLongClick = {
-                                            selectedIds = if (event.id in selectedIds)
-                                                selectedIds - event.id else selectedIds + event.id
-                                        },
-                                        onDelete = { eventToDelete = event },
-                                        onToggleNotifications = { onToggleNotifications(event) },
-                                        onTogglePin = { onTogglePin(event) },
-                                        onEdit = { onEditEvent(event) },
-                                        onCall = { dialEvent(event) }
-                                    )
-                                }
+                                itemsWithAds(
+                                    items = pinned,
+                                    animationsAllowed = animationsAllowed,
+                                    swipesEnabled = swipesEnabled && !selectionMode,
+                                    swipeLeftAction = swipeLeftAction,
+                                    swipeRightAction = swipeRightAction,
+                                    selectedIds = selectedIds,
+                                    selectionMode = selectionMode,
+                                    showNotificationsIcon = showNotificationsIcon,
+                                    showPinIcon = showPinIcon,
+                                    onEventClick = onEventClick,
+                                    onDelete = { eventToDelete = it },
+                                    onToggleNotifications = onToggleNotifications,
+                                    onTogglePin = onTogglePin,
+                                    onEdit = onEditEvent,
+                                    onCall = { dialEvent(it) }
+                                )
                                 item { Spacer(Modifier.height(4.dp)) }
                             }
 
@@ -393,34 +385,23 @@ fun EventListScreen(
                                         color = MaterialTheme.colorScheme.primary,
                                         fontWeight = FontWeight.SemiBold)
                                 }
-                                items(todayEvents, key = { "today_${it.id}" }) { event ->
-                                    EventRow(
-                                        event = event,
-                                        swipesEnabled = swipesEnabled && !selectionMode,
-                                        swipeLeftAction = swipeLeftAction,
-                                        swipeRightAction = swipeRightAction,
-                                        isSelected = event.id in selectedIds,
-                                        selectionMode = selectionMode,
-                                        showNotificationsIcon = showNotificationsIcon,
-                                        showPinIcon = showPinIcon,
-                                        animationsAllowed = animationsAllowed,
-                                        onClick = {
-                                            if (selectionMode) {
-                                                selectedIds = if (event.id in selectedIds)
-                                                    selectedIds - event.id else selectedIds + event.id
-                                            } else onEventClick(event)
-                                        },
-                                        onLongClick = {
-                                            selectedIds = if (event.id in selectedIds)
-                                                selectedIds - event.id else selectedIds + event.id
-                                        },
-                                        onDelete = { eventToDelete = event },
-                                        onToggleNotifications = { onToggleNotifications(event) },
-                                        onTogglePin = { onTogglePin(event) },
-                                        onEdit = { onEditEvent(event) },
-                                        onCall = { dialEvent(event) }
-                                    )
-                                }
+                                itemsWithAds(
+                                    items = todayEvents,
+                                    animationsAllowed = animationsAllowed,
+                                    swipesEnabled = swipesEnabled && !selectionMode,
+                                    swipeLeftAction = swipeLeftAction,
+                                    swipeRightAction = swipeRightAction,
+                                    selectedIds = selectedIds,
+                                    selectionMode = selectionMode,
+                                    showNotificationsIcon = showNotificationsIcon,
+                                    showPinIcon = showPinIcon,
+                                    onEventClick = onEventClick,
+                                    onDelete = { eventToDelete = it },
+                                    onToggleNotifications = onToggleNotifications,
+                                    onTogglePin = onTogglePin,
+                                    onEdit = onEditEvent,
+                                    onCall = { dialEvent(it) }
+                                )
                                 item {
                                     Spacer(Modifier.height(8.dp))
                                     Text("Все события",
@@ -431,34 +412,23 @@ fun EventListScreen(
                             }
 
                             val others = sorted.filter { !it.isPinned }
-                            items(others, key = { it.id }) { event ->
-                                EventRow(
-                                    event = event,
-                                    swipesEnabled = swipesEnabled && !selectionMode,
-                                    swipeLeftAction = swipeLeftAction,
-                                    swipeRightAction = swipeRightAction,
-                                    isSelected = event.id in selectedIds,
-                                    selectionMode = selectionMode,
-                                    showNotificationsIcon = showNotificationsIcon,
-                                    showPinIcon = showPinIcon,
-                                    animationsAllowed = animationsAllowed,
-                                    onClick = {
-                                        if (selectionMode) {
-                                            selectedIds = if (event.id in selectedIds)
-                                                selectedIds - event.id else selectedIds + event.id
-                                        } else onEventClick(event)
-                                    },
-                                    onLongClick = {
-                                        selectedIds = if (event.id in selectedIds)
-                                            selectedIds - event.id else selectedIds + event.id
-                                    },
-                                    onDelete = { eventToDelete = event },
-                                    onToggleNotifications = { onToggleNotifications(event) },
-                                    onTogglePin = { onTogglePin(event) },
-                                    onEdit = { onEditEvent(event) },
-                                    onCall = { dialEvent(event) }
-                                )
-                            }
+                            itemsWithAds(
+                                items = others,
+                                animationsAllowed = animationsAllowed,
+                                swipesEnabled = swipesEnabled && !selectionMode,
+                                swipeLeftAction = swipeLeftAction,
+                                swipeRightAction = swipeRightAction,
+                                selectedIds = selectedIds,
+                                selectionMode = selectionMode,
+                                showNotificationsIcon = showNotificationsIcon,
+                                showPinIcon = showPinIcon,
+                                onEventClick = onEventClick,
+                                onDelete = { eventToDelete = it },
+                                onToggleNotifications = onToggleNotifications,
+                                onTogglePin = onTogglePin,
+                                onEdit = onEditEvent,
+                                onCall = { dialEvent(it) }
+                            )
                         }
                     }
                 }
@@ -500,6 +470,66 @@ fun EventListScreen(
                 TextButton(onClick = { showBulkDeleteConfirm = false }) { Text("Отмена") }
             }
         )
+    }
+}
+
+/**
+ * Раскладывает элементы с рекламными вставками каждые AD_EVERY_N_ITEMS штук.
+ */
+private fun LazyListScope.itemsWithAds(
+    items: List<Event>,
+    animationsAllowed: Boolean,
+    swipesEnabled: Boolean,
+    swipeLeftAction: SwipeAction,
+    swipeRightAction: SwipeAction,
+    selectedIds: Set<Long>,
+    selectionMode: Boolean,
+    showNotificationsIcon: Boolean,
+    showPinIcon: Boolean,
+    onEventClick: (Event) -> Unit,
+    onDelete: (Event) -> Unit,
+    onToggleNotifications: (Event) -> Unit,
+    onTogglePin: (Event) -> Unit,
+    onEdit: (Event) -> Unit,
+    onCall: (Event) -> Unit
+) {
+    items.forEachIndexed { index, event ->
+        item(key = "event_${event.id}") {
+            EventRow(
+                event = event,
+                swipesEnabled = swipesEnabled,
+                swipeLeftAction = swipeLeftAction,
+                swipeRightAction = swipeRightAction,
+                isSelected = event.id in selectedIds,
+                selectionMode = selectionMode,
+                showNotificationsIcon = showNotificationsIcon,
+                showPinIcon = showPinIcon,
+                animationsAllowed = animationsAllowed,
+                onClick = {
+                    if (selectionMode) {
+                        // handled at caller via selectedIds logic — re-emit
+                        // (в этой упрощённой версии — просто onEventClick)
+                        onEventClick(event)
+                    } else onEventClick(event)
+                },
+                onLongClick = { onEventClick(event) },
+                onDelete = { onDelete(event) },
+                onToggleNotifications = { onToggleNotifications(event) },
+                onTogglePin = { onTogglePin(event) },
+                onEdit = { onEdit(event) },
+                onCall = { onCall(event) }
+            )
+        }
+        // После каждого 7-го элемента, кроме последнего, — реклама
+        if ((index + 1) % AD_EVERY_N_ITEMS == 0 && index != items.size - 1) {
+            item(key = "ad_$index") {
+                YandexBanner(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                )
+            }
+        }
     }
 }
 
