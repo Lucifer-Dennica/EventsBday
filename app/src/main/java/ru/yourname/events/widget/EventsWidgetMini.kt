@@ -251,8 +251,7 @@ private fun TileCell(
             style = TextStyle(
                 color = ColorProvider(textColor),
                 fontSize = nameSize,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1
+                fontWeight = FontWeight.Medium
             )
         )
         Text(
@@ -264,8 +263,7 @@ private fun TileCell(
             style = TextStyle(
                 color = ColorProvider(accentColor),
                 fontSize = daysSize,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
+                fontWeight = FontWeight.Bold
             )
         )
     }
