@@ -5,11 +5,13 @@ plugins {
 }
 
 android {
+    // namespace — внутренний ID для R-класса и импортов. НЕ меняем.
     namespace = "ru.yourname.events"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "ru.yourname.events"
+        // applicationId — публичный ID, который видит RuStore. ЗАМЕНИЛИ.
+        applicationId = "ru.eventsbday.app"
         minSdk = 24
         targetSdk = 34
         versionCode = 10
@@ -68,13 +70,10 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("io.coil-kt:coil-gif:2.6.0")
 
-    // WorkManager для уведомлений
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
-    // Yandex Mobile Ads
     implementation("com.yandex.android:mobileads:8.5.0")
 
-    // Glance — виджеты на главный экран
     implementation("androidx.glance:glance-appwidget:1.1.0")
     implementation("androidx.glance:glance-material3:1.1.0")
 }
