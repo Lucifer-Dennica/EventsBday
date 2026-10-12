@@ -146,8 +146,21 @@ fun EventListScreen(
         }
         base.sortedByDescending { it.isPinned }
     }
-    val todayEvents = remember(sorted) {
-        sorted.filter { it.daysUntil(today) == 0L && !it.isPinned }
+
+    // Разбиваем на три непересекающихся списка
+    val pinned = remember(sorted) { sorted.filter { it.isPinned } }
+
+    // todayEvents показываем только при BY_DATE без фильтров
+    val showTodaySection = selectedGroup == null && query.isBlank() && sortMode == SortMode.BY_DATE
+    val todayEvents = remember(sorted, showTodaySection) {
+        if (showTodaySection) sorted.filter { it.daysUntil(today) == 0L && !it.isPinned }
+        else emptyList()
+    }
+
+    // Остальные: не закреплённые и не в секции "Сегодня"
+    val others = remember(sorted, todayEvents) {
+        val todayIds = todayEvents.map { it.id }.toSet()
+        sorted.filter { !it.isPinned && it.id !in todayIds }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -178,7 +191,6 @@ fun EventListScreen(
             !selectionMode &&
             viewMode == ViewMode.LIST
 
-    // Единая логика клика/долгого клика по карточке — работает и при выделении
     fun handleCardClick(event: Event) {
         if (selectionMode) {
             selectedIds = if (event.id in selectedIds) selectedIds - event.id
@@ -365,9 +377,8 @@ fun EventListScreen(
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            val pinned = sorted.filter { it.isPinned }
-                            if (pinned.isNotEmpty() && selectedGroup == null && query.isBlank()) {
-                                item {
+                            if (pinned.isNotEmpty()) {
+                                item(key = "header_pinned") {
                                     Text("Закреплённые",
                                         style = MaterialTheme.typography.titleMedium,
                                         color = MaterialTheme.colorScheme.primary,
@@ -375,6 +386,7 @@ fun EventListScreen(
                                 }
                                 itemsWithAds(
                                     items = pinned,
+                                    keyPrefix = "pin",
                                     animationsAllowed = animationsAllowed,
                                     swipesEnabled = swipesEnabled && !selectionMode,
                                     swipeLeftAction = swipeLeftAction,
@@ -391,11 +403,11 @@ fun EventListScreen(
                                     onEdit = onEditEvent,
                                     onCall = { dialEvent(it) }
                                 )
-                                item { Spacer(Modifier.height(4.dp)) }
+                                item(key = "spacer_after_pinned") { Spacer(Modifier.height(4.dp)) }
                             }
 
-                            if (todayEvents.isNotEmpty() && selectedGroup == null && query.isBlank() && sortMode == SortMode.BY_DATE) {
-                                item {
+                            if (todayEvents.isNotEmpty()) {
+                                item(key = "header_today") {
                                     Text("Сегодня",
                                         style = MaterialTheme.typography.titleMedium,
                                         color = MaterialTheme.colorScheme.primary,
@@ -403,6 +415,7 @@ fun EventListScreen(
                                 }
                                 itemsWithAds(
                                     items = todayEvents,
+                                    keyPrefix = "today",
                                     animationsAllowed = animationsAllowed,
                                     swipesEnabled = swipesEnabled && !selectionMode,
                                     swipeLeftAction = swipeLeftAction,
@@ -419,7 +432,7 @@ fun EventListScreen(
                                     onEdit = onEditEvent,
                                     onCall = { dialEvent(it) }
                                 )
-                                item {
+                                item(key = "header_all") {
                                     Spacer(Modifier.height(8.dp))
                                     Text("Все события",
                                         style = MaterialTheme.typography.titleMedium,
@@ -428,9 +441,9 @@ fun EventListScreen(
                                 }
                             }
 
-                            val others = sorted.filter { !it.isPinned }
                             itemsWithAds(
                                 items = others,
+                                keyPrefix = "other",
                                 animationsAllowed = animationsAllowed,
                                 swipesEnabled = swipesEnabled && !selectionMode,
                                 swipeLeftAction = swipeLeftAction,
@@ -493,6 +506,7 @@ fun EventListScreen(
 
 private fun LazyListScope.itemsWithAds(
     items: List<Event>,
+    keyPrefix: String,
     animationsAllowed: Boolean,
     swipesEnabled: Boolean,
     swipeLeftAction: SwipeAction,
@@ -510,7 +524,7 @@ private fun LazyListScope.itemsWithAds(
     onCall: (Event) -> Unit
 ) {
     items.forEachIndexed { index, event ->
-        item(key = "event_${event.id}") {
+        item(key = "${keyPrefix}_event_${event.id}") {
             EventRow(
                 event = event,
                 swipesEnabled = swipesEnabled,
@@ -531,7 +545,7 @@ private fun LazyListScope.itemsWithAds(
             )
         }
         if ((index + 1) % AD_EVERY_N_ITEMS == 0 && index != items.size - 1) {
-            item(key = "ad_$index") {
+            item(key = "${keyPrefix}_ad_$index") {
                 YandexBanner(
                     modifier = Modifier
                         .fillMaxWidth()
