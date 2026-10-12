@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import ru.yourname.events.ads.YandexBanner
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.ui.components.SwipeNavigationBox
 import java.time.LocalDate
@@ -73,10 +74,13 @@ fun StatsScreen(
                             textAlign = TextAlign.Center
                         )
                     }
+                    Spacer(Modifier.height(16.dp))
+                    YandexBanner(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                    )
                     return@Column
                 }
 
-                // Главная карточка — всего событий
                 BigStatCard(
                     title = "Всего событий",
                     value = stats.total.toString(),
@@ -194,7 +198,13 @@ fun StatsScreen(
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(16.dp))
+
+                YandexBanner(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+
+                Spacer(Modifier.height(16.dp))
             }
         }
     }
@@ -267,8 +277,6 @@ private fun SmallStatCard(
     }
 }
 
-// ================== ВЫЧИСЛЕНИЯ ==================
-
 private data class Stats(
     val total: Int,
     val thisMonthCount: Int,
@@ -289,13 +297,11 @@ private fun computeStats(events: List<Event>, today: LocalDate): Stats {
     val nearest = events.minByOrNull { it.daysUntil(today) }
     val nearestDays = nearest?.daysUntil(today) ?: 0L
 
-    // Средний возраст
     val ages = events.mapNotNull { e ->
         e.year?.let { today.year - it }
     }.filter { it in 0..150 }
     val avgAge = if (ages.isNotEmpty()) ages.average().toInt() else null
 
-    // Самый насыщенный месяц
     val monthCounts = events.groupingBy { it.month }.eachCount()
     val busiest = monthCounts.maxByOrNull { it.value }?.let { (month, count) ->
         val name = java.time.Month.of(month)
@@ -304,7 +310,6 @@ private fun computeStats(events: List<Event>, today: LocalDate): Stats {
         name to count
     }
 
-    // Самый старший контакт
     val oldest = events
         .mapNotNull { e ->
             e.year?.let { OldestContact(e.name, today.year - it) }
@@ -312,7 +317,6 @@ private fun computeStats(events: List<Event>, today: LocalDate): Stats {
         .filter { it.age in 0..150 }
         .maxByOrNull { it.age }
 
-    // Распределение по группам
     val groupCounts = events
         .groupingBy { it.group }
         .eachCount()
