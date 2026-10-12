@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -33,7 +32,7 @@ fun YandexBanner(
             modifier = Modifier.fillMaxWidth().height(50.dp),
             factory = { c ->
                 val dm = c.resources.displayMetrics
-                val widthDp = (dm.widthPixels / dm.density).toInt() - 16  // минус padding
+                val widthDp = (dm.widthPixels / dm.density).toInt() - 16
                 Log.d("AdsDebug", "Creating banner, widthDp=$widthDp")
 
                 BannerAdView(c).apply {
@@ -52,11 +51,7 @@ fun YandexBanner(
                     })
                     loadAd(AdRequest.Builder(adUnitId).build())
                 }
-            },
-            update = { /* ничего не меняем */ }
+            }
         )
     }
-
-    // Просим SDK обновить баннер при пересоздании
-    DisposableEffect(Unit) { onDispose { } }
 }
