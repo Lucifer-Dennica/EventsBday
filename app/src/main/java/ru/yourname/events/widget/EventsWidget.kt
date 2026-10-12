@@ -134,8 +134,7 @@ private fun WidgetContent(
                         Box(
                             modifier = GlanceModifier
                                 .size(photoSize.dp)
-                                .background(Color(0xFFE0E5FF))
-                                .cornerRadius(24.dp),
+                                .background(Color(0xFFE0E5FF)),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
