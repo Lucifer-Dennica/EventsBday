@@ -19,6 +19,13 @@ enum class WidgetBgMode(val label: String) {
     TRANSPARENT("Прозрачный")
 }
 
+enum class WidgetTextColor(val label: String) {
+    AUTO("Автоматически"),
+    WHITE("Белый"),
+    BLACK("Чёрный"),
+    BLUE("Синий акцент")
+}
+
 object WidgetSettings {
 
     private val KEY_FONT_SCALE = intPreferencesKey("widget_font_scale")
@@ -27,6 +34,7 @@ object WidgetSettings {
     private val KEY_SHOW_HEADER = booleanPreferencesKey("widget_show_header")
     private val KEY_SHOW_DATE = booleanPreferencesKey("widget_show_date")
     private val KEY_BG_MODE = stringPreferencesKey("widget_bg_mode")
+    private val KEY_TEXT_COLOR = stringPreferencesKey("widget_text_color")
     private val KEY_MINI_FONT_SCALE = intPreferencesKey("widget_mini_font_scale")
     private val KEY_MINI_SHOW_HEADER = booleanPreferencesKey("widget_mini_show_header")
     private val KEY_MINI_DAYS_ONLY = booleanPreferencesKey("widget_mini_days_only")
@@ -70,7 +78,16 @@ object WidgetSettings {
         ctx.widgetStore.edit { it[KEY_BG_MODE] = mode.name }
     }
 
-    // Мини-виджет (2x2 плитки)
+    // Цвет текста
+    fun textColorFlow(ctx: Context): Flow<WidgetTextColor> = ctx.widgetStore.data.map { prefs ->
+        prefs[KEY_TEXT_COLOR]?.let { runCatching { WidgetTextColor.valueOf(it) }.getOrNull() }
+            ?: WidgetTextColor.AUTO
+    }
+    suspend fun setTextColor(ctx: Context, color: WidgetTextColor) {
+        ctx.widgetStore.edit { it[KEY_TEXT_COLOR] = color.name }
+    }
+
+    // Мини-виджет
     fun miniFontScaleFlow(ctx: Context): Flow<Int> =
         ctx.widgetStore.data.map { it[KEY_MINI_FONT_SCALE] ?: 100 }
     suspend fun setMiniFontScale(ctx: Context, v: Int) {
