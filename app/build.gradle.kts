@@ -12,8 +12,8 @@ android {
         applicationId = "ru.yourname.events"
         minSdk = 24
         targetSdk = 34
-        versionCode = 6
-        versionName = "1.5.0"
+        versionCode = 10
+        versionName = "1.9.0"
     }
 
     signingConfigs {
@@ -71,6 +71,10 @@ dependencies {
     // WorkManager для уведомлений
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
-    // Yandex Mobile Ads SDK 8
+    // Yandex Mobile Ads
     implementation("com.yandex.android:mobileads:8.5.0")
+
+    // Glance — виджеты на главный экран
+    implementation("androidx.glance:glance-appwidget:1.1.0")
+    implementation("androidx.glance:glance-material3:1.1.0")
 }
