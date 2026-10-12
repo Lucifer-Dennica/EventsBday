@@ -9,6 +9,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.Image
+import androidx.glance.ImageProvider
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -21,27 +23,29 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import kotlinx.coroutines.flow.first
-import java.time.LocalDate
+import ru.yourname.events.R
 
 class EventsWidgetMini : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val calendar = WidgetDataProvider.loadCalendar(context)
+        val events = WidgetDataProvider.loadUpcoming(context, 4)
         val fontScale = WidgetSettings.miniFontScaleFlow(context).first()
         val showHeader = WidgetSettings.miniShowHeaderFlow(context).first()
+        val daysOnly = WidgetSettings.miniDaysOnlyFlow(context).first()
         val opacity = WidgetSettings.opacityFlow(context).first()
         val bgMode = WidgetSettings.bgModeFlow(context).first()
 
         val openAppIntent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("events://calendar")
+            data = Uri.parse("events://list")
             setPackage(context.packageName)
         }
 
         provideContent {
-            MiniCalendarContent(
-                calendar = calendar,
+            MiniGridContent(
+                events = events,
                 fontScale = fontScale,
                 showHeader = showHeader,
+                daysOnly = daysOnly,
                 opacity = opacity,
                 bgMode = bgMode,
                 openAppIntent = openAppIntent
@@ -51,57 +55,55 @@ class EventsWidgetMini : GlanceAppWidget() {
 }
 
 @Composable
-private fun MiniCalendarContent(
-    calendar: WidgetCalendarMonth,
+private fun MiniGridContent(
+    events: List<WidgetEvent>,
     fontScale: Int,
     showHeader: Boolean,
+    daysOnly: Boolean,
     opacity: Int,
     bgMode: WidgetBgMode,
     openAppIntent: Intent
 ) {
     val baseAlpha = opacity / 100f
-    val (bgColor, textColor, subColor, accentColor) = when (bgMode) {
-        WidgetBgMode.SYSTEM -> listOf(
+    val (bgColor, textColor, subColor, accentColor, cardColor) = when (bgMode) {
+        WidgetBgMode.LIGHT -> listOf(
             Color(0xFFF8F9FC).copy(alpha = baseAlpha),
             Color(0xFF1A1C22),
             Color(0xFF5B6478),
-            Color(0xFF5B6BC0)
-        )
-        WidgetBgMode.LIGHT -> listOf(
-            Color.White.copy(alpha = baseAlpha),
-            Color(0xFF1A1C22),
-            Color(0xFF5B6478),
-            Color(0xFF5B6BC0)
+            Color(0xFF5B6BC0),
+            Color(0xFFFFFFFF).copy(alpha = baseAlpha)
         )
         WidgetBgMode.DARK -> listOf(
             Color(0xFF121318).copy(alpha = baseAlpha),
             Color(0xFFE4E6EE),
             Color(0xFFB0B6C4),
-            Color(0xFFB8C2FF)
+            Color(0xFFB8C2FF),
+            Color(0xFF1C1E24).copy(alpha = baseAlpha)
         )
         WidgetBgMode.TRANSPARENT -> listOf(
             Color.Transparent,
             Color(0xFF1A1C22),
             Color(0xFF5B6478),
-            Color(0xFF5B6BC0)
+            Color(0xFF5B6BC0),
+            Color(0x40FFFFFF)
         )
     }
 
     val scale = fontScale / 100f
-    val headerSize = (13f * scale).sp
-    val weekdaySize = (9f * scale).sp
-    val daySize = (10f * scale).sp
+    val nameSize = (11f * scale).sp
+    val daysSize = (16f * scale).sp
+    val headerSize = (12f * scale).sp
 
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(bgColor)
             .clickable(actionStartActivity(openAppIntent))
-            .padding(8.dp)
+            .padding(6.dp)
     ) {
         if (showHeader) {
             Text(
-                text = calendar.title,
+                text = "🎂 События",
                 style = TextStyle(
                     color = ColorProvider(textColor),
                     fontSize = headerSize,
@@ -111,77 +113,133 @@ private fun MiniCalendarContent(
             Spacer(GlanceModifier.height(4.dp))
         }
 
-        // Дни недели
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            calendar.weekdays.forEach { wd ->
-                Box(
-                    modifier = GlanceModifier.defaultWeight(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = wd,
-                        style = TextStyle(
-                            color = ColorProvider(subColor),
-                            fontSize = weekdaySize,
-                            fontWeight = FontWeight.Medium
-                        )
+        if (events.isEmpty()) {
+            Box(
+                modifier = GlanceModifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Нет событий",
+                    style = TextStyle(
+                        color = ColorProvider(subColor),
+                        fontSize = nameSize
                     )
-                }
+                )
             }
-        }
+        } else {
+            // 2x2 сетка
+            val row1 = events.take(2)
+            val row2 = events.drop(2).take(2)
 
-        Spacer(GlanceModifier.height(2.dp))
-
-        // Сетка дней
-        val rows = calendar.days.chunked(7)
-        rows.forEach { week ->
             Row(
-                modifier = GlanceModifier.fillMaxWidth().padding(vertical = 1.dp),
+                modifier = GlanceModifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                week.forEach { day ->
-                    Box(
-                        modifier = GlanceModifier
-                            .defaultWeight()
-                            .padding(1.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (day == null) {
-                            Text(text = "", style = TextStyle(fontSize = daySize))
-                        } else {
-                            val bg = when {
-                                day.isToday -> accentColor
-                                day.hasEvents -> accentColor.copy(alpha = 0.25f)
-                                else -> Color.Transparent
-                            }
-                            val fg = if (day.isToday) Color.White else textColor
-
-                            Box(
-                                modifier = GlanceModifier
-                                    .fillMaxWidth()
-                                    .background(bg)
-                                    .padding(vertical = 2.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = day.day.toString(),
-                                    style = TextStyle(
-                                        color = ColorProvider(fg),
-                                        fontSize = daySize,
-                                        fontWeight = if (day.isToday || day.hasEvents)
-                                            FontWeight.Bold else FontWeight.Normal
-                                    )
-                                )
-                            }
-                        }
-                    }
+                if (row1.size > 0) TileCell(row1[0], cardColor, textColor, subColor, accentColor, nameSize, daysSize, daysOnly, GlanceModifier.defaultWeight())
+                if (row1.size > 1) {
+                    Spacer(GlanceModifier.width(4.dp))
+                    TileCell(row1[1], cardColor, textColor, subColor, accentColor, nameSize, daysSize, daysOnly, GlanceModifier.defaultWeight())
+                } else {
+                    Spacer(GlanceModifier.defaultWeight())
+                }
+            }
+            Spacer(GlanceModifier.height(4.dp))
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (row2.size > 0) TileCell(row2[0], cardColor, textColor, subColor, accentColor, nameSize, daysSize, daysOnly, GlanceModifier.defaultWeight())
+                if (row2.size > 1) {
+                    Spacer(GlanceModifier.width(4.dp))
+                    TileCell(row2[1], cardColor, textColor, subColor, accentColor, nameSize, daysSize, daysOnly, GlanceModifier.defaultWeight())
+                } else {
+                    Spacer(GlanceModifier.defaultWeight())
                 }
             }
         }
     }
+}
+
+@Composable
+private fun TileCell(
+    event: WidgetEvent,
+    cardColor: Color,
+    textColor: Color,
+    subColor: Color,
+    accentColor: Color,
+    nameSize: androidx.compose.ui.unit.TextUnit,
+    daysSize: androidx.compose.ui.unit.TextUnit,
+    daysOnly: Boolean,
+    modifier: GlanceModifier = GlanceModifier
+) {
+    Column(
+        modifier = modifier
+            .background(cardColor)
+            .padding(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Фото или инициал
+        val photoRes = event.presetAvatar?.let { presetAvatarDrawable(it) }
+        if (photoRes != null) {
+            Image(
+                provider = ImageProvider(photoRes),
+                contentDescription = null,
+                modifier = GlanceModifier.size(32.dp)
+            )
+        } else {
+            Box(
+                modifier = GlanceModifier
+                    .size(32.dp)
+                    .background(Color(0xFFE0E5FF)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = event.name.firstOrNull()?.uppercase() ?: "?",
+                    style = TextStyle(
+                        color = ColorProvider(Color(0xFF394099)),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+            }
+        }
+        Spacer(GlanceModifier.height(4.dp))
+        Text(
+            text = event.name,
+            maxLines = 1,
+            style = TextStyle(
+                color = ColorProvider(textColor),
+                fontSize = nameSize,
+                fontWeight = FontWeight.Medium
+            )
+        )
+        Text(
+            text = when {
+                event.daysLeft == 0L -> "сегодня"
+                daysOnly -> "${event.daysLeft} дн."
+                else -> "${event.daysLeft} дн. · ${event.dayMonth}"
+            },
+            maxLines = 1,
+            style = TextStyle(
+                color = ColorProvider(accentColor),
+                fontSize = daysSize,
+                fontWeight = FontWeight.Bold
+            )
+        )
+    }
+}
+
+private fun presetAvatarDrawable(index: Int): Int? = when (index) {
+    1 -> R.drawable.ic_avatar_girl
+    2 -> R.drawable.ic_avatar_young_woman
+    3 -> R.drawable.ic_avatar_old_woman
+    4 -> R.drawable.ic_avatar_boy
+    5 -> R.drawable.ic_avatar_young_man
+    6 -> R.drawable.ic_avatar_old_man
+    7 -> R.drawable.ic_avatar_astronaut
+    8 -> R.drawable.ic_avatar_cat
+    else -> null
 }
 
 class EventsWidgetMiniReceiver : GlanceAppWidgetReceiver() {
