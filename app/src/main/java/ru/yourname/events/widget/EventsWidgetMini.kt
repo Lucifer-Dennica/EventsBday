@@ -149,13 +149,12 @@ private fun MiniGridContent(
         } else {
             val rows = events.chunked(2)
             Column(
-                modifier = GlanceModifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                modifier = GlanceModifier.fillMaxSize()
             ) {
                 rows.forEach { rowEvents ->
                     Row(
                         modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        verticalAlignment = Alignment.Top
                     ) {
                         rowEvents.forEach { ev ->
                             MiniTile(
@@ -168,10 +167,16 @@ private fun MiniGridContent(
                                 daysOnly = daysOnly,
                                 modifier = GlanceModifier.defaultWeight().fillMaxHeight()
                             )
+                            if (rowEvents.size > 1 && ev != rowEvents.last()) {
+                                Spacer(GlanceModifier.width(6.dp))
+                            }
                         }
                         if (rowEvents.size == 1) {
                             Spacer(GlanceModifier.defaultWeight())
                         }
+                    }
+                    if (rowEvents != rows.last()) {
+                        Spacer(GlanceModifier.height(6.dp))
                     }
                 }
             }
