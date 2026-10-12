@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import ru.yourname.events.ads.YandexBanner
 import ru.yourname.events.data.backup.BackupManager
 import ru.yourname.events.ui.components.SwipeNavigationBox
 import java.time.LocalDate
@@ -88,7 +89,7 @@ fun DataSettingsScreen(onBack: () -> Unit) {
                     onClick = { importLauncher.launch(arrayOf("application/json")) }
                 )
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(16.dp))
 
                 Text(
                     "⚠️ Экспорт сохраняет события, но не пользовательские фото — они остаются в галерее. " +
@@ -97,6 +98,14 @@ fun DataSettingsScreen(onBack: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
+
+                Spacer(Modifier.height(16.dp))
+
+                YandexBanner(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+
+                Spacer(Modifier.height(16.dp))
             }
         }
     }
