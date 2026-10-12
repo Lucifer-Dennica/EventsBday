@@ -35,6 +35,7 @@ class EventsWidgetMini : GlanceAppWidget() {
         val daysOnly = WidgetSettings.miniDaysOnlyFlow(context).first()
         val opacity = WidgetSettings.opacityFlow(context).first()
         val bgMode = WidgetSettings.bgModeFlow(context).first()
+        val textColorPref = WidgetSettings.textColorFlow(context).first()
 
         val openAppIntent = Intent(Intent.ACTION_VIEW).apply {
             data = Uri.parse("events://list")
@@ -49,6 +50,7 @@ class EventsWidgetMini : GlanceAppWidget() {
                 daysOnly = daysOnly,
                 opacity = opacity,
                 bgMode = bgMode,
+                textColorPref = textColorPref,
                 openAppIntent = openAppIntent
             )
         }
@@ -63,38 +65,48 @@ private fun MiniGridContent(
     daysOnly: Boolean,
     opacity: Int,
     bgMode: WidgetBgMode,
+    textColorPref: WidgetTextColor,
     openAppIntent: Intent
 ) {
     val baseAlpha = opacity / 100f
 
     val bgColor: Color
-    val textColor: Color
-    val subColor: Color
+    val autoTextColor: Color
     val accentColor: Color
     val cardColor: Color
 
     when (bgMode) {
         WidgetBgMode.LIGHT -> {
             bgColor = Color(0xFFF8F9FC).copy(alpha = baseAlpha)
-            textColor = Color(0xFF1A1C22)
-            subColor = Color(0xFF5B6478)
+            autoTextColor = Color(0xFF1A1C22)
             accentColor = Color(0xFF5B6BC0)
             cardColor = Color(0xFFFFFFFF).copy(alpha = baseAlpha)
         }
         WidgetBgMode.DARK -> {
             bgColor = Color(0xFF121318).copy(alpha = baseAlpha)
-            textColor = Color(0xFFE4E6EE)
-            subColor = Color(0xFFB0B6C4)
+            autoTextColor = Color(0xFFE4E6EE)
             accentColor = Color(0xFFB8C2FF)
             cardColor = Color(0xFF1C1E24).copy(alpha = baseAlpha)
         }
         WidgetBgMode.TRANSPARENT -> {
             bgColor = Color.Transparent
-            textColor = Color(0xFF1A1C22)
-            subColor = Color(0xFF5B6478)
+            autoTextColor = Color(0xFF1A1C22)
             accentColor = Color(0xFF5B6BC0)
             cardColor = Color(0x40FFFFFF)
         }
+    }
+
+    val textColor = when (textColorPref) {
+        WidgetTextColor.AUTO -> autoTextColor
+        WidgetTextColor.WHITE -> Color.White
+        WidgetTextColor.BLACK -> Color.Black
+        WidgetTextColor.BLUE -> Color(0xFF5B6BC0)
+    }
+    val daysColor = when (textColorPref) {
+        WidgetTextColor.AUTO -> accentColor
+        WidgetTextColor.WHITE -> Color.White
+        WidgetTextColor.BLACK -> Color.Black
+        WidgetTextColor.BLUE -> Color(0xFF5B6BC0)
     }
 
     val scale = fontScale / 100f
@@ -129,7 +141,7 @@ private fun MiniGridContent(
                 Text(
                     text = "Нет событий",
                     style = TextStyle(
-                        color = ColorProvider(subColor),
+                        color = ColorProvider(textColor),
                         fontSize = nameSize
                     )
                 )
@@ -150,7 +162,7 @@ private fun MiniGridContent(
                                 ev = ev,
                                 cardColor = cardColor,
                                 textColor = textColor,
-                                accentColor = accentColor,
+                                daysColor = daysColor,
                                 nameSize = nameSize,
                                 daysSize = daysSize,
                                 daysOnly = daysOnly,
@@ -172,7 +184,7 @@ private fun MiniTile(
     ev: WidgetEvent,
     cardColor: Color,
     textColor: Color,
-    accentColor: Color,
+    daysColor: Color,
     nameSize: androidx.compose.ui.unit.TextUnit,
     daysSize: androidx.compose.ui.unit.TextUnit,
     daysOnly: Boolean,
@@ -186,7 +198,6 @@ private fun MiniTile(
             modifier = GlanceModifier.padding(6.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Аватар
             val photoRes = ev.presetAvatar?.let { presetAvatarDrawable(it) }
             if (photoRes != null) {
                 Image(
@@ -214,7 +225,6 @@ private fun MiniTile(
 
             Spacer(GlanceModifier.height(4.dp))
 
-            // Имя
             Text(
                 text = ev.name,
                 style = TextStyle(
@@ -227,7 +237,6 @@ private fun MiniTile(
 
             Spacer(GlanceModifier.height(2.dp))
 
-            // Дни
             Text(
                 text = when {
                     ev.daysLeft == 0L -> "сегодня"
@@ -235,7 +244,7 @@ private fun MiniTile(
                     else -> "${ev.daysLeft} дн."
                 },
                 style = TextStyle(
-                    color = ColorProvider(accentColor),
+                    color = ColorProvider(daysColor),
                     fontSize = daysSize,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
