@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Мои События</string>
+    <string name="widget_big_desc">Ближайшие 3 события с фото и датами</string>
+    <string name="widget_mini_desc">Одно ближайшее событие</string>
 </resources>
