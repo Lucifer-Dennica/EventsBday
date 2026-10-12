@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.launch
 import ru.yourname.events.ui.components.SwipeNavigationBox
 import ru.yourname.events.widget.EventsWidget
@@ -76,7 +77,6 @@ fun WidgetSettingsScreen(onBack: () -> Unit) {
                     modifier = Modifier.padding(16.dp)
                 )
 
-                // ====== ОБЩИЕ ======
                 SectionHeader("Общие")
 
                 Text(
@@ -129,7 +129,6 @@ fun WidgetSettingsScreen(onBack: () -> Unit) {
 
                 Spacer(Modifier.height(8.dp))
 
-                // ====== БОЛЬШОЙ ВИДЖЕТ ======
                 SectionHeader("Большой виджет")
 
                 SliderRow(
@@ -204,11 +203,10 @@ fun WidgetSettingsScreen(onBack: () -> Unit) {
 
                 Spacer(Modifier.height(8.dp))
 
-                // ====== МИНИ-КАЛЕНДАРЬ ======
                 SectionHeader("Мини-календарь")
 
                 Text(
-                    "Показывает текущий месяц с отметками событий. Сегодняшний день выделен синим.",
+                    "Показывает текущий месяц с отметками событий. Сегодняшний день выделен акцентом.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
