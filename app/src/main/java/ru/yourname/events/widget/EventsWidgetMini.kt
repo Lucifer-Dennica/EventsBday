@@ -65,6 +65,7 @@ private fun MiniGridContent(
     openAppIntent: Intent
 ) {
     val baseAlpha = opacity / 100f
+
     val bgColor: Color
     val textColor: Color
     val subColor: Color
@@ -138,7 +139,8 @@ private fun MiniGridContent(
 
             Row(
                 modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalAlignment = Alignment.Top
             ) {
                 if (row1.isNotEmpty()) {
                     TileCell(
@@ -149,7 +151,7 @@ private fun MiniGridContent(
                         nameSize = nameSize,
                         daysSize = daysSize,
                         daysOnly = daysOnly,
-                        modifier = GlanceModifier.defaultWeight().fillMaxHeight()
+                        modifier = GlanceModifier.defaultWeight()
                     )
                 }
                 if (row1.size > 1) {
@@ -162,14 +164,15 @@ private fun MiniGridContent(
                         nameSize = nameSize,
                         daysSize = daysSize,
                         daysOnly = daysOnly,
-                        modifier = GlanceModifier.defaultWeight().fillMaxHeight()
+                        modifier = GlanceModifier.defaultWeight()
                     )
                 }
             }
             Spacer(GlanceModifier.height(4.dp))
             Row(
                 modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalAlignment = Alignment.Top
             ) {
                 if (row2.isNotEmpty()) {
                     TileCell(
@@ -180,7 +183,7 @@ private fun MiniGridContent(
                         nameSize = nameSize,
                         daysSize = daysSize,
                         daysOnly = daysOnly,
-                        modifier = GlanceModifier.defaultWeight().fillMaxHeight()
+                        modifier = GlanceModifier.defaultWeight()
                     )
                 }
                 if (row2.size > 1) {
@@ -193,7 +196,7 @@ private fun MiniGridContent(
                         nameSize = nameSize,
                         daysSize = daysSize,
                         daysOnly = daysOnly,
-                        modifier = GlanceModifier.defaultWeight().fillMaxHeight()
+                        modifier = GlanceModifier.defaultWeight()
                     )
                 }
             }
@@ -210,14 +213,13 @@ private fun TileCell(
     nameSize: androidx.compose.ui.unit.TextUnit,
     daysSize: androidx.compose.ui.unit.TextUnit,
     daysOnly: Boolean,
-    modifier: GlanceModifier = GlanceModifier
+    modifier: GlanceModifier
 ) {
     Column(
         modifier = modifier
             .background(cardColor)
             .padding(6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalAlignment = Alignment.CenterVertically
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         val photoRes = event.presetAvatar?.let { presetAvatarDrawable(it) }
         if (photoRes != null) {
