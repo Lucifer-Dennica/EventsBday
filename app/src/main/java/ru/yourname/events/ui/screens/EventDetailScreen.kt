@@ -24,11 +24,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import ru.yourname.events.data.model.ChecklistItem
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.model.SocialPlatform
 import ru.yourname.events.data.social.SocialUrlParser
 import ru.yourname.events.ui.components.EventAvatar
+import ru.yourname.events.ui.components.SocialIcon
 import ru.yourname.events.ui.components.ZodiacBlock
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -141,7 +141,6 @@ fun EventDetailScreen(
                 }
             }
 
-            // ЧЕК-ЛИСТ
             if (event.checklist.isNotEmpty()) {
                 HorizontalDivider()
                 Column(
@@ -217,7 +216,7 @@ fun EventDetailScreen(
                             }.padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(link.platform.emoji, style = MaterialTheme.typography.titleLarge)
+                            SocialIcon(link.platform, size = 28.dp)
                             Spacer(Modifier.width(12.dp))
                             Column {
                                 Text(link.platform.label, style = MaterialTheme.typography.labelSmall,
