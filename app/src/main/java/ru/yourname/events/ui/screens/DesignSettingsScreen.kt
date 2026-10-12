@@ -49,6 +49,9 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
     val animRespectSystem by SettingsRepository.animRespectSystemFlow(ctx).collectAsState(initial = true)
     val animMode by SettingsRepository.animModeFlow(ctx).collectAsState(initial = AnimationMode.ALL_VISIBLE)
 
+    val avatarGlow by SettingsRepository.avatarGlowFlow(ctx).collectAsState(initial = true)
+    val avatarSize by SettingsRepository.avatarSizeFlow(ctx).collectAsState(initial = 54)
+
     val inPowerSave = remember {
         val pm = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager
         pm.isPowerSaveMode
@@ -116,8 +119,66 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
+                HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
+                // ================= АВАТАР =================
+                SectionHeader("Аватар события")
+                Text(
+                    "Свечение вокруг круглой рамки и размер аватара во всех карточках",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+                )
+
+                SwitchRow(
+                    label = "Свечение вокруг аватара",
+                    checked = avatarGlow,
+                    onToggle = {
+                        scope.launch { SettingsRepository.setAvatarGlow(ctx, it) }
+                    }
+                )
+
+                Text(
+                    "Размер аватара",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
+                )
+
+                val sizeOptions = listOf(
+                    44 to "Маленький (44 dp)",
+                    54 to "Стандартный (54 dp)",
+                    64 to "Большой (64 dp)",
+                    76 to "Очень большой (76 dp)"
+                )
+                sizeOptions.forEach { (value, label) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = avatarSize == value,
+                                onClick = {
+                                    scope.launch { SettingsRepository.setAvatarSize(ctx, value) }
+                                }
+                            )
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = avatarSize == value,
+                            onClick = {
+                                scope.launch { SettingsRepository.setAvatarSize(ctx, value) }
+                            }
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(label, style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+
+                HorizontalDivider(Modifier.padding(vertical = 20.dp))
+
+                // ================= СОРТИРОВКА =================
                 SectionHeader("Сортировка списка")
                 ExposedDropdownMenuBox(
                     expanded = sortExpanded,
@@ -223,7 +284,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
                     )
-
                     AnimationMode.entries.forEach { m ->
                         Row(
                             modifier = Modifier
@@ -397,4 +457,25 @@ private fun SectionHeader(text: String) {
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
     )
+}
+
+@Composable
+private fun SwitchRow(
+    label: String,
+    checked: Boolean,
+    onToggle: (Boolean) -> Unit
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            label,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge
+        )
+        Switch(checked = checked, onCheckedChange = onToggle)
+    }
 }
