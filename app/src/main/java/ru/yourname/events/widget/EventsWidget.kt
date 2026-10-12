@@ -35,6 +35,7 @@ class EventsWidget : GlanceAppWidget() {
         val showHeader = WidgetSettings.showHeaderFlow(context).first()
         val showDate = WidgetSettings.showDateFlow(context).first()
         val bgMode = WidgetSettings.bgModeFlow(context).first()
+        val textColorPref = WidgetSettings.textColorFlow(context).first()
 
         val openAppIntent = Intent(Intent.ACTION_VIEW).apply {
             data = Uri.parse("events://list")
@@ -50,6 +51,7 @@ class EventsWidget : GlanceAppWidget() {
                 showHeader = showHeader,
                 showDate = showDate,
                 bgMode = bgMode,
+                textColorPref = textColorPref,
                 openAppIntent = openAppIntent
             )
         }
@@ -65,38 +67,58 @@ private fun WidgetContent(
     showHeader: Boolean,
     showDate: Boolean,
     bgMode: WidgetBgMode,
+    textColorPref: WidgetTextColor,
     openAppIntent: Intent
 ) {
     val baseAlpha = opacity / 100f
 
     val bgColor: Color
-    val textColor: Color
-    val subColor: Color
+    val autoTextColor: Color
+    val autoSubColor: Color
     val accentColor: Color
     val cardColor: Color
 
     when (bgMode) {
         WidgetBgMode.LIGHT -> {
             bgColor = Color(0xFFF8F9FC).copy(alpha = baseAlpha)
-            textColor = Color(0xFF1A1C22)
-            subColor = Color(0xFF5B6478)
+            autoTextColor = Color(0xFF1A1C22)
+            autoSubColor = Color(0xFF5B6478)
             accentColor = Color(0xFF5B6BC0)
             cardColor = Color(0xFFFFFFFF).copy(alpha = baseAlpha)
         }
         WidgetBgMode.DARK -> {
             bgColor = Color(0xFF121318).copy(alpha = baseAlpha)
-            textColor = Color(0xFFE4E6EE)
-            subColor = Color(0xFFB0B6C4)
+            autoTextColor = Color(0xFFE4E6EE)
+            autoSubColor = Color(0xFFB0B6C4)
             accentColor = Color(0xFFB8C2FF)
             cardColor = Color(0xFF1C1E24).copy(alpha = baseAlpha)
         }
         WidgetBgMode.TRANSPARENT -> {
             bgColor = Color.Transparent
-            textColor = Color(0xFF1A1C22)
-            subColor = Color(0xFF5B6478)
+            autoTextColor = Color(0xFF1A1C22)
+            autoSubColor = Color(0xFF5B6478)
             accentColor = Color(0xFF5B6BC0)
             cardColor = Color(0x40FFFFFF)
         }
+    }
+
+    val textColor = when (textColorPref) {
+        WidgetTextColor.AUTO -> autoTextColor
+        WidgetTextColor.WHITE -> Color.White
+        WidgetTextColor.BLACK -> Color.Black
+        WidgetTextColor.BLUE -> Color(0xFF5B6BC0)
+    }
+    val subColor = when (textColorPref) {
+        WidgetTextColor.AUTO -> autoSubColor
+        WidgetTextColor.WHITE -> Color.White.copy(alpha = 0.8f)
+        WidgetTextColor.BLACK -> Color.Black.copy(alpha = 0.7f)
+        WidgetTextColor.BLUE -> Color(0xFF5B6BC0).copy(alpha = 0.8f)
+    }
+    val daysColor = when (textColorPref) {
+        WidgetTextColor.AUTO -> accentColor
+        WidgetTextColor.WHITE -> Color.White
+        WidgetTextColor.BLACK -> Color.Black
+        WidgetTextColor.BLUE -> Color(0xFF5B6BC0)
     }
 
     val scale = fontScale / 100f
@@ -194,7 +216,7 @@ private fun WidgetContent(
                                 else -> ev.daysLeft.toString()
                             },
                             style = TextStyle(
-                                color = ColorProvider(accentColor),
+                                color = ColorProvider(daysColor),
                                 fontSize = daysSize,
                                 fontWeight = FontWeight.Bold
                             )
