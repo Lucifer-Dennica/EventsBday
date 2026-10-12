@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import ru.yourname.events.ads.YandexBanner
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.data.settings.SwipeAction
 import ru.yourname.events.ui.components.SwipeNavigationBox
@@ -107,7 +108,15 @@ fun BehaviorSettingsScreen(onBack: () -> Unit) {
                     }
                 )
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(16.dp))
+
+                YandexBanner(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                )
+
+                Spacer(Modifier.height(16.dp))
             }
         }
     }
