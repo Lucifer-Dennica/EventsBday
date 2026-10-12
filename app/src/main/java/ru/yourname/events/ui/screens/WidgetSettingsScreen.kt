@@ -16,6 +16,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.launch
+import ru.yourname.events.data.model.Event
+import ru.yourname.events.ui.components.BigWidgetPreview
+import ru.yourname.events.ui.components.MiniWidgetPreview
 import ru.yourname.events.ui.components.SwipeNavigationBox
 import ru.yourname.events.widget.EventsWidget
 import ru.yourname.events.widget.EventsWidgetMini
@@ -24,7 +27,10 @@ import ru.yourname.events.widget.WidgetSettings
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WidgetSettingsScreen(onBack: () -> Unit) {
+fun WidgetSettingsScreen(
+    events: List<Event>,
+    onBack: () -> Unit
+) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -86,7 +92,7 @@ fun WidgetSettingsScreen(onBack: () -> Unit) {
             ) {
 
                 Text(
-                    "Виджеты добавляются через долгое нажатие на пустой области рабочего стола → «Виджеты». Если изменения не видны — нажмите «Обновить виджеты».",
+                    "Изменения в настройках сразу видны на предпросмотре ниже. На рабочем столе виджет обновится в течение 5–30 секунд или нажмите кнопку «Обновить».",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(16.dp)
@@ -100,7 +106,36 @@ fun WidgetSettingsScreen(onBack: () -> Unit) {
                 ) {
                     Icon(Icons.Default.Refresh, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Обновить виджеты сейчас")
+                    Text("Обновить виджеты на рабочем столе")
+                }
+
+                SectionHeader("Предпросмотр большого виджета")
+                Box(Modifier.padding(horizontal = 16.dp)) {
+                    BigWidgetPreview(
+                        events = events,
+                        fontScale = fontScale,
+                        opacity = opacity,
+                        photoSize = photoSize,
+                        showHeader = showHeader,
+                        showDate = showDate,
+                        bgMode = bgMode
+                    )
+                }
+
+                SectionHeader("Предпросмотр мини-виджета")
+                Box(
+                    Modifier
+                        .padding(horizontal = 16.dp)
+                        .width(180.dp)
+                ) {
+                    MiniWidgetPreview(
+                        events = events,
+                        fontScale = miniFontScale,
+                        opacity = opacity,
+                        showHeader = miniShowHeader,
+                        daysOnly = miniDaysOnly,
+                        bgMode = bgMode
+                    )
                 }
 
                 SectionHeader("Общие")
