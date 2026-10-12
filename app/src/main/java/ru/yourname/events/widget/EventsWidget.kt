@@ -68,6 +68,7 @@ private fun WidgetContent(
     openAppIntent: Intent
 ) {
     val baseAlpha = opacity / 100f
+
     val bgColor: Color
     val textColor: Color
     val subColor: Color
@@ -171,8 +172,7 @@ private fun WidgetContent(
                             style = TextStyle(
                                 color = ColorProvider(textColor),
                                 fontSize = nameSize,
-                                fontWeight = FontWeight.Medium,
-                                maxLines = 1
+                                fontWeight = FontWeight.Medium
                             )
                         )
                         if (showDate) {
@@ -180,8 +180,7 @@ private fun WidgetContent(
                                 text = ev.dayMonth,
                                 style = TextStyle(
                                     color = ColorProvider(subColor),
-                                    fontSize = subSize,
-                                    maxLines = 1
+                                    fontSize = subSize
                                 )
                             )
                         }
