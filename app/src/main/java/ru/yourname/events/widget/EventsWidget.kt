@@ -1,14 +1,19 @@
 package ru.yourname.events.widget
 
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.*
@@ -32,8 +37,14 @@ class EventsWidget : GlanceAppWidget() {
         val showAge = WidgetSettings.showAgeFlow(context).first()
         val bgMode = WidgetSettings.bgModeFlow(context).first()
 
+        val openAppIntent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("events://list")
+            setPackage(context.packageName)
+        }
+
         provideContent {
             WidgetContent(
+                context = context,
                 events = events,
                 fontScale = fontScale,
                 opacity = opacity,
@@ -42,7 +53,8 @@ class EventsWidget : GlanceAppWidget() {
                 showDate = showDate,
                 showGroup = showGroup,
                 showAge = showAge,
-                bgMode = bgMode
+                bgMode = bgMode,
+                openAppIntent = openAppIntent
             )
         }
     }
@@ -50,6 +62,7 @@ class EventsWidget : GlanceAppWidget() {
 
 @Composable
 private fun WidgetContent(
+    context: Context,
     events: List<WidgetEvent>,
     fontScale: Int,
     opacity: Int,
@@ -58,7 +71,8 @@ private fun WidgetContent(
     showDate: Boolean,
     showGroup: Boolean,
     showAge: Boolean,
-    bgMode: WidgetBgMode
+    bgMode: WidgetBgMode,
+    openAppIntent: Intent
 ) {
     val baseAlpha = opacity / 100f
 
@@ -94,6 +108,7 @@ private fun WidgetContent(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(bgColor)
+            .clickable(actionStartActivity(openAppIntent))
             .padding(12.dp)
     ) {
         if (showHeader) {
@@ -122,7 +137,6 @@ private fun WidgetContent(
                     modifier = GlanceModifier.fillMaxWidth().padding(vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Фото или инициал
                     val photoRes = ev.presetAvatar?.let { presetAvatarDrawable(it) }
                     if (photoRes != null) {
                         androidx.glance.Image(
