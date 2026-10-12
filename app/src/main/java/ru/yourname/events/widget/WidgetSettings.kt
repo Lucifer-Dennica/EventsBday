@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.map
 private val Context.widgetStore: DataStore<Preferences> by preferencesDataStore("widget_settings")
 
 enum class WidgetBgMode(val label: String) {
-    SYSTEM("Как в теме"),
     LIGHT("Светлый"),
     DARK("Тёмный"),
     TRANSPARENT("Прозрачный")
@@ -27,11 +26,10 @@ object WidgetSettings {
     private val KEY_PHOTO_SIZE = intPreferencesKey("widget_photo_size")
     private val KEY_SHOW_HEADER = booleanPreferencesKey("widget_show_header")
     private val KEY_SHOW_DATE = booleanPreferencesKey("widget_show_date")
-    private val KEY_SHOW_GROUP = booleanPreferencesKey("widget_show_group")
-    private val KEY_SHOW_AGE = booleanPreferencesKey("widget_show_age")
     private val KEY_BG_MODE = stringPreferencesKey("widget_bg_mode")
     private val KEY_MINI_FONT_SCALE = intPreferencesKey("widget_mini_font_scale")
     private val KEY_MINI_SHOW_HEADER = booleanPreferencesKey("widget_mini_show_header")
+    private val KEY_MINI_DAYS_ONLY = booleanPreferencesKey("widget_mini_days_only")
 
     // Большой виджет
     fun fontScaleFlow(ctx: Context): Flow<Int> =
@@ -43,13 +41,13 @@ object WidgetSettings {
     fun opacityFlow(ctx: Context): Flow<Int> =
         ctx.widgetStore.data.map { it[KEY_OPACITY] ?: 100 }
     suspend fun setOpacity(ctx: Context, v: Int) {
-        ctx.widgetStore.edit { it[KEY_OPACITY] = v.coerceIn(20, 100) }
+        ctx.widgetStore.edit { it[KEY_OPACITY] = v.coerceIn(40, 100) }
     }
 
     fun photoSizeFlow(ctx: Context): Flow<Int> =
-        ctx.widgetStore.data.map { it[KEY_PHOTO_SIZE] ?: 48 }
+        ctx.widgetStore.data.map { it[KEY_PHOTO_SIZE] ?: 44 }
     suspend fun setPhotoSize(ctx: Context, v: Int) {
-        ctx.widgetStore.edit { it[KEY_PHOTO_SIZE] = v.coerceIn(32, 72) }
+        ctx.widgetStore.edit { it[KEY_PHOTO_SIZE] = v.coerceIn(32, 64) }
     }
 
     fun showHeaderFlow(ctx: Context): Flow<Boolean> =
@@ -64,27 +62,15 @@ object WidgetSettings {
         ctx.widgetStore.edit { it[KEY_SHOW_DATE] = v }
     }
 
-    fun showGroupFlow(ctx: Context): Flow<Boolean> =
-        ctx.widgetStore.data.map { it[KEY_SHOW_GROUP] ?: true }
-    suspend fun setShowGroup(ctx: Context, v: Boolean) {
-        ctx.widgetStore.edit { it[KEY_SHOW_GROUP] = v }
-    }
-
-    fun showAgeFlow(ctx: Context): Flow<Boolean> =
-        ctx.widgetStore.data.map { it[KEY_SHOW_AGE] ?: true }
-    suspend fun setShowAge(ctx: Context, v: Boolean) {
-        ctx.widgetStore.edit { it[KEY_SHOW_AGE] = v }
-    }
-
     fun bgModeFlow(ctx: Context): Flow<WidgetBgMode> = ctx.widgetStore.data.map { prefs ->
         prefs[KEY_BG_MODE]?.let { runCatching { WidgetBgMode.valueOf(it) }.getOrNull() }
-            ?: WidgetBgMode.SYSTEM
+            ?: WidgetBgMode.LIGHT
     }
     suspend fun setBgMode(ctx: Context, mode: WidgetBgMode) {
         ctx.widgetStore.edit { it[KEY_BG_MODE] = mode.name }
     }
 
-    // Мини-календарь
+    // Мини-виджет (2x2 плитки)
     fun miniFontScaleFlow(ctx: Context): Flow<Int> =
         ctx.widgetStore.data.map { it[KEY_MINI_FONT_SCALE] ?: 100 }
     suspend fun setMiniFontScale(ctx: Context, v: Int) {
@@ -95,5 +81,11 @@ object WidgetSettings {
         ctx.widgetStore.data.map { it[KEY_MINI_SHOW_HEADER] ?: true }
     suspend fun setMiniShowHeader(ctx: Context, v: Boolean) {
         ctx.widgetStore.edit { it[KEY_MINI_SHOW_HEADER] = v }
+    }
+
+    fun miniDaysOnlyFlow(ctx: Context): Flow<Boolean> =
+        ctx.widgetStore.data.map { it[KEY_MINI_DAYS_ONLY] ?: true }
+    suspend fun setMiniDaysOnly(ctx: Context, v: Boolean) {
+        ctx.widgetStore.edit { it[KEY_MINI_DAYS_ONLY] = v }
     }
 }
