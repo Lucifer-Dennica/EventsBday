@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -26,6 +27,8 @@ import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.data.settings.SortMode
 import ru.yourname.events.data.settings.SwipeAction
 import ru.yourname.events.data.settings.ViewMode
+import ru.yourname.events.ui.components.AvatarConfig
+import ru.yourname.events.ui.components.LocalAvatarConfig
 import ru.yourname.events.ui.screens.AboutScreen
 import ru.yourname.events.ui.screens.AddEventScreen
 import ru.yourname.events.ui.screens.BehaviorSettingsScreen
@@ -78,6 +81,9 @@ fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
     val animRespectSystem by SettingsRepository.animRespectSystemFlow(ctx).collectAsState(initial = true)
     val animMode by SettingsRepository.animModeFlow(ctx).collectAsState(initial = AnimationMode.ALL_VISIBLE)
 
+    val avatarGlow by SettingsRepository.avatarGlowFlow(ctx).collectAsState(initial = true)
+    val avatarSize by SettingsRepository.avatarSizeFlow(ctx).collectAsState(initial = 54)
+
     val animationsAllowed = remember(animEnabled, animBatterySaver, animRespectSystem, animMode) {
         if (!animEnabled || animMode == AnimationMode.OFF) {
             false
@@ -105,118 +111,122 @@ fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
         InterstitialManager.preload(ctx)
     }
 
-    // Автообновление виджетов при любом изменении событий (добавление/удаление/редактирование)
+    // Автообновление виджетов при изменении событий
     LaunchedEffect(events) {
         runCatching { EventsWidget().updateAll(ctx) }
         runCatching { EventsWidgetMini().updateAll(ctx) }
     }
 
-    NavHost(navController = nav, startDestination = startRoute) {
+    CompositionLocalProvider(
+        LocalAvatarConfig provides AvatarConfig(glow = avatarGlow, size = avatarSize)
+    ) {
+        NavHost(navController = nav, startDestination = startRoute) {
 
-        composable(Routes.LIST) {
-            EventListScreen(
-                events = events,
-                swipesEnabled = swipes,
-                swipeLeftAction = swipeLeft,
-                swipeRightAction = swipeRight,
-                swipeToSettingsEnabled = swipeToSettings,
-                sortMode = sortMode,
-                viewMode = viewMode,
-                calendarMarkStyle = calMark,
-                animationsAllowed = animationsAllowed,
-                onToggleViewMode = {
-                    scope.launch {
-                        SettingsRepository.setViewMode(
-                            ctx,
-                            if (viewMode == ViewMode.LIST) ViewMode.CALENDAR else ViewMode.LIST
-                        )
-                    }
-                },
-                onAddClick = { nav.navigate(Routes.ADD) },
-                onEventClick = { event ->
-                    scope.launch {
-                        val count = SettingsRepository.incrementCardOpens(ctx)
-                        if (count % AdsConfig.INTERSTITIAL_EVERY_N_OPENS == 0) {
-                            val activity = ctx as? Activity
-                            if (activity != null) {
-                                InterstitialManager.showIfReady(activity) {
-                                    InterstitialManager.preload(ctx)
+            composable(Routes.LIST) {
+                EventListScreen(
+                    events = events,
+                    swipesEnabled = swipes,
+                    swipeLeftAction = swipeLeft,
+                    swipeRightAction = swipeRight,
+                    swipeToSettingsEnabled = swipeToSettings,
+                    sortMode = sortMode,
+                    viewMode = viewMode,
+                    calendarMarkStyle = calMark,
+                    animationsAllowed = animationsAllowed,
+                    onToggleViewMode = {
+                        scope.launch {
+                            SettingsRepository.setViewMode(
+                                ctx,
+                                if (viewMode == ViewMode.LIST) ViewMode.CALENDAR else ViewMode.LIST
+                            )
+                        }
+                    },
+                    onAddClick = { nav.navigate(Routes.ADD) },
+                    onEventClick = { event ->
+                        scope.launch {
+                            val count = SettingsRepository.incrementCardOpens(ctx)
+                            if (count % AdsConfig.INTERSTITIAL_EVERY_N_OPENS == 0) {
+                                val activity = ctx as? Activity
+                                if (activity != null) {
+                                    InterstitialManager.showIfReady(activity) {
+                                        InterstitialManager.preload(ctx)
+                                    }
                                 }
                             }
                         }
-                    }
-                    nav.navigate(Routes.detail(event.id))
-                },
-                onImportContacts = { vm.importFromContacts { } },
-                onOpenSettings = { nav.navigate(Routes.SETTINGS) },
-                onDeleteMany = { vm.deleteMany(it) },
-                onToggleNotifications = { vm.toggleNotifications(it) },
-                onTogglePin = { vm.togglePin(it) },
-                onEditEvent = { nav.navigate(Routes.edit(it.id)) }
-            )
-        }
+                        nav.navigate(Routes.detail(event.id))
+                    },
+                    onImportContacts = { vm.importFromContacts { } },
+                    onOpenSettings = { nav.navigate(Routes.SETTINGS) },
+                    onDeleteMany = { vm.deleteMany(it) },
+                    onToggleNotifications = { vm.toggleNotifications(it) },
+                    onTogglePin = { vm.togglePin(it) },
+                    onEditEvent = { nav.navigate(Routes.edit(it.id)) }
+                )
+            }
 
-        composable(Routes.ADD) {
-            AddEventScreen(editing = null,
-                onSave = {
-                    vm.addOrUpdate(it)
-                    scope.launch { SettingsRepository.incrementEventsCreated(ctx) }
-                    nav.popBackStack()
-                },
-                onBack = { nav.popBackStack() })
-        }
+            composable(Routes.ADD) {
+                AddEventScreen(editing = null,
+                    onSave = {
+                        vm.addOrUpdate(it)
+                        scope.launch { SettingsRepository.incrementEventsCreated(ctx) }
+                        nav.popBackStack()
+                    },
+                    onBack = { nav.popBackStack() })
+            }
 
-        composable(Routes.EDIT, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
-            val id = entry.arguments?.getLong("id") ?: return@composable
-            val event = events.find { it.id == id }
-            if (event == null) { LaunchedEffect(Unit) { nav.popBackStack() }; return@composable }
-            AddEventScreen(editing = event,
-                onSave = { vm.addOrUpdate(it); nav.popBackStack() },
-                onBack = { nav.popBackStack() })
-        }
+            composable(Routes.EDIT, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
+                val id = entry.arguments?.getLong("id") ?: return@composable
+                val event = events.find { it.id == id }
+                if (event == null) { LaunchedEffect(Unit) { nav.popBackStack() }; return@composable }
+                AddEventScreen(editing = event,
+                    onSave = { vm.addOrUpdate(it); nav.popBackStack() },
+                    onBack = { nav.popBackStack() })
+            }
 
-        composable(Routes.DETAIL, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
-            val id = entry.arguments?.getLong("id") ?: return@composable
-            val event = events.find { it.id == id }
-            if (event == null) { LaunchedEffect(Unit) { nav.popBackStack() }; return@composable }
-            EventDetailScreen(
-                event = event,
-                onEdit = { nav.navigate(Routes.edit(event.id)) },
-                onDelete = { vm.delete(event); nav.popBackStack() },
-                onUpdate = { vm.addOrUpdate(it) },
-                onBack = { nav.popBackStack() }
-            )
-        }
+            composable(Routes.DETAIL, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
+                val id = entry.arguments?.getLong("id") ?: return@composable
+                val event = events.find { it.id == id }
+                if (event == null) { LaunchedEffect(Unit) { nav.popBackStack() }; return@composable }
+                EventDetailScreen(
+                    event = event,
+                    onEdit = { nav.navigate(Routes.edit(event.id)) },
+                    onDelete = { vm.delete(event); nav.popBackStack() },
+                    onUpdate = { vm.addOrUpdate(it) },
+                    onBack = { nav.popBackStack() }
+                )
+            }
 
-        composable(Routes.SETTINGS) {
-            SettingsScreen(
-                onBack = { nav.popBackStack() },
-                onOpenDesign = { nav.navigate(Routes.SETTINGS_DESIGN) },
-                onOpenNotifications = { nav.navigate(Routes.SETTINGS_NOTIF) },
-                onOpenBehavior = { nav.navigate(Routes.SETTINGS_BEHAVIOR) },
-                onOpenWidgets = { nav.navigate(Routes.SETTINGS_WIDGETS) },
-                onOpenData = { nav.navigate(Routes.SETTINGS_DATA) },
-                onOpenAbout = { nav.navigate(Routes.SETTINGS_ABOUT) },
-                onOpenStats = { nav.navigate(Routes.SETTINGS_STATS) }
-            )
-        }
+            composable(Routes.SETTINGS) {
+                SettingsScreen(
+                    onBack = { nav.popBackStack() },
+                    onOpenDesign = { nav.navigate(Routes.SETTINGS_DESIGN) },
+                    onOpenNotifications = { nav.navigate(Routes.SETTINGS_NOTIF) },
+                    onOpenBehavior = { nav.navigate(Routes.SETTINGS_BEHAVIOR) },
+                    onOpenWidgets = { nav.navigate(Routes.SETTINGS_WIDGETS) },
+                    onOpenData = { nav.navigate(Routes.SETTINGS_DATA) },
+                    onOpenAbout = { nav.navigate(Routes.SETTINGS_ABOUT) },
+                    onOpenStats = { nav.navigate(Routes.SETTINGS_STATS) }
+                )
+            }
 
-        composable(Routes.SETTINGS_DESIGN) { DesignSettingsScreen(onBack = { nav.popBackStack() }) }
-        composable(Routes.SETTINGS_NOTIF) { NotificationsSettingsScreen(onBack = { nav.popBackStack() }) }
-        composable(Routes.SETTINGS_BEHAVIOR) { BehaviorSettingsScreen(onBack = { nav.popBackStack() }) }
-        composable(Routes.SETTINGS_WIDGETS) {
-            WidgetSettingsScreen(
-                events = events,
-                onBack = { nav.popBackStack() }
-            )
+            composable(Routes.SETTINGS_DESIGN) { DesignSettingsScreen(onBack = { nav.popBackStack() }) }
+            composable(Routes.SETTINGS_NOTIF) { NotificationsSettingsScreen(onBack = { nav.popBackStack() }) }
+            composable(Routes.SETTINGS_BEHAVIOR) { BehaviorSettingsScreen(onBack = { nav.popBackStack() }) }
+            composable(Routes.SETTINGS_WIDGETS) {
+                WidgetSettingsScreen(
+                    events = events,
+                    onBack = { nav.popBackStack() }
+                )
+            }
+            composable(Routes.SETTINGS_STATS) {
+                StatsScreen(
+                    events = events,
+                    onBack = { nav.popBackStack() }
+                )
+            }
+            composable(Routes.SETTINGS_DATA) { DataSettingsScreen(onBack = { nav.popBackStack() }) }
+            composable(Routes.SETTINGS_ABOUT) { AboutScreen(onBack = { nav.popBackStack() }) }
         }
-        composable(Routes.SETTINGS_STATS) {
-            StatsScreen(
-                events = events,
-                onBack = { nav.popBackStack() }
-            )
-        }
-        composable(Routes.SETTINGS_DATA) { DataSettingsScreen(onBack = { nav.popBackStack() }) }
-        composable(Routes.SETTINGS_ABOUT) { AboutScreen(onBack = { nav.popBackStack() }) }
     }
 }
