@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -13,11 +12,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,7 +48,6 @@ fun BigWidgetPreview(
     val alpha = opacity / 100f
     val (bgColor, textColor, subColor, accentColor, cardColor) = widgetColors(bgMode, alpha)
 
-    // Внешний контейнер "рабочего стола"
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -81,7 +79,6 @@ fun BigWidgetPreview(
                 )
             } else {
                 previewEvents.forEachIndexed { idx, ev ->
-                    // Карточка события
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -182,7 +179,6 @@ fun MiniWidgetPreview(
                     )
                 }
             } else {
-                // 2 x 2 сетка плиток
                 val rows = previewEvents.chunked(2)
                 Column(
                     Modifier.fillMaxSize(),
@@ -194,18 +190,16 @@ fun MiniWidgetPreview(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             rowEvents.forEach { ev ->
-                                MiniTile(
+                                MiniTilePreview(
                                     ev = ev,
                                     cardColor = cardColor,
                                     textColor = textColor,
-                                    subColor = subColor,
                                     accentColor = accentColor,
                                     fontScale = fontScale,
                                     daysOnly = daysOnly,
                                     modifier = Modifier.weight(1f).fillMaxHeight()
                                 )
                             }
-                            // Если в ряду один элемент — растягиваем его на всю ширину
                             if (rowEvents.size == 1) {
                                 Spacer(Modifier.weight(1f))
                             }
@@ -218,34 +212,37 @@ fun MiniWidgetPreview(
 }
 
 @Composable
-private fun MiniTile(
+private fun MiniTilePreview(
     ev: PreviewEvent,
     cardColor: Color,
     textColor: Color,
-    subColor: Color,
     accentColor: Color,
     fontScale: Int,
     daysOnly: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    Box(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(cardColor)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .background(cardColor),
+        contentAlignment = Alignment.Center
     ) {
-        AvatarPreview(ev.presetAvatar, ev.name, 34)
-        Spacer(Modifier.width(8.dp))
-        Column(Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier.padding(6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            AvatarPreview(ev.presetAvatar, ev.name, 32)
+            Spacer(Modifier.height(4.dp))
             Text(
                 text = ev.name,
                 color = textColor,
-                fontSize = (12f * fontScale / 100f).sp,
-                fontWeight = FontWeight.SemiBold,
+                fontSize = (10f * fontScale / 100f).sp,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            Spacer(Modifier.height(2.dp))
             Text(
                 text = when {
                     ev.daysLeft == 0L -> "сегодня"
@@ -253,7 +250,7 @@ private fun MiniTile(
                     else -> "${ev.daysLeft} дн."
                 },
                 color = accentColor,
-                fontSize = (14f * fontScale / 100f).sp,
+                fontSize = (15f * fontScale / 100f).sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -265,19 +262,16 @@ private fun MiniTile(
 @Composable
 private fun AvatarPreview(preset: Int?, name: String, size: Int) {
     val resId = preset?.let { presetAvatarDrawable(it) }
-    // Мягкое розовое свечение вокруг — как на мокапе
     Box(
         modifier = Modifier.size((size + 6).dp),
         contentAlignment = Alignment.Center
     ) {
-        // Свечение
         Box(
             modifier = Modifier
                 .size((size + 6).dp)
                 .clip(CircleShape)
                 .background(Color(0x33F48FB1))
         )
-        // Сам аватар
         if (resId != null) {
             Image(
                 painter = painterResource(resId),
