@@ -28,6 +28,9 @@ object SettingsRepository {
     private val KEY_CAL_MARK = stringPreferencesKey("calendar_mark_style")
     private val KEY_APP_ICON = stringPreferencesKey("app_icon")
 
+    private val KEY_AVATAR_GLOW = booleanPreferencesKey("avatar_glow")
+    private val KEY_AVATAR_SIZE = intPreferencesKey("avatar_size")
+
     private val KEY_ANIM_ENABLED = booleanPreferencesKey("anim_enabled")
     private val KEY_ANIM_BATTERY_SAVER = booleanPreferencesKey("anim_battery_saver")
     private val KEY_ANIM_RESPECT_SYSTEM = booleanPreferencesKey("anim_respect_system")
@@ -59,6 +62,19 @@ object SettingsRepository {
     }
     suspend fun setAppIcon(ctx: Context, icon: AppIcon) {
         ctx.settingsStore.edit { it[KEY_APP_ICON] = icon.name }
+    }
+
+    // АВАТАР
+    fun avatarGlowFlow(ctx: Context): Flow<Boolean> =
+        ctx.settingsStore.data.map { it[KEY_AVATAR_GLOW] ?: true }
+    suspend fun setAvatarGlow(ctx: Context, v: Boolean) {
+        ctx.settingsStore.edit { it[KEY_AVATAR_GLOW] = v }
+    }
+
+    fun avatarSizeFlow(ctx: Context): Flow<Int> =
+        ctx.settingsStore.data.map { it[KEY_AVATAR_SIZE] ?: 54 }
+    suspend fun setAvatarSize(ctx: Context, v: Int) {
+        ctx.settingsStore.edit { it[KEY_AVATAR_SIZE] = v.coerceIn(44, 80) }
     }
 
     // АНИМАЦИИ
