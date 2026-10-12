@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,7 +36,8 @@ fun SettingsScreen(
     onOpenBehavior: () -> Unit,
     onOpenData: () -> Unit,
     onOpenAbout: () -> Unit,
-    onOpenStats: () -> Unit
+    onOpenStats: () -> Unit,
+    onOpenWidgets: () -> Unit
 ) {
     val ctx = LocalContext.current
     fun open(url: String) {
@@ -62,11 +64,13 @@ fun SettingsScreen(
             Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
 
                 NavItemVector(Icons.Default.Palette, "Дизайн",
-                    "Тема, сортировка, анимации, иконка приложения", onOpenDesign)
+                    "Тема, сортировка, анимации, иконка", onOpenDesign)
                 NavItemVector(Icons.Default.Notifications, "Уведомления",
                     "Частота, время, выбор событий", onOpenNotifications)
                 NavItemVector(Icons.Default.TouchApp, "Поведение",
                     "Свайпы и жесты", onOpenBehavior)
+                NavItemVector(Icons.Default.Widgets, "Виджеты",
+                    "Настройки внешнего вида виджетов", onOpenWidgets)
                 NavItemVector(Icons.Default.BarChart, "Статистика",
                     "Цифры о ваших событиях", onOpenStats)
                 NavItemVector(Icons.Default.Storage, "Данные",
