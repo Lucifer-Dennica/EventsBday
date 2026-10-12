@@ -51,7 +51,6 @@ fun EventCard(
     val animOverride = if (playAnimation) event.animation.backgroundOverride else null
     val hasAnimOverride = animOverride != null
 
-    // Верхний приоритет: анимация с override > пользовательский цвет > preset-цвет > тема
     val customBrush = if (hasCustomColor) customColorBrush(event.customColorHex) else null
     val customPrimary = if (hasCustomColor) customColorPrimary(event.customColorHex) else null
 
@@ -62,7 +61,6 @@ fun EventCard(
         else -> MaterialTheme.colorScheme.surface
     }
 
-    // Текст: если фон тёмный — светлый, иначе тёмный/по теме
     val isDarkBg = when {
         hasAnimOverride -> true
         hasCustomColor && customPrimary != null -> !customPrimary.isLight()
@@ -139,7 +137,8 @@ fun EventCard(
                     Spacer(Modifier.width(10.dp))
                 }
 
-                EventAvatar(event, size = 54.dp, accentColor = accentOnCard)
+                // Размер и свечение аватара берутся из LocalAvatarConfig
+                EventAvatar(event, accentColor = accentOnCard)
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
