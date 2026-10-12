@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.launch
+import ru.yourname.events.ads.YandexBanner
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.ui.components.BigWidgetPreview
 import ru.yourname.events.ui.components.MiniWidgetPreview
@@ -279,7 +280,13 @@ fun WidgetSettingsScreen(
                     }
                 )
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(16.dp))
+
+                YandexBanner(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+
+                Spacer(Modifier.height(16.dp))
             }
         }
     }
