@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import ru.yourname.events.R
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.widget.WidgetBgMode
+import ru.yourname.events.widget.WidgetTextColor
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
@@ -42,11 +42,15 @@ fun BigWidgetPreview(
     photoSize: Int,
     showHeader: Boolean,
     showDate: Boolean,
-    bgMode: WidgetBgMode
+    bgMode: WidgetBgMode,
+    textColorPref: WidgetTextColor
 ) {
     val previewEvents = rememberPreview(events, 3)
     val alpha = opacity / 100f
-    val (bgColor, textColor, subColor, accentColor, cardColor) = widgetColors(bgMode, alpha)
+    val (bgColor, autoText, autoSub, accent, cardColor) = widgetColors(bgMode, alpha)
+    val textColor = resolveText(textColorPref, autoText)
+    val subColor = resolveSub(textColorPref, autoSub)
+    val daysColor = resolveAccent(textColorPref, accent)
 
     Box(
         modifier = Modifier
@@ -115,7 +119,7 @@ fun BigWidgetPreview(
                                     0L -> "сегодня"
                                     else -> ev.daysLeft.toString()
                                 },
-                                color = accentColor,
+                                color = daysColor,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = (18f * fontScale / 100f).sp
                             )
@@ -144,11 +148,14 @@ fun MiniWidgetPreview(
     opacity: Int,
     showHeader: Boolean,
     daysOnly: Boolean,
-    bgMode: WidgetBgMode
+    bgMode: WidgetBgMode,
+    textColorPref: WidgetTextColor
 ) {
     val previewEvents = rememberPreview(events, 4)
     val alpha = opacity / 100f
-    val (bgColor, textColor, subColor, accentColor, cardColor) = widgetColors(bgMode, alpha)
+    val (bgColor, autoText, autoSub, accent, cardColor) = widgetColors(bgMode, alpha)
+    val textColor = resolveText(textColorPref, autoText)
+    val daysColor = resolveAccent(textColorPref, accent)
 
     Box(
         modifier = Modifier
@@ -174,7 +181,7 @@ fun MiniWidgetPreview(
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
                         text = "Нет событий",
-                        color = subColor,
+                        color = textColor,
                         fontSize = (12f * fontScale / 100f).sp
                     )
                 }
@@ -194,7 +201,7 @@ fun MiniWidgetPreview(
                                     ev = ev,
                                     cardColor = cardColor,
                                     textColor = textColor,
-                                    accentColor = accentColor,
+                                    daysColor = daysColor,
                                     fontScale = fontScale,
                                     daysOnly = daysOnly,
                                     modifier = Modifier.weight(1f).fillMaxHeight()
@@ -216,7 +223,7 @@ private fun MiniTilePreview(
     ev: PreviewEvent,
     cardColor: Color,
     textColor: Color,
-    accentColor: Color,
+    daysColor: Color,
     fontScale: Int,
     daysOnly: Boolean,
     modifier: Modifier = Modifier
@@ -249,7 +256,7 @@ private fun MiniTilePreview(
                     daysOnly -> "${ev.daysLeft} дн."
                     else -> "${ev.daysLeft} дн."
                 },
-                color = accentColor,
+                color = daysColor,
                 fontSize = (15f * fontScale / 100f).sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -316,6 +323,27 @@ private fun rememberPreview(events: List<Event>, limit: Int): List<PreviewEvent>
                 presetAvatar = e.presetAvatar
             )
         }
+}
+
+private fun resolveText(pref: WidgetTextColor, auto: Color): Color = when (pref) {
+    WidgetTextColor.AUTO -> auto
+    WidgetTextColor.WHITE -> Color.White
+    WidgetTextColor.BLACK -> Color.Black
+    WidgetTextColor.BLUE -> Color(0xFF5B6BC0)
+}
+
+private fun resolveSub(pref: WidgetTextColor, auto: Color): Color = when (pref) {
+    WidgetTextColor.AUTO -> auto
+    WidgetTextColor.WHITE -> Color.White.copy(alpha = 0.8f)
+    WidgetTextColor.BLACK -> Color.Black.copy(alpha = 0.7f)
+    WidgetTextColor.BLUE -> Color(0xFF5B6BC0).copy(alpha = 0.8f)
+}
+
+private fun resolveAccent(pref: WidgetTextColor, auto: Color): Color = when (pref) {
+    WidgetTextColor.AUTO -> auto
+    WidgetTextColor.WHITE -> Color.White
+    WidgetTextColor.BLACK -> Color.Black
+    WidgetTextColor.BLUE -> Color(0xFF5B6BC0)
 }
 
 private fun widgetColors(mode: WidgetBgMode, alpha: Float): List<Color> = when (mode) {
