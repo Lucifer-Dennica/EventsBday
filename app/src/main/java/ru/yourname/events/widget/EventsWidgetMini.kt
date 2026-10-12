@@ -65,33 +65,39 @@ private fun MiniGridContent(
     openAppIntent: Intent
 ) {
     val baseAlpha = opacity / 100f
-    val (bgColor, textColor, subColor, accentColor, cardColor) = when (bgMode) {
-        WidgetBgMode.LIGHT -> listOf(
-            Color(0xFFF8F9FC).copy(alpha = baseAlpha),
-            Color(0xFF1A1C22),
-            Color(0xFF5B6478),
-            Color(0xFF5B6BC0),
-            Color(0xFFFFFFFF).copy(alpha = baseAlpha)
-        )
-        WidgetBgMode.DARK -> listOf(
-            Color(0xFF121318).copy(alpha = baseAlpha),
-            Color(0xFFE4E6EE),
-            Color(0xFFB0B6C4),
-            Color(0xFFB8C2FF),
-            Color(0xFF1C1E24).copy(alpha = baseAlpha)
-        )
-        WidgetBgMode.TRANSPARENT -> listOf(
-            Color.Transparent,
-            Color(0xFF1A1C22),
-            Color(0xFF5B6478),
-            Color(0xFF5B6BC0),
-            Color(0x40FFFFFF)
-        )
+    val bgColor: Color
+    val textColor: Color
+    val subColor: Color
+    val accentColor: Color
+    val cardColor: Color
+
+    when (bgMode) {
+        WidgetBgMode.LIGHT -> {
+            bgColor = Color(0xFFF8F9FC).copy(alpha = baseAlpha)
+            textColor = Color(0xFF1A1C22)
+            subColor = Color(0xFF5B6478)
+            accentColor = Color(0xFF5B6BC0)
+            cardColor = Color(0xFFFFFFFF).copy(alpha = baseAlpha)
+        }
+        WidgetBgMode.DARK -> {
+            bgColor = Color(0xFF121318).copy(alpha = baseAlpha)
+            textColor = Color(0xFFE4E6EE)
+            subColor = Color(0xFFB0B6C4)
+            accentColor = Color(0xFFB8C2FF)
+            cardColor = Color(0xFF1C1E24).copy(alpha = baseAlpha)
+        }
+        WidgetBgMode.TRANSPARENT -> {
+            bgColor = Color.Transparent
+            textColor = Color(0xFF1A1C22)
+            subColor = Color(0xFF5B6478)
+            accentColor = Color(0xFF5B6BC0)
+            cardColor = Color(0x40FFFFFF)
+        }
     }
 
     val scale = fontScale / 100f
     val nameSize = (11f * scale).sp
-    val daysSize = (16f * scale).sp
+    val daysSize = (15f * scale).sp
     val headerSize = (12f * scale).sp
 
     Column(
@@ -127,33 +133,68 @@ private fun MiniGridContent(
                 )
             }
         } else {
-            // 2x2 сетка
             val row1 = events.take(2)
             val row2 = events.drop(2).take(2)
 
             Row(
-                modifier = GlanceModifier.fillMaxWidth(),
+                modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (row1.size > 0) TileCell(row1[0], cardColor, textColor, subColor, accentColor, nameSize, daysSize, daysOnly, GlanceModifier.defaultWeight())
+                if (row1.isNotEmpty()) {
+                    TileCell(
+                        event = row1[0],
+                        cardColor = cardColor,
+                        textColor = textColor,
+                        accentColor = accentColor,
+                        nameSize = nameSize,
+                        daysSize = daysSize,
+                        daysOnly = daysOnly,
+                        modifier = GlanceModifier.defaultWeight().fillMaxHeight()
+                    )
+                }
                 if (row1.size > 1) {
                     Spacer(GlanceModifier.width(4.dp))
-                    TileCell(row1[1], cardColor, textColor, subColor, accentColor, nameSize, daysSize, daysOnly, GlanceModifier.defaultWeight())
-                } else {
-                    Spacer(GlanceModifier.defaultWeight())
+                    TileCell(
+                        event = row1[1],
+                        cardColor = cardColor,
+                        textColor = textColor,
+                        accentColor = accentColor,
+                        nameSize = nameSize,
+                        daysSize = daysSize,
+                        daysOnly = daysOnly,
+                        modifier = GlanceModifier.defaultWeight().fillMaxHeight()
+                    )
                 }
             }
             Spacer(GlanceModifier.height(4.dp))
             Row(
-                modifier = GlanceModifier.fillMaxWidth(),
+                modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (row2.size > 0) TileCell(row2[0], cardColor, textColor, subColor, accentColor, nameSize, daysSize, daysOnly, GlanceModifier.defaultWeight())
+                if (row2.isNotEmpty()) {
+                    TileCell(
+                        event = row2[0],
+                        cardColor = cardColor,
+                        textColor = textColor,
+                        accentColor = accentColor,
+                        nameSize = nameSize,
+                        daysSize = daysSize,
+                        daysOnly = daysOnly,
+                        modifier = GlanceModifier.defaultWeight().fillMaxHeight()
+                    )
+                }
                 if (row2.size > 1) {
                     Spacer(GlanceModifier.width(4.dp))
-                    TileCell(row2[1], cardColor, textColor, subColor, accentColor, nameSize, daysSize, daysOnly, GlanceModifier.defaultWeight())
-                } else {
-                    Spacer(GlanceModifier.defaultWeight())
+                    TileCell(
+                        event = row2[1],
+                        cardColor = cardColor,
+                        textColor = textColor,
+                        accentColor = accentColor,
+                        nameSize = nameSize,
+                        daysSize = daysSize,
+                        daysOnly = daysOnly,
+                        modifier = GlanceModifier.defaultWeight().fillMaxHeight()
+                    )
                 }
             }
         }
@@ -165,7 +206,6 @@ private fun TileCell(
     event: WidgetEvent,
     cardColor: Color,
     textColor: Color,
-    subColor: Color,
     accentColor: Color,
     nameSize: androidx.compose.ui.unit.TextUnit,
     daysSize: androidx.compose.ui.unit.TextUnit,
@@ -179,18 +219,17 @@ private fun TileCell(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Фото или инициал
         val photoRes = event.presetAvatar?.let { presetAvatarDrawable(it) }
         if (photoRes != null) {
             Image(
                 provider = ImageProvider(photoRes),
                 contentDescription = null,
-                modifier = GlanceModifier.size(32.dp)
+                modifier = GlanceModifier.size(28.dp)
             )
         } else {
             Box(
                 modifier = GlanceModifier
-                    .size(32.dp)
+                    .size(28.dp)
                     .background(Color(0xFFE0E5FF)),
                 contentAlignment = Alignment.Center
             ) {
@@ -198,20 +237,20 @@ private fun TileCell(
                     text = event.name.firstOrNull()?.uppercase() ?: "?",
                     style = TextStyle(
                         color = ColorProvider(Color(0xFF394099)),
-                        fontSize = 14.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
                 )
             }
         }
-        Spacer(GlanceModifier.height(4.dp))
+        Spacer(GlanceModifier.height(3.dp))
         Text(
             text = event.name,
-            maxLines = 1,
             style = TextStyle(
                 color = ColorProvider(textColor),
                 fontSize = nameSize,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                maxLines = 1
             )
         )
         Text(
@@ -220,11 +259,11 @@ private fun TileCell(
                 daysOnly -> "${event.daysLeft} дн."
                 else -> "${event.daysLeft} дн. · ${event.dayMonth}"
             },
-            maxLines = 1,
             style = TextStyle(
                 color = ColorProvider(accentColor),
                 fontSize = daysSize,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
             )
         )
     }
