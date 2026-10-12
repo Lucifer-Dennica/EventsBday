@@ -25,6 +25,7 @@ import ru.yourname.events.widget.EventsWidget
 import ru.yourname.events.widget.EventsWidgetMini
 import ru.yourname.events.widget.WidgetBgMode
 import ru.yourname.events.widget.WidgetSettings
+import ru.yourname.events.widget.WidgetTextColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +42,7 @@ fun WidgetSettingsScreen(
     val showHeader by WidgetSettings.showHeaderFlow(ctx).collectAsState(initial = true)
     val showDate by WidgetSettings.showDateFlow(ctx).collectAsState(initial = true)
     val bgMode by WidgetSettings.bgModeFlow(ctx).collectAsState(initial = WidgetBgMode.LIGHT)
+    val textColorPref by WidgetSettings.textColorFlow(ctx).collectAsState(initial = WidgetTextColor.AUTO)
     val miniFontScale by WidgetSettings.miniFontScaleFlow(ctx).collectAsState(initial = 100)
     val miniShowHeader by WidgetSettings.miniShowHeaderFlow(ctx).collectAsState(initial = true)
     val miniDaysOnly by WidgetSettings.miniDaysOnlyFlow(ctx).collectAsState(initial = true)
@@ -119,7 +121,8 @@ fun WidgetSettingsScreen(
                         photoSize = photoSize,
                         showHeader = showHeader,
                         showDate = showDate,
-                        bgMode = bgMode
+                        bgMode = bgMode,
+                        textColorPref = textColorPref
                     )
                 }
 
@@ -135,7 +138,8 @@ fun WidgetSettingsScreen(
                         opacity = opacity,
                         showHeader = miniShowHeader,
                         daysOnly = miniDaysOnly,
-                        bgMode = bgMode
+                        bgMode = bgMode,
+                        textColorPref = textColorPref
                     )
                 }
 
@@ -175,6 +179,52 @@ fun WidgetSettingsScreen(
                         Text(mode.label, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
+
+                Spacer(Modifier.height(8.dp))
+
+                // ЦВЕТ ТЕКСТА
+                Text(
+                    "Цвет текста",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+                Text(
+                    "Пригодится, если прозрачный фон сливается с обоями",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+                )
+                WidgetTextColor.entries.forEach { c ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = textColorPref == c,
+                                onClick = {
+                                    scope.launch {
+                                        WidgetSettings.setTextColor(ctx, c)
+                                        refreshWidgets()
+                                    }
+                                }
+                            )
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = textColorPref == c,
+                            onClick = {
+                                scope.launch {
+                                    WidgetSettings.setTextColor(ctx, c)
+                                    refreshWidgets()
+                                }
+                            }
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(c.label, style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
 
                 SliderRow(
                     label = "Прозрачность фона",
