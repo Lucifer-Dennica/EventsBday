@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import ru.yourname.events.ads.YandexBanner
 import ru.yourname.events.data.settings.NotificationFrequency
 import ru.yourname.events.data.settings.NotificationMode
 import ru.yourname.events.data.settings.SettingsRepository
@@ -83,7 +84,14 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
                     }
                 )
 
-                if (!enabled) return@Column
+                if (!enabled) {
+                    Spacer(Modifier.height(16.dp))
+                    YandexBanner(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    return@Column
+                }
 
                 HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
@@ -232,7 +240,13 @@ fun NotificationsSettingsScreen(onBack: () -> Unit) {
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(16.dp))
+
+                YandexBanner(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+
+                Spacer(Modifier.height(16.dp))
             }
         }
     }
