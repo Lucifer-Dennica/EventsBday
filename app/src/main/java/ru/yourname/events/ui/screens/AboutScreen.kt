@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import ru.yourname.events.R
+import ru.yourname.events.ads.YandexBanner
 import ru.yourname.events.ui.components.SwipeNavigationBox
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,7 +53,7 @@ fun AboutScreen(onBack: () -> Unit) {
             ) {
                 Text("Мои События", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(4.dp))
-                Text("Версия 1.6.0", style = MaterialTheme.typography.bodyMedium,
+                Text("Версия 1.9.0", style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(20.dp))
                 Text(
@@ -98,7 +99,13 @@ fun AboutScreen(onBack: () -> Unit) {
                     subtitle = "Спасибо за любую поддержку!"
                 ) { open("https://www.donationalerts.com/r/lucifer_dennica_1999") }
 
-                Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(24.dp))
+
+                YandexBanner(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+
+                Spacer(Modifier.height(24.dp))
             }
         }
     }
