@@ -20,6 +20,7 @@ import androidx.glance.background
 import androidx.glance.layout.*
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
+import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import kotlinx.coroutines.flow.first
@@ -97,16 +98,16 @@ private fun MiniGridContent(
     }
 
     val scale = fontScale / 100f
-    val nameSize = (11f * scale).sp
+    val headerSize = (13f * scale).sp
+    val nameSize = (10f * scale).sp
     val daysSize = (15f * scale).sp
-    val headerSize = (12f * scale).sp
 
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(bgColor)
             .clickable(actionStartActivity(openAppIntent))
-            .padding(6.dp)
+            .padding(8.dp)
     ) {
         if (showHeader) {
             Text(
@@ -117,7 +118,7 @@ private fun MiniGridContent(
                     fontWeight = FontWeight.Bold
                 )
             )
-            Spacer(GlanceModifier.height(4.dp))
+            Spacer(GlanceModifier.height(6.dp))
         }
 
         if (events.isEmpty()) {
@@ -134,70 +135,32 @@ private fun MiniGridContent(
                 )
             }
         } else {
-            val row1 = events.take(2)
-            val row2 = events.drop(2).take(2)
-
-            Row(
-                modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalAlignment = Alignment.Top
+            val rows = events.chunked(2)
+            Column(
+                modifier = GlanceModifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                if (row1.isNotEmpty()) {
-                    TileCell(
-                        event = row1[0],
-                        cardColor = cardColor,
-                        textColor = textColor,
-                        accentColor = accentColor,
-                        nameSize = nameSize,
-                        daysSize = daysSize,
-                        daysOnly = daysOnly,
-                        modifier = GlanceModifier.defaultWeight()
-                    )
-                }
-                if (row1.size > 1) {
-                    Spacer(GlanceModifier.width(4.dp))
-                    TileCell(
-                        event = row1[1],
-                        cardColor = cardColor,
-                        textColor = textColor,
-                        accentColor = accentColor,
-                        nameSize = nameSize,
-                        daysSize = daysSize,
-                        daysOnly = daysOnly,
-                        modifier = GlanceModifier.defaultWeight()
-                    )
-                }
-            }
-            Spacer(GlanceModifier.height(4.dp))
-            Row(
-                modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalAlignment = Alignment.Top
-            ) {
-                if (row2.isNotEmpty()) {
-                    TileCell(
-                        event = row2[0],
-                        cardColor = cardColor,
-                        textColor = textColor,
-                        accentColor = accentColor,
-                        nameSize = nameSize,
-                        daysSize = daysSize,
-                        daysOnly = daysOnly,
-                        modifier = GlanceModifier.defaultWeight()
-                    )
-                }
-                if (row2.size > 1) {
-                    Spacer(GlanceModifier.width(4.dp))
-                    TileCell(
-                        event = row2[1],
-                        cardColor = cardColor,
-                        textColor = textColor,
-                        accentColor = accentColor,
-                        nameSize = nameSize,
-                        daysSize = daysSize,
-                        daysOnly = daysOnly,
-                        modifier = GlanceModifier.defaultWeight()
-                    )
+                rows.forEach { rowEvents ->
+                    Row(
+                        modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        rowEvents.forEach { ev ->
+                            MiniTile(
+                                ev = ev,
+                                cardColor = cardColor,
+                                textColor = textColor,
+                                accentColor = accentColor,
+                                nameSize = nameSize,
+                                daysSize = daysSize,
+                                daysOnly = daysOnly,
+                                modifier = GlanceModifier.defaultWeight().fillMaxHeight()
+                            )
+                        }
+                        if (rowEvents.size == 1) {
+                            Spacer(GlanceModifier.defaultWeight())
+                        }
+                    }
                 }
             }
         }
@@ -205,8 +168,8 @@ private fun MiniGridContent(
 }
 
 @Composable
-private fun TileCell(
-    event: WidgetEvent,
+private fun MiniTile(
+    ev: WidgetEvent,
     cardColor: Color,
     textColor: Color,
     accentColor: Color,
@@ -215,57 +178,70 @@ private fun TileCell(
     daysOnly: Boolean,
     modifier: GlanceModifier
 ) {
-    Column(
-        modifier = modifier
-            .background(cardColor)
-            .padding(6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier = modifier.background(cardColor),
+        contentAlignment = Alignment.Center
     ) {
-        val photoRes = event.presetAvatar?.let { presetAvatarDrawable(it) }
-        if (photoRes != null) {
-            Image(
-                provider = ImageProvider(photoRes),
-                contentDescription = null,
-                modifier = GlanceModifier.size(28.dp)
-            )
-        } else {
-            Box(
-                modifier = GlanceModifier
-                    .size(28.dp)
-                    .background(Color(0xFFE0E5FF)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = event.name.firstOrNull()?.uppercase() ?: "?",
-                    style = TextStyle(
-                        color = ColorProvider(Color(0xFF394099)),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+        Column(
+            modifier = GlanceModifier.padding(6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Аватар
+            val photoRes = ev.presetAvatar?.let { presetAvatarDrawable(it) }
+            if (photoRes != null) {
+                Image(
+                    provider = ImageProvider(photoRes),
+                    contentDescription = null,
+                    modifier = GlanceModifier.size(32.dp)
                 )
+            } else {
+                Box(
+                    modifier = GlanceModifier
+                        .size(32.dp)
+                        .background(Color(0xFFE0E5FF)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = ev.name.firstOrNull()?.uppercase() ?: "?",
+                        style = TextStyle(
+                            color = ColorProvider(Color(0xFF394099)),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
             }
+
+            Spacer(GlanceModifier.height(4.dp))
+
+            // Имя
+            Text(
+                text = ev.name,
+                style = TextStyle(
+                    color = ColorProvider(textColor),
+                    fontSize = nameSize,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center
+                )
+            )
+
+            Spacer(GlanceModifier.height(2.dp))
+
+            // Дни
+            Text(
+                text = when {
+                    ev.daysLeft == 0L -> "сегодня"
+                    daysOnly -> "${ev.daysLeft} дн."
+                    else -> "${ev.daysLeft} дн."
+                },
+                style = TextStyle(
+                    color = ColorProvider(accentColor),
+                    fontSize = daysSize,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            )
         }
-        Spacer(GlanceModifier.height(3.dp))
-        Text(
-            text = event.name,
-            style = TextStyle(
-                color = ColorProvider(textColor),
-                fontSize = nameSize,
-                fontWeight = FontWeight.Medium
-            )
-        )
-        Text(
-            text = when {
-                event.daysLeft == 0L -> "сегодня"
-                daysOnly -> "${event.daysLeft} дн."
-                else -> "${event.daysLeft} дн. · ${event.dayMonth}"
-            },
-            style = TextStyle(
-                color = ColorProvider(accentColor),
-                fontSize = daysSize,
-                fontWeight = FontWeight.Bold
-            )
-        )
     }
 }
 
