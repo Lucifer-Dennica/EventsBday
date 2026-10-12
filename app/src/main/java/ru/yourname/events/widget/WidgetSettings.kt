@@ -22,9 +22,9 @@ enum class WidgetBgMode(val label: String) {
 
 object WidgetSettings {
 
-    private val KEY_FONT_SCALE = intPreferencesKey("widget_font_scale")       // 80..140 (%)
-    private val KEY_OPACITY = intPreferencesKey("widget_opacity")             // 20..100 (%)
-    private val KEY_PHOTO_SIZE = intPreferencesKey("widget_photo_size")       // 32..72 (dp)
+    private val KEY_FONT_SCALE = intPreferencesKey("widget_font_scale")
+    private val KEY_OPACITY = intPreferencesKey("widget_opacity")
+    private val KEY_PHOTO_SIZE = intPreferencesKey("widget_photo_size")
     private val KEY_SHOW_HEADER = booleanPreferencesKey("widget_show_header")
     private val KEY_SHOW_DATE = booleanPreferencesKey("widget_show_date")
     private val KEY_SHOW_GROUP = booleanPreferencesKey("widget_show_group")
@@ -84,7 +84,7 @@ object WidgetSettings {
         ctx.widgetStore.edit { it[KEY_BG_MODE] = mode.name }
     }
 
-    // Мини-виджет
+    // Мини-календарь
     fun miniFontScaleFlow(ctx: Context): Flow<Int> =
         ctx.widgetStore.data.map { it[KEY_MINI_FONT_SCALE] ?: 100 }
     suspend fun setMiniFontScale(ctx: Context, v: Int) {
@@ -92,7 +92,7 @@ object WidgetSettings {
     }
 
     fun miniShowHeaderFlow(ctx: Context): Flow<Boolean> =
-        ctx.widgetStore.data.map { it[KEY_MINI_SHOW_HEADER] ?: false }
+        ctx.widgetStore.data.map { it[KEY_MINI_SHOW_HEADER] ?: true }
     suspend fun setMiniShowHeader(ctx: Context, v: Boolean) {
         ctx.widgetStore.edit { it[KEY_MINI_SHOW_HEADER] = v }
     }
