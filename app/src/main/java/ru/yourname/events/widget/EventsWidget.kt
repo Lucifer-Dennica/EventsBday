@@ -68,28 +68,34 @@ private fun WidgetContent(
     openAppIntent: Intent
 ) {
     val baseAlpha = opacity / 100f
-    val (bgColor, textColor, subColor, accentColor, cardColor) = when (bgMode) {
-        WidgetBgMode.LIGHT -> listOf(
-            Color(0xFFF8F9FC).copy(alpha = baseAlpha),
-            Color(0xFF1A1C22),
-            Color(0xFF5B6478),
-            Color(0xFF5B6BC0),
-            Color(0xFFFFFFFF).copy(alpha = baseAlpha)
-        )
-        WidgetBgMode.DARK -> listOf(
-            Color(0xFF121318).copy(alpha = baseAlpha),
-            Color(0xFFE4E6EE),
-            Color(0xFFB0B6C4),
-            Color(0xFFB8C2FF),
-            Color(0xFF1C1E24).copy(alpha = baseAlpha)
-        )
-        WidgetBgMode.TRANSPARENT -> listOf(
-            Color.Transparent,
-            Color(0xFF1A1C22),
-            Color(0xFF5B6478),
-            Color(0xFF5B6BC0),
-            Color(0x40FFFFFF)
-        )
+    val bgColor: Color
+    val textColor: Color
+    val subColor: Color
+    val accentColor: Color
+    val cardColor: Color
+
+    when (bgMode) {
+        WidgetBgMode.LIGHT -> {
+            bgColor = Color(0xFFF8F9FC).copy(alpha = baseAlpha)
+            textColor = Color(0xFF1A1C22)
+            subColor = Color(0xFF5B6478)
+            accentColor = Color(0xFF5B6BC0)
+            cardColor = Color(0xFFFFFFFF).copy(alpha = baseAlpha)
+        }
+        WidgetBgMode.DARK -> {
+            bgColor = Color(0xFF121318).copy(alpha = baseAlpha)
+            textColor = Color(0xFFE4E6EE)
+            subColor = Color(0xFFB0B6C4)
+            accentColor = Color(0xFFB8C2FF)
+            cardColor = Color(0xFF1C1E24).copy(alpha = baseAlpha)
+        }
+        WidgetBgMode.TRANSPARENT -> {
+            bgColor = Color.Transparent
+            textColor = Color(0xFF1A1C22)
+            subColor = Color(0xFF5B6478)
+            accentColor = Color(0xFF5B6BC0)
+            cardColor = Color(0x40FFFFFF)
+        }
     }
 
     val scale = fontScale / 100f
@@ -134,7 +140,6 @@ private fun WidgetContent(
                         .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Фото или инициал
                     val photoRes = ev.presetAvatar?.let { presetAvatarDrawable(it) }
                     if (photoRes != null) {
                         Image(
@@ -163,20 +168,20 @@ private fun WidgetContent(
                     Column(modifier = GlanceModifier.defaultWeight()) {
                         Text(
                             text = ev.name,
-                            maxLines = 1,
                             style = TextStyle(
                                 color = ColorProvider(textColor),
                                 fontSize = nameSize,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1
                             )
                         )
                         if (showDate) {
                             Text(
                                 text = ev.dayMonth,
-                                maxLines = 1,
                                 style = TextStyle(
                                     color = ColorProvider(subColor),
-                                    fontSize = subSize
+                                    fontSize = subSize,
+                                    maxLines = 1
                                 )
                             )
                         }
