@@ -56,7 +56,7 @@ object Routes {
 }
 
 @Composable
-fun NavGraph(vm: EventViewModel) {
+fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
     val nav = rememberNavController()
     val events by vm.events.collectAsState()
     val ctx = LocalContext.current
@@ -102,7 +102,7 @@ fun NavGraph(vm: EventViewModel) {
         InterstitialManager.preload(ctx)
     }
 
-    NavHost(navController = nav, startDestination = Routes.LIST) {
+    NavHost(navController = nav, startDestination = startRoute) {
 
         composable(Routes.LIST) {
             EventListScreen(
