@@ -178,6 +178,21 @@ fun EventListScreen(
             !selectionMode &&
             viewMode == ViewMode.LIST
 
+    // Единая логика клика/долгого клика по карточке — работает и при выделении
+    fun handleCardClick(event: Event) {
+        if (selectionMode) {
+            selectedIds = if (event.id in selectedIds) selectedIds - event.id
+                          else selectedIds + event.id
+        } else {
+            onEventClick(event)
+        }
+    }
+
+    fun handleCardLongClick(event: Event) {
+        selectedIds = if (event.id in selectedIds) selectedIds - event.id
+                      else selectedIds + event.id
+    }
+
     SwipeNavigationBox(
         onSwipeLeft = if (navigationSwipeEnabled) {
             { onOpenSettings() }
@@ -368,7 +383,8 @@ fun EventListScreen(
                                     selectionMode = selectionMode,
                                     showNotificationsIcon = showNotificationsIcon,
                                     showPinIcon = showPinIcon,
-                                    onEventClick = onEventClick,
+                                    onCardClick = { handleCardClick(it) },
+                                    onCardLongClick = { handleCardLongClick(it) },
                                     onDelete = { eventToDelete = it },
                                     onToggleNotifications = onToggleNotifications,
                                     onTogglePin = onTogglePin,
@@ -395,7 +411,8 @@ fun EventListScreen(
                                     selectionMode = selectionMode,
                                     showNotificationsIcon = showNotificationsIcon,
                                     showPinIcon = showPinIcon,
-                                    onEventClick = onEventClick,
+                                    onCardClick = { handleCardClick(it) },
+                                    onCardLongClick = { handleCardLongClick(it) },
                                     onDelete = { eventToDelete = it },
                                     onToggleNotifications = onToggleNotifications,
                                     onTogglePin = onTogglePin,
@@ -422,7 +439,8 @@ fun EventListScreen(
                                 selectionMode = selectionMode,
                                 showNotificationsIcon = showNotificationsIcon,
                                 showPinIcon = showPinIcon,
-                                onEventClick = onEventClick,
+                                onCardClick = { handleCardClick(it) },
+                                onCardLongClick = { handleCardLongClick(it) },
                                 onDelete = { eventToDelete = it },
                                 onToggleNotifications = onToggleNotifications,
                                 onTogglePin = onTogglePin,
@@ -473,9 +491,6 @@ fun EventListScreen(
     }
 }
 
-/**
- * Раскладывает элементы с рекламными вставками каждые AD_EVERY_N_ITEMS штук.
- */
 private fun LazyListScope.itemsWithAds(
     items: List<Event>,
     animationsAllowed: Boolean,
@@ -486,7 +501,8 @@ private fun LazyListScope.itemsWithAds(
     selectionMode: Boolean,
     showNotificationsIcon: Boolean,
     showPinIcon: Boolean,
-    onEventClick: (Event) -> Unit,
+    onCardClick: (Event) -> Unit,
+    onCardLongClick: (Event) -> Unit,
     onDelete: (Event) -> Unit,
     onToggleNotifications: (Event) -> Unit,
     onTogglePin: (Event) -> Unit,
@@ -505,14 +521,8 @@ private fun LazyListScope.itemsWithAds(
                 showNotificationsIcon = showNotificationsIcon,
                 showPinIcon = showPinIcon,
                 animationsAllowed = animationsAllowed,
-                onClick = {
-                    if (selectionMode) {
-                        // handled at caller via selectedIds logic — re-emit
-                        // (в этой упрощённой версии — просто onEventClick)
-                        onEventClick(event)
-                    } else onEventClick(event)
-                },
-                onLongClick = { onEventClick(event) },
+                onClick = { onCardClick(event) },
+                onLongClick = { onCardLongClick(event) },
                 onDelete = { onDelete(event) },
                 onToggleNotifications = { onToggleNotifications(event) },
                 onTogglePin = { onTogglePin(event) },
@@ -520,7 +530,6 @@ private fun LazyListScope.itemsWithAds(
                 onCall = { onCall(event) }
             )
         }
-        // После каждого 7-го элемента, кроме последнего, — реклама
         if ((index + 1) % AD_EVERY_N_ITEMS == 0 && index != items.size - 1) {
             item(key = "ad_$index") {
                 YandexBanner(
