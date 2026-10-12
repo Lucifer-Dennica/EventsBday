@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ru.yourname.events.R
+import ru.yourname.events.ads.YandexBanner
 import ru.yourname.events.data.settings.AnimationMode
 import ru.yourname.events.data.settings.AppIcon
 import ru.yourname.events.data.settings.AppTheme
@@ -81,7 +82,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     .verticalScroll(rememberScrollState())
             ) {
 
-                // === ТЕМА ===
                 SectionHeader("Тема оформления")
                 ExposedDropdownMenuBox(
                     expanded = themeExpanded,
@@ -118,7 +118,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 Spacer(Modifier.height(16.dp))
 
-                // === СОРТИРОВКА ===
                 SectionHeader("Сортировка списка")
                 ExposedDropdownMenuBox(
                     expanded = sortExpanded,
@@ -155,7 +154,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 Spacer(Modifier.height(16.dp))
 
-                // === ОТМЕТКИ КАЛЕНДАРЯ ===
                 SectionHeader("Отметки в календаре")
                 ExposedDropdownMenuBox(
                     expanded = markExpanded,
@@ -192,7 +190,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
-                // === АНИМАЦИИ КАРТОЧЕК ===
                 SectionHeader("Анимации карточек")
                 Text(
                     "Выбираются в каждой карточке отдельно. Здесь — общие настройки.",
@@ -299,7 +296,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
-                // === ИКОНКА ПРИЛОЖЕНИЯ ===
                 SectionHeader("Иконка приложения")
                 Text(
                     "Рабочий стол может обновляться не сразу",
@@ -352,7 +348,15 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     )
                 }
 
-                Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(16.dp))
+
+                YandexBanner(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                )
+
+                Spacer(Modifier.height(16.dp))
             }
         }
     }
