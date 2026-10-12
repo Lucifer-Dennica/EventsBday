@@ -86,13 +86,12 @@ fun WidgetSettingsScreen(onBack: () -> Unit) {
             ) {
 
                 Text(
-                    "Виджеты добавляются через долгое нажатие на пустой области рабочего стола → «Виджеты». Если изменения не видны — нажмите «Обновить виджеты» (иконка вверху справа) или перезагрузите телефон.",
+                    "Виджеты добавляются через долгое нажатие на пустой области рабочего стола → «Виджеты». Если изменения не видны — нажмите «Обновить виджеты».",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(16.dp)
                 )
 
-                // Кнопка обновления крупная
                 Button(
                     onClick = { refreshWidgetsWithToast() },
                     modifier = Modifier
@@ -187,7 +186,7 @@ fun WidgetSettingsScreen(onBack: () -> Unit) {
                 SwitchRow(
                     label = "Показывать заголовок",
                     checked = showHeader,
-                    onChange = {
+                    onToggle = {
                         scope.launch {
                             WidgetSettings.setShowHeader(ctx, it)
                             refreshWidgets()
@@ -198,7 +197,7 @@ fun WidgetSettingsScreen(onBack: () -> Unit) {
                 SwitchRow(
                     label = "Показывать дату",
                     checked = showDate,
-                    onChange = {
+                    onToggle = {
                         scope.launch {
                             WidgetSettings.setShowDate(ctx, it)
                             refreshWidgets()
@@ -226,7 +225,7 @@ fun WidgetSettingsScreen(onBack: () -> Unit) {
                 SwitchRow(
                     label = "Показывать заголовок",
                     checked = miniShowHeader,
-                    onChange = {
+                    onToggle = {
                         scope.launch {
                             WidgetSettings.setMiniShowHeader(ctx, it)
                             refreshWidgets()
@@ -237,7 +236,7 @@ fun WidgetSettingsScreen(onBack: () -> Unit) {
                 SwitchRow(
                     label = "Только количество дней",
                     checked = miniDaysOnly,
-                    onChange = {
+                    onToggle = {
                         scope.launch {
                             WidgetSettings.setMiniDaysOnly(ctx, it)
                             refreshWidgets()
@@ -296,7 +295,7 @@ private fun SliderRow(
 private fun SwitchRow(
     label: String,
     checked: Boolean,
-    onChange: (Boolean) -> Unit
+    onToggle: (Boolean) -> Unit
 ) {
     Row(
         Modifier
@@ -309,6 +308,9 @@ private fun SwitchRow(
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyLarge
         )
-        Switch(checked = checked, onChange = onChange)
+        Switch(
+            checked = checked,
+            onCheckedChange = onToggle
+        )
     }
 }
