@@ -45,78 +45,85 @@ fun BehaviorSettingsScreen(onBack: () -> Unit) {
                 )
             }
         ) { p ->
-            Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
+            Column(Modifier.fillMaxSize().padding(p)) {
 
-                SectionHeader("Жесты")
+                // Скроллируемая часть занимает всё свободное место
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    SectionHeader("Жесты")
 
-                ListItem(
-                    headlineContent = {
-                        Text("Свайпы по карточкам",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold)
-                    },
-                    supportingContent = { Text("Движение пальцем по карточке для действий") },
-                    trailingContent = {
-                        Switch(
-                            checked = swipesEnabled,
-                            onCheckedChange = {
-                                scope.launch { SettingsRepository.setSwipesEnabled(ctx, it) }
-                            }
+                    ListItem(
+                        headlineContent = {
+                            Text("Свайпы по карточкам",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold)
+                        },
+                        supportingContent = { Text("Движение пальцем по карточке для действий") },
+                        trailingContent = {
+                            Switch(
+                                checked = swipesEnabled,
+                                onCheckedChange = {
+                                    scope.launch { SettingsRepository.setSwipesEnabled(ctx, it) }
+                                }
+                            )
+                        }
+                    )
+
+                    if (swipesEnabled) {
+                        Spacer(Modifier.height(8.dp))
+                        ActionDropdown(
+                            title = "Свайп влево",
+                            subtitle = "Справа налево",
+                            current = leftAction,
+                            exclude = rightAction,
+                            onPick = { scope.launch { SettingsRepository.setSwipeLeftAction(ctx, it) } }
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        ActionDropdown(
+                            title = "Свайп вправо",
+                            subtitle = "Слева направо",
+                            current = rightAction,
+                            exclude = leftAction,
+                            onPick = { scope.launch { SettingsRepository.setSwipeRightAction(ctx, it) } }
                         )
                     }
-                )
 
-                if (swipesEnabled) {
-                    Spacer(Modifier.height(8.dp))
-                    ActionDropdown(
-                        title = "Свайп влево",
-                        subtitle = "Справа налево",
-                        current = leftAction,
-                        exclude = rightAction,
-                        onPick = { scope.launch { SettingsRepository.setSwipeLeftAction(ctx, it) } }
-                    )
                     Spacer(Modifier.height(12.dp))
-                    ActionDropdown(
-                        title = "Свайп вправо",
-                        subtitle = "Слева направо",
-                        current = rightAction,
-                        exclude = leftAction,
-                        onPick = { scope.launch { SettingsRepository.setSwipeRightAction(ctx, it) } }
+
+                    ListItem(
+                        headlineContent = {
+                            Text("Свайп между главным экраном и настройками",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold)
+                        },
+                        supportingContent = {
+                            Text(if (swipeToSettings)
+                                "Свайп влево на главном → настройки; свайп вправо в настройках → назад"
+                                else "Отключено")
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = swipeToSettings,
+                                onCheckedChange = {
+                                    scope.launch { SettingsRepository.setSwipeToSettingsEnabled(ctx, it) }
+                                }
+                            )
+                        }
                     )
+
+                    Spacer(Modifier.height(16.dp))
                 }
 
-                Spacer(Modifier.height(12.dp))
-
-                ListItem(
-                    headlineContent = {
-                        Text("Свайп между главным экраном и настройками",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold)
-                    },
-                    supportingContent = {
-                        Text(if (swipeToSettings)
-                            "Свайп влево на главном → настройки; свайп вправо в настройках → назад"
-                            else "Отключено")
-                    },
-                    trailingContent = {
-                        Switch(
-                            checked = swipeToSettings,
-                            onCheckedChange = {
-                                scope.launch { SettingsRepository.setSwipeToSettingsEnabled(ctx, it) }
-                            }
-                        )
-                    }
-                )
-
-                Spacer(Modifier.height(16.dp))
-
+                // Баннер прижат к низу экрана
                 YandexBanner(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
                 )
-
-                Spacer(Modifier.height(16.dp))
             }
         }
     }
