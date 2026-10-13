@@ -8,13 +8,14 @@ import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -52,6 +53,12 @@ import ru.yourname.events.ui.components.SwipeNavigationBox
 import java.time.LocalDate
 
 private const val AD_EVERY_N_ITEMS = 10
+
+/** Тип элемента в списке — заголовок секции или событие. */
+private sealed interface ListRow {
+    data class Header(val title: String, val key: String, val secondary: Boolean = false) : ListRow
+    data class EventItem(val event: Event) : ListRow
+}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -147,20 +154,51 @@ fun EventListScreen(
         base.sortedByDescending { it.isPinned }
     }
 
-    // Разбиваем на три непересекающихся списка
     val pinned = remember(sorted) { sorted.filter { it.isPinned } }
 
-    // todayEvents показываем только при BY_DATE без фильтров
     val showTodaySection = selectedGroup == null && query.isBlank() && sortMode == SortMode.BY_DATE
     val todayEvents = remember(sorted, showTodaySection) {
         if (showTodaySection) sorted.filter { it.daysUntil(today) == 0L && !it.isPinned }
         else emptyList()
     }
 
-    // Остальные: не закреплённые и не в секции "Сегодня"
     val others = remember(sorted, todayEvents) {
         val todayIds = todayEvents.map { it.id }.toSet()
         sorted.filter { !it.isPinned && it.id !in todayIds }
+    }
+
+    // ЕДИНЫЙ список с заголовками и событиями — единый счётчик для рекламы
+    val listRows: List<ListRow> = remember(pinned, todayEvents, others) {
+        buildList {
+            if (pinned.isNotEmpty()) {
+                add(ListRow.Header("Закреплённые", "h_pin"))
+                pinned.forEach { add(ListRow.EventItem(it)) }
+            }
+            if (todayEvents.isNotEmpty()) {
+                add(ListRow.Header("Сегодня", "h_today"))
+                todayEvents.forEach { add(ListRow.EventItem(it)) }
+                add(ListRow.Header("Все события", "h_all", secondary = true))
+            }
+            others.forEach { add(ListRow.EventItem(it)) }
+        }
+    }
+
+    // Позиции в listRows, ПОСЛЕ которых нужно вставить рекламу
+    // Счётчик сквозной — не сбрасывается на границах секций
+    val adAfterIndexes: Set<Int> = remember(listRows) {
+        val result = mutableSetOf<Int>()
+        var eventCounter = 0
+        listRows.forEachIndexed { idx, row ->
+            if (row is ListRow.EventItem) {
+                eventCounter++
+                if (eventCounter % AD_EVERY_N_ITEMS == 0) {
+                    result.add(idx)
+                }
+            }
+        }
+        // Не показываем рекламу после самого последнего элемента
+        result.remove(listRows.lastIndex)
+        result
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -369,7 +407,7 @@ fun EventListScreen(
                         }
                     }
 
-                    if (sorted.isEmpty()) {
+                    if (listRows.isEmpty()) {
                         EmptyState(Modifier.fillMaxSize(), query)
                     } else {
                         LazyColumn(
@@ -377,89 +415,55 @@ fun EventListScreen(
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            if (pinned.isNotEmpty()) {
-                                item(key = "header_pinned") {
-                                    Text("Закреплённые",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.SemiBold)
+                            listRows.forEachIndexed { index, row ->
+                                when (row) {
+                                    is ListRow.Header -> {
+                                        item(key = row.key) {
+                                            if (row.secondary) {
+                                                Spacer(Modifier.height(4.dp))
+                                            }
+                                            Text(
+                                                row.title,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = if (row.secondary)
+                                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                                else
+                                                    MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                    }
+                                    is ListRow.EventItem -> {
+                                        item(key = "event_${row.event.id}") {
+                                            EventRow(
+                                                event = row.event,
+                                                swipesEnabled = swipesEnabled && !selectionMode,
+                                                swipeLeftAction = swipeLeftAction,
+                                                swipeRightAction = swipeRightAction,
+                                                isSelected = row.event.id in selectedIds,
+                                                selectionMode = selectionMode,
+                                                showNotificationsIcon = showNotificationsIcon,
+                                                showPinIcon = showPinIcon,
+                                                animationsAllowed = animationsAllowed,
+                                                onClick = { handleCardClick(row.event) },
+                                                onLongClick = { handleCardLongClick(row.event) },
+                                                onDelete = { eventToDelete = row.event },
+                                                onToggleNotifications = { onToggleNotifications(row.event) },
+                                                onTogglePin = { onTogglePin(row.event) },
+                                                onEdit = { onEditEvent(row.event) },
+                                                onCall = { dialEvent(row.event) }
+                                            )
+                                        }
+                                    }
                                 }
-                                itemsWithAds(
-                                    items = pinned,
-                                    keyPrefix = "pin",
-                                    animationsAllowed = animationsAllowed,
-                                    swipesEnabled = swipesEnabled && !selectionMode,
-                                    swipeLeftAction = swipeLeftAction,
-                                    swipeRightAction = swipeRightAction,
-                                    selectedIds = selectedIds,
-                                    selectionMode = selectionMode,
-                                    showNotificationsIcon = showNotificationsIcon,
-                                    showPinIcon = showPinIcon,
-                                    onCardClick = { handleCardClick(it) },
-                                    onCardLongClick = { handleCardLongClick(it) },
-                                    onDelete = { eventToDelete = it },
-                                    onToggleNotifications = onToggleNotifications,
-                                    onTogglePin = onTogglePin,
-                                    onEdit = onEditEvent,
-                                    onCall = { dialEvent(it) }
-                                )
-                                item(key = "spacer_after_pinned") { Spacer(Modifier.height(4.dp)) }
-                            }
 
-                            if (todayEvents.isNotEmpty()) {
-                                item(key = "header_today") {
-                                    Text("Сегодня",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.SemiBold)
-                                }
-                                itemsWithAds(
-                                    items = todayEvents,
-                                    keyPrefix = "today",
-                                    animationsAllowed = animationsAllowed,
-                                    swipesEnabled = swipesEnabled && !selectionMode,
-                                    swipeLeftAction = swipeLeftAction,
-                                    swipeRightAction = swipeRightAction,
-                                    selectedIds = selectedIds,
-                                    selectionMode = selectionMode,
-                                    showNotificationsIcon = showNotificationsIcon,
-                                    showPinIcon = showPinIcon,
-                                    onCardClick = { handleCardClick(it) },
-                                    onCardLongClick = { handleCardLongClick(it) },
-                                    onDelete = { eventToDelete = it },
-                                    onToggleNotifications = onToggleNotifications,
-                                    onTogglePin = onTogglePin,
-                                    onEdit = onEditEvent,
-                                    onCall = { dialEvent(it) }
-                                )
-                                item(key = "header_all") {
-                                    Spacer(Modifier.height(8.dp))
-                                    Text("Все события",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontWeight = FontWeight.SemiBold)
+                                // Реклама как карточка — после каждого 10-го события
+                                if (index in adAfterIndexes) {
+                                    item(key = "ad_$index") {
+                                        AdCard()
+                                    }
                                 }
                             }
-
-                            itemsWithAds(
-                                items = others,
-                                keyPrefix = "other",
-                                animationsAllowed = animationsAllowed,
-                                swipesEnabled = swipesEnabled && !selectionMode,
-                                swipeLeftAction = swipeLeftAction,
-                                swipeRightAction = swipeRightAction,
-                                selectedIds = selectedIds,
-                                selectionMode = selectionMode,
-                                showNotificationsIcon = showNotificationsIcon,
-                                showPinIcon = showPinIcon,
-                                onCardClick = { handleCardClick(it) },
-                                onCardLongClick = { handleCardLongClick(it) },
-                                onDelete = { eventToDelete = it },
-                                onToggleNotifications = onToggleNotifications,
-                                onTogglePin = onTogglePin,
-                                onEdit = onEditEvent,
-                                onCall = { dialEvent(it) }
-                            )
                         }
                     }
                 }
@@ -504,54 +508,28 @@ fun EventListScreen(
     }
 }
 
-private fun LazyListScope.itemsWithAds(
-    items: List<Event>,
-    keyPrefix: String,
-    animationsAllowed: Boolean,
-    swipesEnabled: Boolean,
-    swipeLeftAction: SwipeAction,
-    swipeRightAction: SwipeAction,
-    selectedIds: Set<Long>,
-    selectionMode: Boolean,
-    showNotificationsIcon: Boolean,
-    showPinIcon: Boolean,
-    onCardClick: (Event) -> Unit,
-    onCardLongClick: (Event) -> Unit,
-    onDelete: (Event) -> Unit,
-    onToggleNotifications: (Event) -> Unit,
-    onTogglePin: (Event) -> Unit,
-    onEdit: (Event) -> Unit,
-    onCall: (Event) -> Unit
-) {
-    items.forEachIndexed { index, event ->
-        item(key = "${keyPrefix}_event_${event.id}") {
-            EventRow(
-                event = event,
-                swipesEnabled = swipesEnabled,
-                swipeLeftAction = swipeLeftAction,
-                swipeRightAction = swipeRightAction,
-                isSelected = event.id in selectedIds,
-                selectionMode = selectionMode,
-                showNotificationsIcon = showNotificationsIcon,
-                showPinIcon = showPinIcon,
-                animationsAllowed = animationsAllowed,
-                onClick = { onCardClick(event) },
-                onLongClick = { onCardLongClick(event) },
-                onDelete = { onDelete(event) },
-                onToggleNotifications = { onToggleNotifications(event) },
-                onTogglePin = { onTogglePin(event) },
-                onEdit = { onEdit(event) },
-                onCall = { onCall(event) }
+/** Реклама, оформленная как карточка — визуально похожа на EventCard. */
+@Composable
+private fun AdCard() {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+        ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            YandexBanner(
+                modifier = Modifier.fillMaxWidth()
             )
-        }
-        if ((index + 1) % AD_EVERY_N_ITEMS == 0 && index != items.size - 1) {
-            item(key = "${keyPrefix}_ad_$index") {
-                YandexBanner(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                )
-            }
         }
     }
 }
@@ -621,7 +599,7 @@ private fun EventRow(
                         .fillMaxSize()
                         .background(
                             color = bg,
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+                            shape = RoundedCornerShape(18.dp)
                         )
                         .padding(horizontal = 20.dp),
                     contentAlignment =
