@@ -2,7 +2,6 @@ package ru.yourname.events.ui.screens
 
 import android.content.Context
 import android.os.PowerManager
-import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,8 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -121,7 +120,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
-                // ================= АВАТАР =================
                 SectionHeader("Аватар события")
                 Text(
                     "Свечение вокруг круглой рамки и размер аватара во всех карточках",
@@ -178,7 +176,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
-                // ================= СОРТИРОВКА =================
                 SectionHeader("Сортировка списка")
                 ExposedDropdownMenuBox(
                     expanded = sortExpanded,
@@ -356,6 +353,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
+                // ===== ИКОНКА ПРИЛОЖЕНИЯ =====
                 SectionHeader("Иконка приложения")
                 Text(
                     "Рабочий стол может обновляться не сразу",
@@ -364,6 +362,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
                 )
 
+                // Первый ряд из 4 иконок
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -404,6 +403,51 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                         onClick = {
                             scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.GIFT) }
                             IconSwitcher.switchTo(ctx, AppIcon.GIFT)
+                        }
+                    )
+                }
+
+                // Второй ряд из 4 новых иконок
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    IconTile(
+                        iconRes = R.mipmap.ic_launcher_balloons,
+                        selected = appIcon == AppIcon.BALLOONS,
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.BALLOONS) }
+                            IconSwitcher.switchTo(ctx, AppIcon.BALLOONS)
+                        }
+                    )
+                    IconTile(
+                        iconRes = R.mipmap.ic_launcher_heart,
+                        selected = appIcon == AppIcon.HEART,
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.HEART) }
+                            IconSwitcher.switchTo(ctx, AppIcon.HEART)
+                        }
+                    )
+                    IconTile(
+                        iconRes = R.mipmap.ic_launcher_bear,
+                        selected = appIcon == AppIcon.BEAR,
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.BEAR) }
+                            IconSwitcher.switchTo(ctx, AppIcon.BEAR)
+                        }
+                    )
+                    IconTile(
+                        iconRes = R.mipmap.ic_launcher_present,
+                        selected = appIcon == AppIcon.PRESENT,
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.PRESENT) }
+                            IconSwitcher.switchTo(ctx, AppIcon.PRESENT)
                         }
                     )
                 }
