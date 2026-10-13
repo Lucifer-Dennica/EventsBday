@@ -85,6 +85,62 @@
             </intent-filter>
         </activity-alias>
 
+        <activity-alias
+            android:name=".MainActivityBalloons"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_balloons"
+            android:label="@string/app_name"
+            android:roundIcon="@mipmap/ic_launcher_balloons"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".MainActivityHeart"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_heart"
+            android:label="@string/app_name"
+            android:roundIcon="@mipmap/ic_launcher_heart"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".MainActivityBear"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_bear"
+            android:label="@string/app_name"
+            android:roundIcon="@mipmap/ic_launcher_bear"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".MainActivityPresent"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_present"
+            android:label="@string/app_name"
+            android:roundIcon="@mipmap/ic_launcher_present"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
         <!-- Большой виджет -->
         <receiver
             android:name=".widget.EventsWidgetReceiver"
@@ -97,7 +153,7 @@
                 android:resource="@xml/events_widget_info" />
         </receiver>
 
-        <!-- Мини-календарь -->
+        <!-- Мини-виджет -->
         <receiver
             android:name=".widget.EventsWidgetMiniReceiver"
             android:exported="true">
