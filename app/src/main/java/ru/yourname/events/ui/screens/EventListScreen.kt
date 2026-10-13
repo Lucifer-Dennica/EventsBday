@@ -52,7 +52,7 @@ import ru.yourname.events.ui.components.EventCard
 import ru.yourname.events.ui.components.SwipeNavigationBox
 import java.time.LocalDate
 
-private const val AD_EVERY_N_ITEMS = 10
+private const val AD_EVERY_N_ITEMS = 15
 
 /** Тип элемента в списке — заголовок секции или событие. */
 private sealed interface ListRow {
