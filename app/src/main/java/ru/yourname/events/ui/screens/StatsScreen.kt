@@ -32,10 +32,7 @@ fun StatsScreen(
     onBack: () -> Unit
 ) {
     val today = LocalDate.now()
-
-    val stats = remember(events) {
-        computeStats(events, today)
-    }
+    val stats = remember(events) { computeStats(events, today) }
 
     SwipeNavigationBox(
         onSwipeRight = { onBack() },
@@ -54,157 +51,155 @@ fun StatsScreen(
                 )
             }
         ) { p ->
-            Column(
-                Modifier
-                    .fillMaxSize()
-                    .padding(p)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                if (events.isEmpty()) {
-                    Box(
-                        Modifier.fillMaxWidth().padding(top = 48.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            "Пока нет данных\nДобавьте события — и здесь появятся цифры",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
+            Column(Modifier.fillMaxSize().padding(p)) {
+
+                // Скроллируемая часть со всеми карточками статистики
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (events.isEmpty()) {
+                        Box(
+                            Modifier.fillMaxWidth().padding(top = 48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Пока нет данных\nДобавьте события — и здесь появятся цифры",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    } else {
+                        BigStatCard(
+                            title = "Всего событий",
+                            value = stats.total.toString(),
+                            emoji = "🎉",
+                            gradient = listOf(Color(0xFF5B6BC0), Color(0xFF8A63A8))
                         )
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    YandexBanner(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
-                    )
-                    return@Column
-                }
 
-                BigStatCard(
-                    title = "Всего событий",
-                    value = stats.total.toString(),
-                    emoji = "🎉",
-                    gradient = listOf(Color(0xFF5B6BC0), Color(0xFF8A63A8))
-                )
-
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SmallStatCard(
-                        Modifier.weight(1f),
-                        "В этом месяце",
-                        stats.thisMonthCount.toString(),
-                        "📅"
-                    )
-                    SmallStatCard(
-                        Modifier.weight(1f),
-                        "Ближайшее",
-                        if (stats.nearestDays == 0L) "сегодня"
-                        else "через ${stats.nearestDays} дн.",
-                        "⏰"
-                    )
-                }
-
-                if (stats.avgAge != null) {
-                    BigStatCard(
-                        title = "Средний возраст",
-                        value = "${stats.avgAge} лет",
-                        emoji = "🎂",
-                        gradient = listOf(Color(0xFF2E9E6B), Color(0xFF43CFA0))
-                    )
-                }
-
-                if (stats.busiestMonth != null) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text(
-                                "Самый насыщенный месяц",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            SmallStatCard(
+                                Modifier.weight(1f),
+                                "В этом месяце",
+                                stats.thisMonthCount.toString(),
+                                "📅"
                             )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                "${stats.busiestMonth.first} — ${stats.busiestMonth.second} событий",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold
+                            SmallStatCard(
+                                Modifier.weight(1f),
+                                "Ближайшее",
+                                if (stats.nearestDays == 0L) "сегодня"
+                                else "через ${stats.nearestDays} дн.",
+                                "⏰"
                             )
                         }
-                    }
-                }
 
-                if (stats.oldest != null) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text(
-                                "Самый старший контакт",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                "${stats.oldest.name} — ${stats.oldest.age} лет",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold
+                        if (stats.avgAge != null) {
+                            BigStatCard(
+                                title = "Средний возраст",
+                                value = "${stats.avgAge} лет",
+                                emoji = "🎂",
+                                gradient = listOf(Color(0xFF2E9E6B), Color(0xFF43CFA0))
                             )
                         }
-                    }
-                }
 
-                if (stats.groupCounts.isNotEmpty()) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text(
-                                "Группы",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(Modifier.height(12.dp))
-                            stats.groupCounts.forEach { (group, count) ->
-                                Row(
-                                    Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
+                        if (stats.busiestMonth != null) {
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(Modifier.padding(16.dp)) {
                                     Text(
-                                        group,
-                                        modifier = Modifier.weight(1f),
-                                        style = MaterialTheme.typography.bodyLarge
+                                        "Самый насыщенный месяц",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                    Spacer(Modifier.height(4.dp))
                                     Text(
-                                        "$count",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.primary
+                                        "${stats.busiestMonth.first} — ${stats.busiestMonth.second} событий",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.SemiBold
                                     )
+                                }
+                            }
+                        }
+
+                        if (stats.oldest != null) {
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(Modifier.padding(16.dp)) {
+                                    Text(
+                                        "Самый старший контакт",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        "${stats.oldest.name} — ${stats.oldest.age} лет",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+
+                        if (stats.groupCounts.isNotEmpty()) {
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(Modifier.padding(16.dp)) {
+                                    Text(
+                                        "Группы",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(Modifier.height(12.dp))
+                                    stats.groupCounts.forEach { (group, count) ->
+                                        Row(
+                                            Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                group,
+                                                modifier = Modifier.weight(1f),
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
+                                            Text(
+                                                "$count",
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
-
+                // Реклама прижата к низу экрана
                 YandexBanner(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
                 )
-
-                Spacer(Modifier.height(16.dp))
             }
         }
     }
@@ -291,15 +286,11 @@ private data class OldestContact(val name: String, val age: Int)
 
 private fun computeStats(events: List<Event>, today: LocalDate): Stats {
     val total = events.size
-
     val thisMonthCount = events.count { it.month == today.monthValue }
-
     val nearest = events.minByOrNull { it.daysUntil(today) }
     val nearestDays = nearest?.daysUntil(today) ?: 0L
 
-    val ages = events.mapNotNull { e ->
-        e.year?.let { today.year - it }
-    }.filter { it in 0..150 }
+    val ages = events.mapNotNull { e -> e.year?.let { today.year - it } }.filter { it in 0..150 }
     val avgAge = if (ages.isNotEmpty()) ages.average().toInt() else null
 
     val monthCounts = events.groupingBy { it.month }.eachCount()
@@ -311,25 +302,11 @@ private fun computeStats(events: List<Event>, today: LocalDate): Stats {
     }
 
     val oldest = events
-        .mapNotNull { e ->
-            e.year?.let { OldestContact(e.name, today.year - it) }
-        }
+        .mapNotNull { e -> e.year?.let { OldestContact(e.name, today.year - it) } }
         .filter { it.age in 0..150 }
         .maxByOrNull { it.age }
 
-    val groupCounts = events
-        .groupingBy { it.group }
-        .eachCount()
-        .toList()
-        .sortedByDescending { it.second }
+    val groupCounts = events.groupingBy { it.group }.eachCount().toList().sortedByDescending { it.second }
 
-    return Stats(
-        total = total,
-        thisMonthCount = thisMonthCount,
-        nearestDays = nearestDays,
-        avgAge = avgAge,
-        busiestMonth = busiest,
-        oldest = oldest,
-        groupCounts = groupCounts
-    )
+    return Stats(total, thisMonthCount, nearestDays, avgAge, busiest, oldest, groupCounts)
 }
