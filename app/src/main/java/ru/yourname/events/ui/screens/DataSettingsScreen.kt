@@ -70,42 +70,50 @@ fun DataSettingsScreen(onBack: () -> Unit) {
                 )
             }
         ) { p ->
-            Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
+            Column(Modifier.fillMaxSize().padding(p)) {
 
-                ActionCard(
-                    icon = Icons.Default.CloudUpload,
-                    title = "Сохранить резервную копию",
-                    subtitle = "Экспортирует все события в JSON-файл",
-                    onClick = {
-                        val name = "events_backup_${LocalDate.now()}.json"
-                        exportLauncher.launch(name)
-                    }
-                )
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    ActionCard(
+                        icon = Icons.Default.CloudUpload,
+                        title = "Сохранить резервную копию",
+                        subtitle = "Экспортирует все события в JSON-файл",
+                        onClick = {
+                            val name = "events_backup_${LocalDate.now()}.json"
+                            exportLauncher.launch(name)
+                        }
+                    )
 
-                ActionCard(
-                    icon = Icons.Default.Download,
-                    title = "Восстановить из файла",
-                    subtitle = "Загрузит события из ранее сохранённого JSON",
-                    onClick = { importLauncher.launch(arrayOf("application/json")) }
-                )
+                    ActionCard(
+                        icon = Icons.Default.Download,
+                        title = "Восстановить из файла",
+                        subtitle = "Загрузит события из ранее сохранённого JSON",
+                        onClick = { importLauncher.launch(arrayOf("application/json")) }
+                    )
 
-                Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(16.dp))
 
-                Text(
-                    "⚠️ Экспорт сохраняет события, но не пользовательские фото — они остаются в галерее. " +
-                            "Сохраните бэкап на облако или ПК.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
+                    Text(
+                        "⚠️ Экспорт сохраняет события, но не пользовательские фото — они остаются в галерее. " +
+                                "Сохраните бэкап на облако или ПК.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
 
-                Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(16.dp))
+                }
 
+                // Баннер прижат к низу экрана
                 YandexBanner(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
                 )
-
-                Spacer(Modifier.height(16.dp))
             }
         }
     }
