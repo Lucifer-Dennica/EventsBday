@@ -107,18 +107,32 @@ private fun WidgetContent(
         WidgetTextColor.WHITE -> Color.White
         WidgetTextColor.BLACK -> Color.Black
         WidgetTextColor.BLUE -> Color(0xFF5B6BC0)
+        WidgetTextColor.PINK -> Color(0xFFE91E63)
+        WidgetTextColor.GREEN -> Color(0xFF2E9E6B)
+        WidgetTextColor.PURPLE -> Color(0xFF9C27B0)
+        WidgetTextColor.ORANGE -> Color(0xFFF57C00)
     }
+    
     val subColor = when (textColorPref) {
         WidgetTextColor.AUTO -> autoSubColor
         WidgetTextColor.WHITE -> Color.White.copy(alpha = 0.8f)
         WidgetTextColor.BLACK -> Color.Black.copy(alpha = 0.7f)
         WidgetTextColor.BLUE -> Color(0xFF5B6BC0).copy(alpha = 0.8f)
+        WidgetTextColor.PINK -> Color(0xFFE91E63).copy(alpha = 0.8f)
+        WidgetTextColor.GREEN -> Color(0xFF2E9E6B).copy(alpha = 0.8f)
+        WidgetTextColor.PURPLE -> Color(0xFF9C27B0).copy(alpha = 0.8f)
+        WidgetTextColor.ORANGE -> Color(0xFFF57C00).copy(alpha = 0.8f)
     }
+    
     val daysColor = when (textColorPref) {
         WidgetTextColor.AUTO -> accentColor
         WidgetTextColor.WHITE -> Color.White
         WidgetTextColor.BLACK -> Color.Black
         WidgetTextColor.BLUE -> Color(0xFF5B6BC0)
+        WidgetTextColor.PINK -> Color(0xFFE91E63)
+        WidgetTextColor.GREEN -> Color(0xFF2E9E6B)
+        WidgetTextColor.PURPLE -> Color(0xFF9C27B0)
+        WidgetTextColor.ORANGE -> Color(0xFFF57C00)
     }
 
     val scale = fontScale / 100f
