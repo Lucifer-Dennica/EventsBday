@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -53,23 +54,17 @@ fun AboutScreen(onBack: () -> Unit) {
             ) {
                 Text("Мои События", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(4.dp))
-                Text("Версия 1.9.0", style = MaterialTheme.typography.bodyMedium,
+                Text("Версия 2.0.0", style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(20.dp))
+                
                 Text(
                     "Приложение для напоминаний о днях рождения, годовщинах и других важных событиях.",
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center
                 )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Не является официальным продуктом. Не одобрено какими-либо сторонними компаниями.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(Modifier.height(32.dp))
+                
+                Spacer(Modifier.height(24.dp))
                 Text("Связь с разработчиком",
                     style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.fillMaxWidth())
@@ -87,7 +82,14 @@ fun AboutScreen(onBack: () -> Unit) {
                     subtitle = "@Lucifer_Denicca_22142"
                 ) { open("https://t.me/Lucifer_Denicca_22142") }
 
-                Spacer(Modifier.height(32.dp))
+                // Ссылка на сайт
+                ContactRowVector(
+                    icon = Icons.Default.Language,
+                    title = "Сайт разработчика",
+                    subtitle = "lucifer-dennica.github.io"
+                ) { open("https://lucifer-dennica.github.io/index.html") }
+
+                Spacer(Modifier.height(24.dp))
                 Text("Поддержать проект",
                     style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.fillMaxWidth())
@@ -98,6 +100,26 @@ fun AboutScreen(onBack: () -> Unit) {
                     title = "DonationAlerts",
                     subtitle = "Спасибо за любую поддержку!"
                 ) { open("https://www.donationalerts.com/r/lucifer_dennica_1999") }
+
+                Spacer(Modifier.height(32.dp))
+
+                // ДИСКЛЕЙМЕР ДЛЯ RUSTORE
+                Text(
+                    "Instagram и WhatsApp принадлежат компании Meta, признанной экстремистской организацией, деятельность которой в России запрещена.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+                
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Приложение не является официальным продуктом. Не одобрено какими-либо сторонними компаниями.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
 
                 Spacer(Modifier.height(24.dp))
 
@@ -135,6 +157,43 @@ private fun ContactRow(
                     painter = painterResource(iconRes),
                     contentDescription = null,
                     modifier = Modifier.size(32.dp)
+                )
+            }
+            Spacer(Modifier.width(14.dp))
+            Column {
+                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                Text(subtitle, style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContactRowVector(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clickable { onClick() }
+    ) {
+        Row(
+            Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
                 )
             }
             Spacer(Modifier.width(14.dp))
