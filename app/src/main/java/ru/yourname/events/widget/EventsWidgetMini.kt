@@ -101,12 +101,21 @@ private fun MiniGridContent(
         WidgetTextColor.WHITE -> Color.White
         WidgetTextColor.BLACK -> Color.Black
         WidgetTextColor.BLUE -> Color(0xFF5B6BC0)
+        WidgetTextColor.PINK -> Color(0xFFE91E63)
+        WidgetTextColor.GREEN -> Color(0xFF2E9E6B)
+        WidgetTextColor.PURPLE -> Color(0xFF9C27B0)
+        WidgetTextColor.ORANGE -> Color(0xFFF57C00)
     }
+    
     val daysColor = when (textColorPref) {
         WidgetTextColor.AUTO -> accentColor
         WidgetTextColor.WHITE -> Color.White
         WidgetTextColor.BLACK -> Color.Black
         WidgetTextColor.BLUE -> Color(0xFF5B6BC0)
+        WidgetTextColor.PINK -> Color(0xFFE91E63)
+        WidgetTextColor.GREEN -> Color(0xFF2E9E6B)
+        WidgetTextColor.PURPLE -> Color(0xFF9C27B0)
+        WidgetTextColor.ORANGE -> Color(0xFFF57C00)
     }
 
     val scale = fontScale / 100f
