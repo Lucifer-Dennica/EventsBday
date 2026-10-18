@@ -36,7 +36,7 @@ object NotificationHelper {
     ) {
         ensureChannel(ctx)
         val builder = NotificationCompat.Builder(ctx, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher_main)
+            .setSmallIcon(R.drawable.ic_notification) // <-- ИСПРАВЛЕНО
             .setContentTitle(title)
             .setContentText(text)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
