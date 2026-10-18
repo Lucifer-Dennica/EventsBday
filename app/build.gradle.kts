@@ -10,12 +10,11 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        // applicationId — публичный ID, который видит RuStore. ЗАМЕНИЛИ.
         applicationId = "ru.eventsbday.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 10
-        versionName = "1.9.0"
+        versionCode = 11
+        versionName = "2.0.0"
     }
 
     signingConfigs {
