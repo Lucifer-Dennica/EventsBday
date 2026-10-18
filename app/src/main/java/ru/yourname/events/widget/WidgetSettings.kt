@@ -23,7 +23,11 @@ enum class WidgetTextColor(val label: String) {
     AUTO("Автоматически"),
     WHITE("Белый"),
     BLACK("Чёрный"),
-    BLUE("Синий акцент")
+    BLUE("Синий"),
+    PINK("Розовый"),
+    GREEN("Зелёный"),
+    PURPLE("Фиолетовый"),
+    ORANGE("Оранжевый")
 }
 
 object WidgetSettings {
@@ -78,7 +82,6 @@ object WidgetSettings {
         ctx.widgetStore.edit { it[KEY_BG_MODE] = mode.name }
     }
 
-    // Цвет текста
     fun textColorFlow(ctx: Context): Flow<WidgetTextColor> = ctx.widgetStore.data.map { prefs ->
         prefs[KEY_TEXT_COLOR]?.let { runCatching { WidgetTextColor.valueOf(it) }.getOrNull() }
             ?: WidgetTextColor.AUTO
