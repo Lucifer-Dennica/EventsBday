@@ -3,6 +3,12 @@ package ru.yourname.events.ui.screens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -27,12 +33,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -92,7 +101,6 @@ fun AddEventScreen(
     var customColorHex by remember { mutableStateOf(editing?.customColorHex) }
     var checklist by remember { mutableStateOf(editing?.checklist ?: emptyList()) }
     var repeatYearly by remember { mutableStateOf(editing?.repeatYearly ?: true) }
-    // === Обводка карточки ===
     var borderColorHex by remember { mutableStateOf(editing?.borderColorHex) }
     var borderStyle by remember { mutableStateOf(editing?.borderStyle) }
     var newItemText by remember { mutableStateOf("") }
@@ -285,7 +293,6 @@ fun AddEventScreen(
                 }
             }
 
-            // === ОБВОДКА ЭТОЙ КАРТОЧКИ ===
             Text("Обводка этой карточки", style = MaterialTheme.typography.titleMedium)
             Text("«A» — как в настройках дизайна. Цвета — статичная обводка. Неоновые кружки — анимированная.",
                 style = MaterialTheme.typography.bodySmall,
@@ -314,7 +321,6 @@ fun AddEventScreen(
                 }
             }
 
-            // === ПРЕДПРОСМОТР ===
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Предпросмотр", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.width(8.dp))
@@ -498,7 +504,6 @@ private fun PerCardBorderPicker(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(vertical = 4.dp)
     ) {
-        // 1. «A» — стандарт (глобальные настройки)
         item {
             val isSelected = selectedStyle == null && selectedColorHex == null
             Box(
@@ -517,7 +522,6 @@ private fun PerCardBorderPicker(
             }
         }
 
-        // 2. 16 цветов — статичная обводка
         items(CardBorderColor.entries.filter { it.hex != null }) { color ->
             val hex = "#" + (color.hex!!.toInt() and 0xFFFFFF).toString(16).padStart(6, '0').uppercase()
             val isSelected = selectedStyle == "COLOR" && selectedColorHex.equals(hex, ignoreCase = true)
@@ -543,7 +547,6 @@ private fun PerCardBorderPicker(
             }
         }
 
-        // 3. Три неона
         item {
             NeonStyleCircle(
                 mode = NeonStyle.FULL_STATIC,
@@ -570,6 +573,12 @@ private fun PerCardBorderPicker(
 
 private enum class NeonStyle { FULL_STATIC, RUNNING, FULL_ANIMATED }
 
+/**
+ * Живой кружок неона — внутри реально анимируется:
+ * - FULL_STATIC: статичный залитый радужный круг + пульсирующее внешнее свечение
+ * - RUNNING: вращающаяся неполная дуга (бегущий сегмент)
+ * - FULL_ANIMATED: сплошное радужное кольцо с непрерывно вращающимся градиентом
+ */
 @Composable
 private fun NeonStyleCircle(
     mode: NeonStyle,
@@ -581,7 +590,25 @@ private fun NeonStyleCircle(
         Color(0xFF4CAF50), Color(0xFF00BCD4), Color(0xFF3F51B5),
         Color(0xFF9C27B0), Color(0xFFE91E63)
     )
-    val brush = Brush.sweepGradient(neonGradient)
+
+    val transition = rememberInfiniteTransition(label = "preview_${mode.name}")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = when (mode) {
+                    NeonStyle.RUNNING -> 2000
+                    NeonStyle.FULL_ANIMATED -> 3000
+                    NeonStyle.FULL_STATIC -> 4000
+                },
+                easing = LinearEasing
+            ),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "phase"
+    )
+
     val borderColor = if (isSelected) MaterialTheme.colorScheme.onSurface
         else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
     val borderWidth = if (isSelected) 3.dp else 1.dp
@@ -597,32 +624,66 @@ private fun NeonStyleCircle(
     ) {
         Canvas(Modifier.fillMaxSize().padding(8.dp)) {
             val strokeW = 5f
+            val brush = Brush.sweepGradient(neonGradient)
+            val c = Offset(size.width / 2f, size.height / 2f)
+            val radius = size.minDimension / 2f - strokeW / 2f
+
             when (mode) {
                 NeonStyle.FULL_STATIC -> {
-                    // Залитый градиентом круг
-                    drawCircle(brush = brush)
-                }
-                NeonStyle.RUNNING -> {
-                    // Прозрачный круг с неполной дугой (60% периметра)
-                    drawArc(
-                        brush = brush,
-                        startAngle = -90f,
-                        sweepAngle = 216f,
-                        useCenter = false,
-                        style = Stroke(width = strokeW, cap = StrokeCap.Round)
-                    )
-                }
-                NeonStyle.FULL_ANIMATED -> {
-                    // Кольцо градиентом (замкнутый круг)
-                    drawCircle(brush = brush, style = Stroke(width = strokeW))
-                    // Доп. точка для намёка на анимацию
+                    // Пульсирующее внешнее свечение
+                    val pulse = 0.5f + 0.5f * ((sinDegrees(phase) + 1f) / 2f)
                     drawCircle(
-                        color = Color.White.copy(alpha = 0.9f),
-                        radius = 2.5f,
-                        center = Offset(size.width / 2f, 3f)
+                        brush = brush,
+                        alpha = 0.25f + pulse * 0.35f,
+                        radius = radius + 3f
                     )
+                    // Чёткое кольцо
+                    drawCircle(brush = brush, style = Stroke(width = strokeW))
+                }
+
+                NeonStyle.RUNNING -> {
+                    // Вращающаяся дуга — как «бегущий сегмент»
+                    rotate(phase) {
+                        drawArc(
+                            brush = brush,
+                            startAngle = 0f,
+                            sweepAngle = 216f,
+                            useCenter = false,
+                            style = Stroke(width = strokeW, cap = StrokeCap.Round)
+                        )
+                        // Догоняющий «хвост»
+                        drawArc(
+                            brush = brush,
+                            startAngle = 216f,
+                            sweepAngle = 40f,
+                            useCenter = false,
+                            alpha = 0.35f,
+                            style = Stroke(width = strokeW * 0.7f, cap = StrokeCap.Round)
+                        )
+                    }
+                }
+
+                NeonStyle.FULL_ANIMATED -> {
+                    // Полное кольцо с вращающимся градиентом (эффект «перелива»)
+                    rotate(phase) {
+                        drawCircle(brush = brush, style = Stroke(width = strokeW))
+                    }
+                    // Белая точка-«искра», бегущая по кругу
+                    rotate(phase) {
+                        drawCircle(
+                            color = Color.White,
+                            radius = strokeW * 0.55f,
+                            center = Offset(c.width, c.height - radius)
+                        )
+                    }
                 }
             }
         }
     }
+}
+
+/** Простой синус по градусам (0..360 → -1..1) */
+private fun sinDegrees(deg: Float): Float {
+    val rad = Math.toRadians(deg.toDouble())
+    return kotlin.math.sin(rad).toFloat()
 }
