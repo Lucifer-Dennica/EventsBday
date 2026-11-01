@@ -1,5 +1,11 @@
 package ru.yourname.events.ui.components
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -15,11 +21,18 @@ import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ru.yourname.events.data.model.Event
@@ -41,6 +54,7 @@ fun EventCard(
     borderWidth: Int = 2,
     borderColorPref: CardBorderColor = CardBorderColor.AUTO,
     borderGlow: Boolean = false,
+    neonBorder: Boolean = false,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onToggleNotifications: () -> Unit,
@@ -113,14 +127,25 @@ fun EventCard(
     }
 
     val cardShape = RoundedCornerShape(18.dp)
-    
-    // Цвет свечения берем от цвета обводки
     val glowColor = cardBorderColor.copy(alpha = 0.6f)
+
+    // Анимация для неоновой рамки
+    val infiniteTransition = rememberInfiniteTransition(label = "neon")
+    val borderAngle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "borderAngle"
+    )
 
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = cardShape,
-        border = BorderStroke(width = actualBorderWidth, color = cardBorderColor),
+        // Если неоновая рамка включена, стандартную отключаем
+        border = if (!neonBorder) BorderStroke(width = actualBorderWidth, color = cardBorderColor) else null,
         modifier = Modifier
             .fillMaxWidth()
             .then(
@@ -132,6 +157,38 @@ fun EventCard(
                         ambientColor = glowColor,
                         spotColor = glowColor
                     )
+                } else Modifier
+            )
+            .then(
+                if (neonBorder) {
+                    Modifier.drawWithContent {
+                        drawContent()
+                        // Рисуем неоновую рамку
+                        rotate(borderAngle) {
+                            val gradient = Brush.sweepGradient(
+                                colors = listOf(
+                                    Color(0xFFE91E63), Color(0xFFFF9800), Color(0xFFFFEB3B),
+                                    Color(0xFF4CAF50), Color(0xFF00BCD4), Color(0xFF3F51B5),
+                                    Color(0xFF9C27B0), Color(0xFFE91E63)
+                                ),
+                                center = Offset(size.width / 2, size.height / 2)
+                            )
+                            // Свечение (широкий полупрозрачный штрих)
+                            drawRoundRect(
+                                brush = gradient,
+                                size = Size(size.width, size.height),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(18.dp.toPx()),
+                                style = Stroke(width = (actualBorderWidth.value + 4).dp.toPx(), alpha = 0.3f)
+                            )
+                            // Четкая линия
+                            drawRoundRect(
+                                brush = gradient,
+                                size = Size(size.width, size.height),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(18.dp.toPx()),
+                                style = Stroke(width = actualBorderWidth.value.dp.toPx())
+                            )
+                        }
+                    }
                 } else Modifier
             )
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
