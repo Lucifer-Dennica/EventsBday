@@ -26,6 +26,7 @@ import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.settings.AppIcon
 import ru.yourname.events.data.settings.AppTheme
 import ru.yourname.events.data.settings.AvatarShape
+import ru.yourname.events.data.settings.CardBorderColor
 import ru.yourname.events.data.settings.CardGlowStyle
 import ru.yourname.events.data.settings.DaysFormat
 import ru.yourname.events.data.settings.IconSwitcher
@@ -55,7 +56,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
     val avatarShape by SettingsRepository.avatarShapeFlow(ctx).collectAsState(initial = AvatarShape.CIRCLE)
 
     val borderWidth by SettingsRepository.cardBorderWidthFlow(ctx).collectAsState(initial = 2)
-    val neonMode by SettingsRepository.neonModeFlow(ctx).collectAsState(initial = NeonMode.OFF)
     val glowStyle by SettingsRepository.cardGlowStyleFlow(ctx).collectAsState(initial = CardGlowStyle.NONE)
     val glowIntensity by SettingsRepository.cardGlowIntensityFlow(ctx).collectAsState(initial = 60)
 
@@ -81,7 +81,8 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
         titleFontSize = titleFontSize,
         daysFormat = daysFormat,
         showDayOfWeek = showDayOfWeek,
-        neonMode = neonMode,
+        // Неон теперь per-card, в предпросмотре показываем «Выкл»
+        neonMode = NeonMode.OFF,
         glowStyle = glowStyle,
         glowIntensity = glowIntensity,
         showZodiac = showZodiac
@@ -114,7 +115,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                             showNotificationsIcon = true, showPinIcon = true,
                             animationsAllowed = animEnabled,
                             borderWidth = borderWidth,
-                            borderColorPref = ru.yourname.events.data.settings.CardBorderColor.AUTO,
+                            borderColorPref = CardBorderColor.AUTO,
                             borderGlow = false,
                             neonBorder = false,
                             onClick = {}, onLongClick = {},
@@ -191,18 +192,24 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     scope.launch { SettingsRepository.setCardBorderWidth(ctx, it) }
                 }
 
-                HorizontalDivider(Modifier.padding(vertical = 20.dp))
-
-                // === НЕОНОВАЯ ОБВОДКА ===
-                SectionHeader("Неоновая обводка")
-                Text("Цвет обводки задаётся индивидуально для каждой карточки в её редакторе.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
-
-                NeonMode.entries.forEach { m ->
-                    RadioOption(m.label, neonMode == m) {
-                        scope.launch { SettingsRepository.setNeonMode(ctx, m) }
+                // Подсказка про per-card обводку
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text(
+                            "💡 Обводка и неон задаются индивидуально",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Откройте карточку на редактирование → секция «Обводка этой карточки». Там можно выбрать статичный цвет, бегущую полосу или сплошную радужную обводку (статичную/анимированную).",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 
@@ -210,6 +217,13 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 // === СВЕЧЕНИЕ / ТЕНЬ ===
                 SectionHeader("Свечение и тень")
+                Text(
+                    "Эффект применяется ко всем карточкам. Цвет свечения совпадает с цветом обводки карточки.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+
                 CardGlowStyle.entries.forEach { g ->
                     RadioOption(g.label, glowStyle == g) {
                         scope.launch { SettingsRepository.setCardGlowStyle(ctx, g) }
