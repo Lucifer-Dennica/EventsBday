@@ -178,7 +178,8 @@ fun EventCard(
                                 brush = gradient,
                                 size = Size(size.width, size.height),
                                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(18.dp.toPx()),
-                                style = Stroke(width = (actualBorderWidth.value + 4).dp.toPx(), alpha = 0.3f)
+                                style = Stroke(width = (actualBorderWidth.value + 4).dp.toPx()),
+                                alpha = 0.3f // <--- ИСПРАВЛЕНО ТУТ
                             )
                             // Четкая линия
                             drawRoundRect(
