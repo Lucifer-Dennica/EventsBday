@@ -14,9 +14,8 @@ import java.io.InputStreamReader
 
 object BackupManager {
 
-    private const val FORMAT_VERSION = 2 // Поднял версию, так как изменили формат
+    private const val FORMAT_VERSION = 2 // Поднял версию из-за новых полей
 
-    /** Сохраняет все события в файл по указанному URI. Возвращает количество сохранённых. */
     suspend fun export(ctx: Context, uri: Uri): Int = withContext(Dispatchers.IO) {
         val dao = AppDatabase.get(ctx).eventDao()
         val events: List<EventEntity> = dao.observeAll().first()
@@ -41,7 +40,7 @@ object BackupManager {
                         put("social_links", e.socialLinksRaw)
                         put("notifications_enabled", e.notificationsEnabled)
                         put("card_color", e.cardColor)
-                        // Добавленные поля:
+                        // ДОБАВЛЕНО:
                         put("is_pinned", e.isPinned)
                         put("animation", e.animation)
                         put("custom_color_hex", e.customColorHex)
@@ -60,7 +59,6 @@ object BackupManager {
         events.size
     }
 
-    /** Загружает события из файла по URI. Возвращает количество добавленных. */
     suspend fun import(ctx: Context, uri: Uri): Int = withContext(Dispatchers.IO) {
         val text = ctx.contentResolver.openInputStream(uri)?.use { input ->
             BufferedReader(InputStreamReader(input, Charsets.UTF_8)).readText()
@@ -88,7 +86,7 @@ object BackupManager {
                     socialLinksRaw = o.optString("social_links", ""),
                     notificationsEnabled = o.optBoolean("notifications_enabled", true),
                     cardColor = o.optInt("card_color", 0),
-                    // Добавленные поля:
+                    // ДОБАВЛЕНО:
                     isPinned = o.optBoolean("is_pinned", false),
                     animation = o.optString("animation", "NONE"),
                     customColorHex = if (o.isNull("custom_color_hex")) null else o.optString("custom_color_hex"),
