@@ -28,8 +28,9 @@ data class Event(
     val customColorHex: String? = null,
     val checklist: List<ChecklistItem> = emptyList(),
     val repeatYearly: Boolean = true,
-    // НОВОЕ: индивидуальный цвет обводки ("#RRGGBB") или null = глобальный из настроек
-    val borderColorHex: String? = null
+    val borderColorHex: String? = null,
+    // "COLOR" | "NEON_RUNNING" | "NEON_FULL_STATIC" | "NEON_FULL_ANIMATED" | null
+    val borderStyle: String? = null
 ) {
     fun nextOccurrence(from: LocalDate): LocalDate {
         var date = try {
@@ -37,7 +38,6 @@ data class Event(
         } catch (e: java.time.DateTimeException) {
             LocalDate.of(from.year, 2, 28)
         }
-
         if (date.isBefore(from)) {
             if (repeatYearly) {
                 date = try {
