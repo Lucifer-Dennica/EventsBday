@@ -38,7 +38,7 @@ fun AnimatedBackground(
         "STARS" -> 10000
         "FISH" -> 8000
         "BUTTERFLIES" -> 9000
-        "JELLYFISH" -> 12000
+        "JELLYFISH" -> 18000
         "WAVES", "WAVES_FOAM" -> 5000
         else -> 9000
     }
@@ -94,7 +94,7 @@ fun AnimatedBackground(
             "FLOWERS" -> drawFlowers(smallParticles + bigParticles, progress)
             "FISH" -> drawFish(smallParticles, progress)
             "BUTTERFLIES" -> drawButterflies(smallParticles, progress)
-            "JELLYFISH" -> drawJellyfish(smallParticles, progress, tint)
+            "JELLYFISH" -> drawJellyfish(bigParticles, progress, tint)
             "WAVES" -> drawWavesSimple(progress, tint)
             "WAVES_FOAM" -> drawWavesFoam(progress, tint)
         }
@@ -325,23 +325,18 @@ private fun DrawScope.drawButterfly(cx: Float, cy: Float, size: Float, flap: Flo
 // ======================= МЕДУЗЫ =======================
 private fun DrawScope.drawJellyfish(particles: List<Particle>, progress: Float, tint: Color) {
     particles.forEachIndexed { idx, p ->
-        val raw = p.y + progress * p.speed * 0.3f
+        // Полный проход сверху вниз за один цикл — без "прыжка" в конце
+        val speed = 1.15f + (p.speed - 1.0f) * 0.1f
+        val raw = p.y + progress * speed
         for (k in 0..1) {
             val yNorm = raw - k.toFloat()
-            val y = (1f - yNorm) * size.height
-            if (y < -100f || y > size.height + 100f) continue
-            
-            val x = p.x * size.width + sin(progress * 4f + p.phase) * 20f
+            val y = yNorm * size.height
+            if (y < -140f || y > size.height + 140f) continue
+
+            val x = p.x * size.width + sin(progress * 4f + p.phase) * 22f
             val jellySize = p.size * 1.5f
-            
-            // Свечение вокруг медузы
-            drawCircle(
-                color = tint.copy(alpha = 0.15f),
-                radius = jellySize * 2.5f,
-                center = Offset(x, y)
-            )
-            
-            // Купол медузы
+
+            // Купол (без серого круга-свечения)
             val bellPath = Path().apply {
                 moveTo(x - jellySize, y)
                 cubicTo(
@@ -349,7 +344,6 @@ private fun DrawScope.drawJellyfish(particles: List<Particle>, progress: Float, 
                     x + jellySize, y - jellySize * 1.5f,
                     x + jellySize, y
                 )
-                // Волнистый низ купола
                 cubicTo(
                     x + jellySize * 0.5f, y + jellySize * 0.3f,
                     x + jellySize * 0.2f, y - jellySize * 0.3f,
@@ -362,88 +356,18 @@ private fun DrawScope.drawJellyfish(particles: List<Particle>, progress: Float, 
                 )
                 close()
             }
-            
-            drawPath(
-                path = bellPath,
-                color = tint.copy(alpha = 0.4f)
-            )
-            drawPath(
-                path = bellPath,
-                color = Color.White.copy(alpha = 0.15f),
-                style = Stroke(width = 2f)
-            )
-            
-            // Щупальца
-            val tentacleCount = 5
+            drawPath(bellPath, tint.copy(alpha = 0.55f))
+            drawPath(bellPath, Color.White.copy(alpha = 0.3f), style = Stroke(width = 2.5f))
+
+            // Щупальца — 6 штук, длиннее, живее колышутся
+            val tentacleCount = 6
             for (t in 0 until tentacleCount) {
-                val tx = x - jellySize * 0.6f + (t * jellySize * 0.3f)
+                val tx = x - jellySize * 0.7f + (t * jellySize * 0.28f)
+                val wave1 = sin(progress * 6.28f * 3f + t * 0.7f)
+                val wave2 = sin(progress * 6.28f * 3f + t * 0.7f + 1.5f)
                 val tentaclePath = Path().apply {
-                    moveTo(tx, y + jellySize * 0.1f)
+                    moveTo(tx, y + jellySize * 0.05f)
                     cubicTo(
-                        tx + sin(progress * 6.28f + t) * 10f, y + jellySize * 0.8f,
-                        tx - sin(progress * 6.28f + t) * 15f, y + jellySize * 1.5f,
-                        tx + sin(progress * 6.28f + t * 2) * 8f, y + jellySize * 2.2f
-                    )
-                }
-                drawPath(
-                    path = tentaclePath,
-                    color = tint.copy(alpha = 0.3f),
-                    style = Stroke(width = 2f)
-                )
-            }
-        }
-    }
-}
-
-// ======================= ВОЛНЫ =======================
-private fun DrawScope.drawWavesSimple(progress: Float, tint: Color) {
-    for (layer in 0..2) {
-        val amplitude = 8f + layer * 5f
-        val yBase = size.height - (size.height * 0.20f) + layer * 12f
-        val alpha = 0.12f - layer * 0.03f
-        val path = Path()
-        path.moveTo(0f, yBase)
-        var x = 0f
-        while (x <= size.width) {
-            val y = yBase + sin((x / size.width) * 4f * PI.toFloat() + progress * 6.28f + layer) * amplitude
-            path.lineTo(x, y)
-            x += 8f
-        }
-        path.lineTo(size.width, size.height)
-        path.lineTo(0f, size.height)
-        path.close()
-        drawPath(path = path, color = tint.copy(alpha = alpha.coerceAtLeast(0.04f)))
-    }
-}
-
-private fun DrawScope.drawWavesFoam(progress: Float, tint: Color) {
-    for (layer in 0..2) {
-        val amplitude = 10f + layer * 6f
-        val yBase = size.height - (size.height * 0.20f) + layer * 12f
-        val alpha = 0.18f - layer * 0.04f
-        val path = Path()
-        path.moveTo(0f, yBase)
-        var x = 0f
-        while (x <= size.width) {
-            val y = yBase + sin((x / size.width) * 4f * PI.toFloat() + progress * 6.28f * (1f - layer * 0.2f) + layer) * amplitude
-            path.lineTo(x, y)
-            x += 6f
-        }
-        path.lineTo(size.width, size.height)
-        path.lineTo(0f, size.height)
-        path.close()
-        drawPath(path = path, color = tint.copy(alpha = alpha.coerceAtLeast(0.06f)))
-    }
-    val foamCount = 12
-    for (i in 0 until foamCount) {
-        val fx = (i + 0.5f) / foamCount * size.width
-        val phase = i * 0.8f
-        val baseY = size.height - (size.height * 0.20f)
-        val y = baseY + sin((fx / size.width) * 4f * PI.toFloat() + progress * 6.28f) * 10f
-        val visible = sin(progress * 6.28f * 2f + phase)
-        if (visible > 0.3f) {
-            val alpha = (visible - 0.3f) / 0.7f
-            drawCircle(Color.White.copy(alpha = alpha * 0.6f), 1.5f + alpha * 1.5f, Offset(fx, y - 2f))
-        }
-    }
-}
+                        tx + wave1 * 18f, y + jellySize * 1.0f,
+                        tx - wave2 * 22f, y + jellySize * 1.8f,
+                        tx + wave1 * 12f, y + jellySize * 2.8
