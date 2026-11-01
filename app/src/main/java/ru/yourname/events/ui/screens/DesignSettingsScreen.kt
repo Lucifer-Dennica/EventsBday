@@ -1,28 +1,20 @@
 package ru.yourname.events.ui.screens
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -34,14 +26,17 @@ import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.settings.AppIcon
 import ru.yourname.events.data.settings.AppTheme
 import ru.yourname.events.data.settings.AvatarShape
-import ru.yourname.events.data.settings.CardBorderColor
+import ru.yourname.events.data.settings.CardGlowStyle
 import ru.yourname.events.data.settings.DaysFormat
 import ru.yourname.events.data.settings.IconSwitcher
 import ru.yourname.events.data.settings.ListDensity
+import ru.yourname.events.data.settings.NeonMode
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.data.settings.TitleFontSize
+import ru.yourname.events.ui.components.AvatarConfig
 import ru.yourname.events.ui.components.DesignConfig
 import ru.yourname.events.ui.components.EventCard
+import ru.yourname.events.ui.components.LocalAvatarConfig
 import ru.yourname.events.ui.components.LocalDesignConfig
 import ru.yourname.events.ui.components.SwipeNavigationBox
 
@@ -54,14 +49,16 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
     val current by SettingsRepository.themeFlow(ctx).collectAsState(initial = AppTheme.SYSTEM)
     val appIcon by SettingsRepository.appIconFlow(ctx).collectAsState(initial = AppIcon.MAIN)
     val animEnabled by SettingsRepository.animEnabledFlow(ctx).collectAsState(initial = true)
+
     val avatarGlow by SettingsRepository.avatarGlowFlow(ctx).collectAsState(initial = true)
     val avatarSize by SettingsRepository.avatarSizeFlow(ctx).collectAsState(initial = 54)
     val avatarShape by SettingsRepository.avatarShapeFlow(ctx).collectAsState(initial = AvatarShape.CIRCLE)
+
     val borderWidth by SettingsRepository.cardBorderWidthFlow(ctx).collectAsState(initial = 2)
-    val borderColor by SettingsRepository.cardBorderColorFlow(ctx).collectAsState(initial = CardBorderColor.AUTO)
-    val borderGlow by SettingsRepository.cardBorderGlowFlow(ctx).collectAsState(initial = false)
-    val neonBorder by SettingsRepository.neonBorderFlow(ctx).collectAsState(initial = false)
-    val neonBorderFull by SettingsRepository.neonBorderFullFlow(ctx).collectAsState(initial = false)
+    val neonMode by SettingsRepository.neonModeFlow(ctx).collectAsState(initial = NeonMode.OFF)
+    val glowStyle by SettingsRepository.cardGlowStyleFlow(ctx).collectAsState(initial = CardGlowStyle.NONE)
+    val glowIntensity by SettingsRepository.cardGlowIntensityFlow(ctx).collectAsState(initial = 60)
+
     val cornerRadius by SettingsRepository.cardCornerRadiusFlow(ctx).collectAsState(initial = 18)
     val density by SettingsRepository.listDensityFlow(ctx).collectAsState(initial = ListDensity.NORMAL)
     val showZodiac by SettingsRepository.showZodiacFlow(ctx).collectAsState(initial = true)
@@ -77,15 +74,16 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
         )
     }
 
-    // Локальная копия DesignConfig для предпросмотра — отражает изменения мгновенно
-    val previewConfig = DesignConfig(
+    val previewAvatarConfig = AvatarConfig(glow = avatarGlow, size = avatarSize, shape = avatarShape)
+    val previewDesignConfig = DesignConfig(
         cornerRadius = cornerRadius,
         density = density,
         titleFontSize = titleFontSize,
         daysFormat = daysFormat,
         showDayOfWeek = showDayOfWeek,
-        neonBorder = neonBorder,
-        neonBorderFull = neonBorderFull,
+        neonMode = neonMode,
+        glowStyle = glowStyle,
+        glowIntensity = glowIntensity,
         showZodiac = showZodiac
     )
 
@@ -106,14 +104,19 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
             Column(Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())) {
 
                 SectionHeader("Предпросмотр карточки")
-                CompositionLocalProvider(LocalDesignConfig provides previewConfig) {
-                    Box(Modifier.padding(horizontal = 16.dp)) {
+                CompositionLocalProvider(
+                    LocalAvatarConfig provides previewAvatarConfig,
+                    LocalDesignConfig provides previewDesignConfig
+                ) {
+                    Box(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                         EventCard(
                             event = previewEvent, isSelected = false, selectionMode = false,
                             showNotificationsIcon = true, showPinIcon = true,
                             animationsAllowed = animEnabled,
-                            borderWidth = borderWidth, borderColorPref = borderColor,
-                            borderGlow = borderGlow, neonBorder = neonBorder,
+                            borderWidth = borderWidth,
+                            borderColorPref = ru.yourname.events.data.settings.CardBorderColor.AUTO,
+                            borderGlow = false,
+                            neonBorder = false,
                             onClick = {}, onLongClick = {},
                             onToggleNotifications = {}, onTogglePin = {}
                         )
@@ -152,7 +155,8 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                 SwitchRow("Свечение вокруг аватара", avatarGlow) {
                     scope.launch { SettingsRepository.setAvatarGlow(ctx, it) }
                 }
-                Text("Форма", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp))
+                Text("Форма", style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp))
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     AvatarShape.entries.forEach { shape ->
                         FilterChip(
@@ -163,7 +167,8 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                         )
                     }
                 }
-                Text("Размер", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp))
+                Text("Размер", style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp))
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(44 to "S", 54 to "M", 64 to "L", 76 to "XL").forEach { (value, label) ->
                         FilterChip(
@@ -177,7 +182,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
-                // === УГЛЫ И ОБВОДКА ===
+                // === ФОРМА КАРТОЧКИ ===
                 SectionHeader("Форма карточек")
                 SliderRow("Скругление углов", cornerRadius, 0..24, " dp") {
                     scope.launch { SettingsRepository.setCardCornerRadius(ctx, it) }
@@ -186,43 +191,33 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     scope.launch { SettingsRepository.setCardBorderWidth(ctx, it) }
                 }
 
-                Text("Цвет обводки — ${borderColor.label}",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp))
+                HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
-                BorderColorPicker(selected = borderColor) {
-                    scope.launch { SettingsRepository.setCardBorderColor(ctx, it) }
-                }
+                // === НЕОНОВАЯ ОБВОДКА ===
+                SectionHeader("Неоновая обводка")
+                Text("Цвет обводки задаётся индивидуально для каждой карточки в её редакторе.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
 
-                SwitchRow("Свечение вокруг карточки", borderGlow) {
-                    scope.launch { SettingsRepository.setCardBorderGlow(ctx, it) }
-                }
-
-                // === НЕОНОВАЯ ОБВОДКА (3 состояния) ===
-                Text("Неоновая обводка",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp))
-
-                RadioOption("Выключена", neonBorder.not() && neonBorderFull.not()) {
-                    scope.launch {
-                        SettingsRepository.setNeonBorder(ctx, false)
-                        SettingsRepository.setNeonBorderFull(ctx, false)
+                NeonMode.entries.forEach { m ->
+                    RadioOption(m.label, neonMode == m) {
+                        scope.launch { SettingsRepository.setNeonMode(ctx, m) }
                     }
                 }
-                RadioOption("Бегущая (сегмент)", neonBorder && neonBorderFull.not()) {
-                    scope.launch {
-                        SettingsRepository.setNeonBorder(ctx, true)
-                        SettingsRepository.setNeonBorderFull(ctx, false)
+
+                HorizontalDivider(Modifier.padding(vertical = 20.dp))
+
+                // === СВЕЧЕНИЕ / ТЕНЬ ===
+                SectionHeader("Свечение и тень")
+                CardGlowStyle.entries.forEach { g ->
+                    RadioOption(g.label, glowStyle == g) {
+                        scope.launch { SettingsRepository.setCardGlowStyle(ctx, g) }
                     }
                 }
-                RadioOption("Полная (сплошная)", neonBorder && neonBorderFull) {
-                    scope.launch {
-                        SettingsRepository.setNeonBorder(ctx, true)
-                        SettingsRepository.setNeonBorderFull(ctx, true)
+                if (glowStyle != CardGlowStyle.NONE) {
+                    SliderRow("Интенсивность", glowIntensity, 0..100, "%") {
+                        scope.launch { SettingsRepository.setCardGlowIntensity(ctx, it) }
                     }
                 }
 
@@ -231,25 +226,14 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                 // === ПЛОТНОСТЬ ===
                 SectionHeader("Плотность списка")
                 ListDensity.entries.forEach { d ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
-                            .selectable(selected = density == d, onClick = {
-                                scope.launch { SettingsRepository.setListDensity(ctx, d) }
-                            })
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(selected = density == d, onClick = {
-                            scope.launch { SettingsRepository.setListDensity(ctx, d) }
-                        })
-                        Spacer(Modifier.width(12.dp))
-                        Text(d.label, style = MaterialTheme.typography.bodyLarge)
+                    RadioOption(d.label, density == d) {
+                        scope.launch { SettingsRepository.setListDensity(ctx, d) }
                     }
                 }
 
                 HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
-                // === ШРИФТ ЗАГОЛОВКА ===
+                // === ШРИФТ ===
                 SectionHeader("Размер шрифта заголовка")
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TitleFontSize.entries.forEach { s ->
@@ -267,19 +251,8 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                 // === ФОРМАТ ДНЕЙ ===
                 SectionHeader("Формат счётчика дней")
                 DaysFormat.entries.forEach { f ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
-                            .selectable(selected = daysFormat == f, onClick = {
-                                scope.launch { SettingsRepository.setDaysFormat(ctx, f) }
-                            })
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(selected = daysFormat == f, onClick = {
-                            scope.launch { SettingsRepository.setDaysFormat(ctx, f) }
-                        })
-                        Spacer(Modifier.width(12.dp))
-                        Text(f.label, style = MaterialTheme.typography.bodyLarge)
+                    RadioOption(f.label, daysFormat == f) {
+                        scope.launch { SettingsRepository.setDaysFormat(ctx, f) }
                     }
                 }
 
@@ -315,46 +288,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                 Spacer(Modifier.height(16.dp))
                 YandexBanner(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp))
                 Spacer(Modifier.height(16.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun BorderColorPicker(selected: CardBorderColor, onPick: (CardBorderColor) -> Unit) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        items(CardBorderColor.entries) { color ->
-            val isSelected = color == selected
-            val bgBrush: Brush = when (color) {
-                CardBorderColor.AUTO -> Brush.sweepGradient(listOf(
-                    Color(0xFFE91E63), Color(0xFFFF9800), Color(0xFFFFEB3B),
-                    Color(0xFF4CAF50), Color(0xFF00BCD4), Color(0xFF3F51B5),
-                    Color(0xFF9C27B0), Color(0xFFE91E63)
-                ))
-                CardBorderColor.ACCENT -> SolidColor(MaterialTheme.colorScheme.primary)
-                else -> SolidColor(Color(color.hex ?: 0xFFFFFFFF))
-            }
-            val checkColor = when (color) {
-                CardBorderColor.WHITE, CardBorderColor.YELLOW, CardBorderColor.GOLD -> Color.Black
-                else -> Color.White
-            }
-            Box(
-                modifier = Modifier.size(44.dp).clip(CircleShape).background(bgBrush)
-                    .border(
-                        width = if (isSelected) 3.dp else 1.dp,
-                        color = if (isSelected) MaterialTheme.colorScheme.onSurface
-                                else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                        shape = CircleShape
-                    )
-                    .clickable { onPick(color) },
-                contentAlignment = Alignment.Center
-            ) {
-                if (isSelected) {
-                    Icon(Icons.Default.Check, contentDescription = null, tint = checkColor, modifier = Modifier.size(22.dp))
-                }
             }
         }
     }
