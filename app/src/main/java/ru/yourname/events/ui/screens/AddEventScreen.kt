@@ -44,6 +44,7 @@ import ru.yourname.events.data.settings.CardBorderColor
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.ui.components.AllPresetAvatars
 import ru.yourname.events.ui.components.CustomColorDialog
+import ru.yourname.events.ui.components.EventCard
 import ru.yourname.events.ui.components.SocialLinksEditor
 import ru.yourname.events.ui.components.customColorBrush
 import ru.yourname.events.ui.components.presetAvatarRes
@@ -60,6 +61,10 @@ fun AddEventScreen(
 ) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    // Глобальные настройки обводки — для точного превью
+    val globalBorderWidth by SettingsRepository.cardBorderWidthFlow(ctx).collectAsState(initial = 2)
+    val globalBorderColor by SettingsRepository.cardBorderColorFlow(ctx).collectAsState(initial = CardBorderColor.AUTO)
 
     var name by remember { mutableStateOf(editing?.name ?: "") }
     var date by remember {
@@ -84,7 +89,7 @@ fun AddEventScreen(
     var customColorHex by remember { mutableStateOf(editing?.customColorHex) }
     var checklist by remember { mutableStateOf(editing?.checklist ?: emptyList()) }
     var repeatYearly by remember { mutableStateOf(editing?.repeatYearly ?: true) }
-    var borderColorHex by remember { mutableStateOf(editing?.borderColorHex) } // НОВОЕ
+    var borderColorHex by remember { mutableStateOf(editing?.borderColorHex) }
     var newItemText by remember { mutableStateOf("") }
     var showDatePicker by remember { mutableStateOf(false) }
     var showColorDialog by remember { mutableStateOf(false) }
@@ -104,6 +109,28 @@ fun AddEventScreen(
     }
 
     val groupPresets = listOf("Семья", "Друзья", "Родственники", "Знакомые", "Работа", "Прочее")
+
+    // Живой превью-объект — обновляется при каждом изменении
+    val previewEvent = Event(
+        id = editing?.id ?: -1L,
+        name = name.ifBlank { "Имя события" },
+        dayOfMonth = date.dayOfMonth,
+        month = date.monthValue,
+        year = if (hasYear) date.year else null,
+        group = group.ifBlank { "Группа" },
+        note = note,
+        photoUri = photoUri,
+        presetAvatar = presetAvatar,
+        socialLinks = socials,
+        notificationsEnabled = notifications,
+        cardColor = cardColor,
+        isPinned = isPinned,
+        animation = animation,
+        customColorHex = customColorHex,
+        checklist = checklist,
+        repeatYearly = repeatYearly,
+        borderColorHex = borderColorHex
+    )
 
     Scaffold(
         topBar = {
@@ -257,9 +284,8 @@ fun AddEventScreen(
                 }
             }
 
-            // === НОВАЯ СЕКЦИЯ: ОБВОДКА ЭТОЙ КАРТОЧКИ ===
             Text("Обводка этой карточки", style = MaterialTheme.typography.titleMedium)
-            Text("Перекрывает глобальную настройку только для этой карточки. «Стандарт» = как в настройках дизайна.",
+            Text("Перекрывает глобальную настройку только для этой карточки. «A» = как в настройках дизайна.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
 
@@ -280,6 +306,33 @@ fun AddEventScreen(
                         label = { Text("${a.emoji} ${a.label}") }
                     )
                 }
+            }
+
+            // === ЖИВОЙ ПРЕДПРОСМОТР ===
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Предпросмотр", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.width(8.dp))
+                Text("— так будет выглядеть карточка",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Box(Modifier.fillMaxWidth()) {
+                EventCard(
+                    event = previewEvent,
+                    isSelected = false,
+                    selectionMode = false,
+                    showNotificationsIcon = true,
+                    showPinIcon = true,
+                    animationsAllowed = true,
+                    borderWidth = globalBorderWidth,
+                    borderColorPref = globalBorderColor,
+                    borderGlow = false,
+                    neonBorder = false,
+                    onClick = {},
+                    onLongClick = {},
+                    onToggleNotifications = {},
+                    onTogglePin = {}
+                )
             }
 
             OutlinedTextField(
@@ -431,7 +484,6 @@ private fun PerCardBorderPicker(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(vertical = 4.dp)
     ) {
-        // Пункт «Стандарт»
         item {
             Box(
                 modifier = Modifier.size(44.dp).clip(CircleShape)
@@ -452,7 +504,6 @@ private fun PerCardBorderPicker(
                 Text("A", color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
-        // 16 готовых цветов (пропускаем AUTO/ACCENT — это не фиксированные цвета)
         items(CardBorderColor.entries.filter { it.hex != null }) { color ->
             val hex = "#" + (color.hex!!.toInt() and 0xFFFFFF).toString(16).padStart(6, '0').uppercase()
             val isSelected = selectedHex.equals(hex, ignoreCase = true)
