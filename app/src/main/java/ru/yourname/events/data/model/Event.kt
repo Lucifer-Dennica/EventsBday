@@ -26,11 +26,19 @@ data class Event(
     val isPinned: Boolean = false,
     val animation: CardAnimation = CardAnimation.NONE,
     val customColorHex: String? = null,
-    val checklist: List<ChecklistItem> = emptyList()
+    val checklist: List<ChecklistItem> = emptyList(),
+    val repeatYearly: Boolean = true
 ) {
     fun nextOccurrence(from: LocalDate): LocalDate {
         var date = LocalDate.of(from.year, month, dayOfMonth)
-        if (date.isBefore(from)) date = date.plusYears(1)
+        if (date.isBefore(from)) {
+            if (repeatYearly) {
+                date = date.plusYears(1)
+            } else {
+                // Разовое событие в прошлом — возвращаем как есть
+                return date
+            }
+        }
         return date
     }
 
