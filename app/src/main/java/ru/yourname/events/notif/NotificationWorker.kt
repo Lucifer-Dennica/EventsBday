@@ -31,8 +31,7 @@ class NotificationWorker(
         val today = LocalDate.now()
 
         entities.forEach { entity ->
-            // ИСПРАВЛЕНО: Если режим "Выборочно" и тумблер выключен — пропускаем.
-            // Если режим "Все события" — игнорируем тумблер (уведомляем обо всех).
+            // ИСПРАВЛЕНО: В режиме CUSTOM проверяем тумблер, в ALL - шлем всем.
             if (mode == NotificationMode.CUSTOM && !entity.notificationsEnabled) return@forEach
 
             val event = Event(
