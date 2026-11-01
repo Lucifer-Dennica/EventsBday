@@ -43,7 +43,9 @@ import ru.yourname.events.ui.components.CustomColorDialog
 import ru.yourname.events.ui.components.SocialLinksEditor
 import ru.yourname.events.ui.components.customColorBrush
 import ru.yourname.events.ui.components.presetAvatarRes
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -200,7 +202,6 @@ fun AddEventScreen(
                 Text("Указать год рождения")
             }
 
-            // НОВОЕ: Повторять каждый год
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -416,16 +417,29 @@ fun AddEventScreen(
 
     if (showDatePicker) {
         val state = rememberDatePickerState(
-            initialSelectedDateMillis = date.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli(),
+            initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
             yearRange = 1900..(LocalDate.now().year + 1)
         )
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    state.selectedDateMillis?.let { millis ->
-                        date = java.time.Instant.ofEpochMilli(millis)
-                            .atZone(java.time.ZoneOffset.UTC).toLocalDate()
+                    // Читаем и выбранную дату, и отображаемый месяц (после смены года в шапке)
+                    val selMillis = state.selectedDateMillis
+                    val dispMillis = state.displayedMonthMillis
+                    if (selMillis != null) {
+                        val sel = Instant.ofEpochMilli(selMillis).atZone(ZoneOffset.UTC).toLocalDate()
+                        val disp = Instant.ofEpochMilli(dispMillis).atZone(ZoneOffset.UTC).toLocalDate()
+                        // Если пользователь перелистнул год через шапку — берём год из displayed
+                        val resultYear = if (disp.year != sel.year) disp.year else sel.year
+                        val resultDate = runCatching {
+                            LocalDate.of(resultYear, sel.monthValue, sel.dayOfMonth)
+                        }.getOrElse {
+                            LocalDate.of(resultYear, sel.monthValue, 28) // 29.02 fallback
+                        }
+                        date = resultDate
+                        // АВТО-включаем год: пользователь явно выбрал дату в пикере
+                        hasYear = true
                     }
                     showDatePicker = false
                 }) { Text("OK") }
