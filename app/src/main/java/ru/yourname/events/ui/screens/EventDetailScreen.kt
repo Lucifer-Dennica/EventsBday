@@ -15,11 +15,13 @@ import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Message
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,12 +29,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.model.SocialPlatform
 import ru.yourname.events.data.social.SocialUrlParser
 import ru.yourname.events.ui.components.EventAvatar
 import ru.yourname.events.ui.components.GreetingsDialog
 import ru.yourname.events.ui.components.LocalDesignConfig
+import ru.yourname.events.ui.components.SharePostcardManager
 import ru.yourname.events.ui.components.SocialIcon
 import ru.yourname.events.ui.components.ZodiacBlock
 import java.time.LocalDate
@@ -51,6 +55,7 @@ fun EventDetailScreen(
 ) {
     val ctx = LocalContext.current
     val design = LocalDesignConfig.current
+    val scope = rememberCoroutineScope()
     val today = LocalDate.now()
     val next = event.nextOccurrence(today)
     val days = event.daysUntil(today)
@@ -59,6 +64,7 @@ fun EventDetailScreen(
 
     var confirmDelete by remember { mutableStateOf(false) }
     var showGreetings by remember { mutableStateOf(false) }
+    var isGeneratingPostcard by remember { mutableStateOf(false) }
 
     val phoneLink = event.socialLinks.firstOrNull {
         it.platform == SocialPlatform.PHONE ||
@@ -104,6 +110,18 @@ fun EventDetailScreen(
         runCatching { ctx.startActivity(intent) }
     }
 
+    fun sharePostcard() {
+        if (isGeneratingPostcard) return
+        isGeneratingPostcard = true
+        scope.launch {
+            try {
+                SharePostcardManager.generateAndShare(ctx, event)
+            } finally {
+                isGeneratingPostcard = false
+            }
+        }
+    }
+
     fun toggleChecklistItem(index: Int) {
         val newList = event.checklist.toMutableList().also {
             it[index] = it[index].copy(done = !it[index].done)
@@ -146,12 +164,12 @@ fun EventDetailScreen(
                 Text("Исполнится $age лет", style = MaterialTheme.typography.titleLarge)
             }
 
-            // === КНОПКИ ДЕЙСТВИЙ 2x2 ===
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                if (phoneDigits != null) {
+            // === Строка 1: Позвонить / SMS ===
+            if (phoneDigits != null) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     Button(
                         onClick = { dial() },
                         modifier = Modifier.weight(1f).height(48.dp)
@@ -171,6 +189,7 @@ fun EventDetailScreen(
                 }
             }
 
+            // === Строка 2: В календарь / Поздравить ===
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -193,6 +212,26 @@ fun EventDetailScreen(
                     Icon(Icons.Default.Cake, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
                     Text("Поздравить", maxLines = 1)
+                }
+            }
+
+            // === Строка 3: Поделиться открыткой ===
+            OutlinedButton(
+                onClick = { sharePostcard() },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                enabled = !isGeneratingPostcard
+            ) {
+                if (isGeneratingPostcard) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Готовим открытку...")
+                } else {
+                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Поделиться открыткой")
                 }
             }
 
