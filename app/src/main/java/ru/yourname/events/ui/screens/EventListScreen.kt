@@ -126,7 +126,7 @@ fun EventListScreen(
             }
         }
         .filter { selectedGroup == null || it.group == selectedGroup }
-        // Скрываем разовые события, которые уже прошли (отрицательные дни)
+        // ИСПРАВЛЕНО: Скрываем разовые события, которые уже прошли
         .filter { it.repeatYearly || it.daysUntil(LocalDate.now()) >= 0 }
     }
 
