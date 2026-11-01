@@ -27,12 +27,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ru.yourname.events.data.model.Event
@@ -116,9 +121,8 @@ fun EventCard(
                 else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
             }
         }
-        CardBorderColor.WHITE -> Color.White
-        CardBorderColor.BLACK -> Color.Black
         CardBorderColor.ACCENT -> accent
+        else -> borderColorPref.hex?.let { Color(it) } ?: accent
     }
 
     val actualBorderWidth = when {
@@ -129,16 +133,16 @@ fun EventCard(
     val cardShape = RoundedCornerShape(18.dp)
     val glowColor = cardBorderColor.copy(alpha = 0.6f)
 
-    // Анимация для неоновой рамки
+    // Бегущая неоновая полоса
     val infiniteTransition = rememberInfiniteTransition(label = "neon")
-    val borderAngle by infiniteTransition.animateFloat(
+    val borderPhase by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 360f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
+            animation = tween(3200, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "borderAngle"
+        label = "borderPhase"
     )
 
     Card(
@@ -162,31 +166,63 @@ fun EventCard(
                 if (neonBorder) {
                     Modifier.drawWithContent {
                         drawContent()
-                        rotate(borderAngle) {
-                            val gradient = Brush.sweepGradient(
-                                colors = listOf(
-                                    Color(0xFFE91E63), Color(0xFFFF9800), Color(0xFFFFEB3B),
-                                    Color(0xFF4CAF50), Color(0xFF00BCD4), Color(0xFF3F51B5),
-                                    Color(0xFF9C27B0), Color(0xFFE91E63)
-                                ),
-                                center = Offset(size.width / 2, size.height / 2)
-                            )
-                            // Свечение
-                            drawRoundRect(
-                                brush = gradient,
-                                size = Size(size.width, size.height),
-                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(18.dp.toPx()),
-                                style = Stroke(width = (actualBorderWidth.value + 4).dp.toPx()),
-                                alpha = 0.3f // ИСПРАВЛЕНО: alpha теперь в drawRoundRect
-                            )
-                            // Четкая линия
-                            drawRoundRect(
-                                brush = gradient,
-                                size = Size(size.width, size.height),
-                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(18.dp.toPx()),
-                                style = Stroke(width = actualBorderWidth.value.dp.toPx())
-                            )
+
+                        val strokePx = actualBorderWidth.value.dp.toPx().coerceAtLeast(2.dp.toPx())
+                        val cornerPx = 18.dp.toPx()
+                        val rect = Rect(0f, 0f, size.width, size.height)
+
+                        // Тонкая базовая рамка, чтобы карточка не выглядела без обводки
+                        drawRoundRect(
+                            color = cardBorderColor.copy(alpha = 0.18f),
+                            topLeft = rect.topLeft,
+                            size = rect.size,
+                            cornerRadius = CornerRadius(cornerPx),
+                            style = Stroke(width = strokePx)
+                        )
+
+                        // Путь карточки и его измерение
+                        val borderPath = Path().apply {
+                            addRoundRect(RoundRect(rect, CornerRadius(cornerPx)))
                         }
+                        val measure = PathMeasure()
+                        measure.setPath(borderPath, false)
+                        val totalLen = measure.length
+                        if (totalLen <= 0f) return@drawWithContent
+
+                        val dashLen = totalLen * 0.28f
+                        val head = borderPhase * totalLen
+                        val tail = head - dashLen
+
+                        val segment = Path()
+                        if (tail >= 0f) {
+                            measure.getSegment(tail, head, segment, true)
+                        } else {
+                            measure.getSegment(totalLen + tail, totalLen, segment, true)
+                            measure.getSegment(0f, head, segment, true)
+                        }
+
+                        val neonBrush = Brush.sweepGradient(
+                            colors = listOf(
+                                Color(0xFFE91E63), Color(0xFFFF9800), Color(0xFFFFEB3B),
+                                Color(0xFF4CAF50), Color(0xFF00BCD4), Color(0xFF3F51B5),
+                                Color(0xFF9C27B0), Color(0xFFE91E63)
+                            ),
+                            center = Offset(size.width / 2f, size.height / 2f)
+                        )
+
+                        // Внешнее свечение
+                        drawPath(
+                            path = segment,
+                            brush = neonBrush,
+                            alpha = 0.40f,
+                            style = Stroke(width = strokePx + 8.dp.toPx(), cap = StrokeCap.Round)
+                        )
+                        // Чёткая линия
+                        drawPath(
+                            path = segment,
+                            brush = neonBrush,
+                            style = Stroke(width = strokePx, cap = StrokeCap.Round)
+                        )
                     }
                 } else Modifier
             )
