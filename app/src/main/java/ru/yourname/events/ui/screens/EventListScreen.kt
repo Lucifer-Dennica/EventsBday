@@ -124,7 +124,10 @@ fun EventListScreen(
                 e.name.contains(q, ignoreCase = true) || e.note.contains(q, ignoreCase = true) ||
                 e.group.contains(q, ignoreCase = true) || e.checklist.any { it.text.contains(q, ignoreCase = true) }
             }
-        }.filter { selectedGroup == null || it.group == selectedGroup }
+        }
+        .filter { selectedGroup == null || it.group == selectedGroup }
+        // Скрываем разовые события, которые уже прошли (отрицательные дни)
+        .filter { it.repeatYearly || it.daysUntil(LocalDate.now()) >= 0 }
     }
 
     val today = LocalDate.now()
