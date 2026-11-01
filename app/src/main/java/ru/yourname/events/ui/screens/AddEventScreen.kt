@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -27,9 +28,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
@@ -37,6 +40,7 @@ import ru.yourname.events.data.model.CardAnimation
 import ru.yourname.events.data.model.CardColors
 import ru.yourname.events.data.model.ChecklistItem
 import ru.yourname.events.data.model.Event
+import ru.yourname.events.data.settings.CardBorderColor
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.ui.components.AllPresetAvatars
 import ru.yourname.events.ui.components.CustomColorDialog
@@ -80,6 +84,7 @@ fun AddEventScreen(
     var customColorHex by remember { mutableStateOf(editing?.customColorHex) }
     var checklist by remember { mutableStateOf(editing?.checklist ?: emptyList()) }
     var repeatYearly by remember { mutableStateOf(editing?.repeatYearly ?: true) }
+    var borderColorHex by remember { mutableStateOf(editing?.borderColorHex) } // НОВОЕ
     var newItemText by remember { mutableStateOf("") }
     var showDatePicker by remember { mutableStateOf(false) }
     var showColorDialog by remember { mutableStateOf(false) }
@@ -99,7 +104,6 @@ fun AddEventScreen(
     }
 
     val groupPresets = listOf("Семья", "Друзья", "Родственники", "Знакомые", "Работа", "Прочее")
-    val checklistPresets = listOf("Купить подарок", "Отправить открытку", "Позвонить", "Написать в мессенджер")
 
     Scaffold(
         topBar = {
@@ -110,9 +114,7 @@ fun AddEventScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = null)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { p ->
@@ -129,21 +131,16 @@ fun AddEventScreen(
             LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 item {
                     Box(
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
+                        modifier = Modifier.size(64.dp).clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primaryContainer)
                             .clickable {
-                                photoPicker.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                )
+                                photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                             },
                         contentAlignment = Alignment.Center
                     ) {
                         if (photoUri != null) {
                             AsyncImage(
-                                model = photoUri,
-                                contentDescription = null,
+                                model = photoUri, contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.size(64.dp).clip(CircleShape)
                             )
@@ -156,9 +153,7 @@ fun AddEventScreen(
                     val selected = presetAvatar == idx && photoUri == null
                     val res = presetAvatarRes(idx)
                     Box(
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
+                        modifier = Modifier.size(64.dp).clip(CircleShape)
                             .border(
                                 width = if (selected) 3.dp else 0.dp,
                                 color = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
@@ -172,8 +167,7 @@ fun AddEventScreen(
                     ) {
                         if (res != 0) {
                             Image(
-                                painter = painterResource(res),
-                                contentDescription = null,
+                                painter = painterResource(res), contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.size(64.dp).clip(CircleShape)
                             )
@@ -183,11 +177,9 @@ fun AddEventScreen(
             }
 
             OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
+                value = name, onValueChange = { name = it },
                 label = { Text("Имя или название события") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                modifier = Modifier.fillMaxWidth(), singleLine = true
             )
 
             Text("Дата", style = MaterialTheme.typography.titleMedium)
@@ -202,39 +194,25 @@ fun AddEventScreen(
                 Text("Указать год рождения")
             }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Checkbox(
-                    checked = repeatYearly,
-                    onCheckedChange = { repeatYearly = it }
-                )
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Checkbox(checked = repeatYearly, onCheckedChange = { repeatYearly = it })
                 Column {
                     Text("Напоминать каждый год", style = MaterialTheme.typography.bodyLarge)
-                    Text(
-                        "Если выключено — событие будет разовым",
+                    Text("Если выключено — событие будет разовым",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
             Text("Группа", style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
-                value = group,
-                onValueChange = { group = it },
+                value = group, onValueChange = { group = it },
                 label = { Text("Название группы") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                modifier = Modifier.fillMaxWidth(), singleLine = true
             )
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(groupPresets) { g ->
-                    FilterChip(
-                        selected = g == group,
-                        onClick = { group = g },
-                        label = { Text(g) }
-                    )
+                    FilterChip(selected = g == group, onClick = { group = g }, label = { Text(g) })
                 }
             }
 
@@ -243,9 +221,7 @@ fun AddEventScreen(
                 items(CardColors.indices.toList()) { i ->
                     val selected = cardColor == i && customColorHex == null
                     Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                        modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp))
                             .background(CardColors[i])
                             .border(
                                 width = if (selected) 3.dp else 1.dp,
@@ -262,17 +238,9 @@ fun AddEventScreen(
                 item {
                     val active = customColorHex != null
                     val brush: Brush = customColorBrush(customColorHex)
-                        ?: Brush.verticalGradient(
-                            listOf(
-                                Color(0xFFFF9A9E),
-                                Color(0xFFFAD0C4),
-                                Color(0xFFA18CD1)
-                            )
-                        )
+                        ?: Brush.verticalGradient(listOf(Color(0xFFFF9A9E), Color(0xFFFAD0C4), Color(0xFFA18CD1)))
                     Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                        modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp))
                             .background(brush)
                             .border(
                                 width = if (active) 3.dp else 1.dp,
@@ -283,22 +251,27 @@ fun AddEventScreen(
                             .clickable { showColorDialog = true },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.Default.ColorLens,
-                            contentDescription = "Свой цвет",
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp)
-                        )
+                        Icon(Icons.Default.ColorLens, contentDescription = "Свой цвет",
+                            tint = Color.White, modifier = Modifier.size(22.dp))
                     }
                 }
             }
 
-            Text("Анимация карточки", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Может немного нагружать устройство. Если не нужно — оставьте «Без анимации».",
+            // === НОВАЯ СЕКЦИЯ: ОБВОДКА ЭТОЙ КАРТОЧКИ ===
+            Text("Обводка этой карточки", style = MaterialTheme.typography.titleMedium)
+            Text("Перекрывает глобальную настройку только для этой карточки. «Стандарт» = как в настройках дизайна.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            PerCardBorderPicker(
+                selectedHex = borderColorHex,
+                onPick = { borderColorHex = it }
             )
+
+            Text("Анимация карточки", style = MaterialTheme.typography.titleMedium)
+            Text("Может немного нагружать устройство. Если не нужно — оставьте «Без анимации».",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(CardAnimation.entries.toList()) { a ->
                     FilterChip(
@@ -310,21 +283,16 @@ fun AddEventScreen(
             }
 
             OutlinedTextField(
-                value = note,
-                onValueChange = { note = it },
+                value = note, onValueChange = { note = it },
                 label = { Text("Заметка") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 2
+                modifier = Modifier.fillMaxWidth(), minLines = 2
             )
 
             Text("Чек-лист", style = MaterialTheme.typography.titleMedium)
             if (checklist.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     checklist.forEachIndexed { i, item ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(
                                 checked = item.done,
                                 onCheckedChange = { checked ->
@@ -344,26 +312,19 @@ fun AddEventScreen(
                 }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
-                    value = newItemText,
-                    onValueChange = { newItemText = it },
-                    placeholder = { Text("Новый пункт") },
-                    singleLine = true,
+                    value = newItemText, onValueChange = { newItemText = it },
+                    placeholder = { Text("Новый пункт") }, singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
                 Spacer(Modifier.width(8.dp))
-                FilledIconButton(
-                    onClick = {
-                        if (newItemText.isNotBlank()) {
-                            checklist = checklist + ChecklistItem(newItemText.trim())
-                            newItemText = ""
-                        }
+                FilledIconButton(onClick = {
+                    if (newItemText.isNotBlank()) {
+                        checklist = checklist + ChecklistItem(newItemText.trim())
+                        newItemText = ""
                     }
-                ) {
+                }) {
                     Icon(Icons.Default.Add, contentDescription = "Добавить")
                 }
             }
@@ -405,7 +366,8 @@ fun AddEventScreen(
                             animation = animation,
                             customColorHex = customColorHex,
                             checklist = checklist,
-                            repeatYearly = repeatYearly
+                            repeatYearly = repeatYearly,
+                            borderColorHex = borderColorHex
                         )
                     )
                 },
@@ -424,32 +386,23 @@ fun AddEventScreen(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    // Читаем и выбранную дату, и отображаемый месяц (после смены года в шапке)
                     val selMillis = state.selectedDateMillis
                     val dispMillis = state.displayedMonthMillis
                     if (selMillis != null) {
                         val sel = Instant.ofEpochMilli(selMillis).atZone(ZoneOffset.UTC).toLocalDate()
                         val disp = Instant.ofEpochMilli(dispMillis).atZone(ZoneOffset.UTC).toLocalDate()
-                        // Если пользователь перелистнул год через шапку — берём год из displayed
                         val resultYear = if (disp.year != sel.year) disp.year else sel.year
                         val resultDate = runCatching {
                             LocalDate.of(resultYear, sel.monthValue, sel.dayOfMonth)
-                        }.getOrElse {
-                            LocalDate.of(resultYear, sel.monthValue, 28) // 29.02 fallback
-                        }
+                        }.getOrElse { LocalDate.of(resultYear, sel.monthValue, 28) }
                         date = resultDate
-                        // АВТО-включаем год: пользователь явно выбрал дату в пикере
                         hasYear = true
                     }
                     showDatePicker = false
                 }) { Text("OK") }
             },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Отмена") }
-            }
-        ) {
-            DatePicker(state = state)
-        }
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Отмена") } }
+        ) { DatePicker(state = state) }
     }
 
     if (showColorDialog) {
@@ -465,5 +418,64 @@ fun AddEventScreen(
                 showColorDialog = false
             }
         )
+    }
+}
+
+/** Горизонтальный ряд кружков. Первый — «Стандарт» (null → глобальная настройка). */
+@Composable
+private fun PerCardBorderPicker(
+    selectedHex: String?,
+    onPick: (String?) -> Unit
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(vertical = 4.dp)
+    ) {
+        // Пункт «Стандарт»
+        item {
+            Box(
+                modifier = Modifier.size(44.dp).clip(CircleShape)
+                    .background(Brush.sweepGradient(listOf(
+                        Color(0xFFE91E63), Color(0xFFFF9800), Color(0xFFFFEB3B),
+                        Color(0xFF4CAF50), Color(0xFF00BCD4), Color(0xFF3F51B5),
+                        Color(0xFF9C27B0), Color(0xFFE91E63)
+                    )))
+                    .border(
+                        width = if (selectedHex == null) 3.dp else 1.dp,
+                        color = if (selectedHex == null) MaterialTheme.colorScheme.onSurface
+                                else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                        shape = CircleShape
+                    )
+                    .clickable { onPick(null) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text("A", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        }
+        // 16 готовых цветов (пропускаем AUTO/ACCENT — это не фиксированные цвета)
+        items(CardBorderColor.entries.filter { it.hex != null }) { color ->
+            val hex = "#" + (color.hex!!.toInt() and 0xFFFFFF).toString(16).padStart(6, '0').uppercase()
+            val isSelected = selectedHex.equals(hex, ignoreCase = true)
+            val checkColor = when (color) {
+                CardBorderColor.WHITE, CardBorderColor.YELLOW, CardBorderColor.GOLD -> Color.Black
+                else -> Color.White
+            }
+            Box(
+                modifier = Modifier.size(44.dp).clip(CircleShape)
+                    .background(SolidColor(Color(color.hex)))
+                    .border(
+                        width = if (isSelected) 3.dp else 1.dp,
+                        color = if (isSelected) MaterialTheme.colorScheme.onSurface
+                                else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                        shape = CircleShape
+                    )
+                    .clickable { onPick(hex) },
+                contentAlignment = Alignment.Center
+            ) {
+                if (isSelected) {
+                    Icon(Icons.Default.Check, contentDescription = null, tint = checkColor, modifier = Modifier.size(22.dp))
+                }
+            }
+        }
     }
 }
