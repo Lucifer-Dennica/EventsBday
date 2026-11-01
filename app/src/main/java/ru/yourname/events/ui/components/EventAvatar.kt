@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -24,20 +26,17 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import ru.yourname.events.R
 import ru.yourname.events.data.model.Event
+import ru.yourname.events.data.settings.AvatarShape
 
 /** Глобальные настройки отображения аватара — задаются в DesignSettingsScreen. */
 data class AvatarConfig(
     val glow: Boolean = true,
-    val size: Int = 54
+    val size: Int = 54,
+    val shape: AvatarShape = AvatarShape.CIRCLE
 )
 
 val LocalAvatarConfig = compositionLocalOf { AvatarConfig() }
 
-/**
- * Аватар события.
- * @param size если не указан — берётся из LocalAvatarConfig.
- * @param glow если не указан — берётся из LocalAvatarConfig.
- */
 @Composable
 fun EventAvatar(
     event: Event,
@@ -50,8 +49,13 @@ fun EventAvatar(
     val realGlow = glow ?: config.glow
 
     val presetRes = event.presetAvatar?.let { presetAvatarRes(it) }
-
     val outerSize = if (realGlow) realSize + 14.dp else realSize
+
+    val avatarShape: Shape = when (config.shape) {
+        AvatarShape.CIRCLE -> CircleShape
+        AvatarShape.SQUARE -> RoundedCornerShape(0.dp)
+        AvatarShape.ROUNDED_SQUARE -> RoundedCornerShape(realSize * 0.28f)
+    }
 
     Box(
         modifier = Modifier.size(outerSize),
@@ -64,7 +68,6 @@ fun EventAvatar(
                 val outerR = this.size.width / 2f
                 val innerR = realSize.toPx() / 2f
 
-                // Мягкое свечение — 3 слоя с уменьшающейся прозрачностью
                 drawCircle(
                     color = accentColor.copy(alpha = 0.08f),
                     radius = outerR,
@@ -80,22 +83,33 @@ fun EventAvatar(
                     radius = innerR + 3.dp.toPx(),
                     center = Offset(cx, cy)
                 )
-
-                // Чёткое кольцо вокруг аватара
-                drawCircle(
-                    color = accentColor.copy(alpha = 0.85f),
-                    radius = innerR + 1.dp.toPx(),
-                    center = Offset(cx, cy),
-                    style = Stroke(width = 2.5.dp.toPx())
-                )
+                // Кольцо свечения работает только для круглой формы
+                if (config.shape == AvatarShape.CIRCLE) {
+                    drawCircle(
+                        color = accentColor.copy(alpha = 0.85f),
+                        radius = innerR + 1.dp.toPx(),
+                        center = Offset(cx, cy),
+                        style = Stroke(width = 2.5.dp.toPx())
+                    )
+                } else {
+                    // Для квадратной формы — рисуем скруглённый прямоугольник
+                    val halfSide = innerR - 1.dp.toPx()
+                    val cornerPx = if (config.shape == AvatarShape.ROUNDED_SQUARE) realSize.toPx() * 0.28f else 0f
+                    drawRoundRect(
+                        color = accentColor.copy(alpha = 0.85f),
+                        topLeft = Offset(cx - halfSide, cy - halfSide),
+                        size = androidx.compose.ui.geometry.Size(halfSide * 2, halfSide * 2),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerPx),
+                        style = Stroke(width = 2.5.dp.toPx())
+                    )
+                }
             }
         }
 
-        // Сам аватар
         Box(
             modifier = Modifier
                 .size(realSize)
-                .clip(CircleShape)
+                .clip(avatarShape)
                 .background(accentColor.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
@@ -105,7 +119,7 @@ fun EventAvatar(
                         model = event.photoUri,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize().clip(avatarShape)
                     )
                 }
                 presetRes != null && presetRes != 0 -> {
@@ -113,7 +127,7 @@ fun EventAvatar(
                         painter = painterResource(presetRes),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize().clip(avatarShape)
                     )
                 }
                 else -> {
