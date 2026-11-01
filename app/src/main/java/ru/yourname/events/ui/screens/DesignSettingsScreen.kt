@@ -3,20 +3,27 @@ package ru.yourname.events.ui.screens
 import android.content.Context
 import android.os.PowerManager
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -187,30 +194,19 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                 )
 
                 Text(
-                    "Цвет обводки",
+                    "Цвет обводки — ${borderColor.label}",
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
                 )
-                CardBorderColor.entries.forEach { c ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
-                            .selectable(
-                                selected = borderColor == c,
-                                onClick = { scope.launch { SettingsRepository.setCardBorderColor(ctx, c) } }
-                            )
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = borderColor == c,
-                            onClick = { scope.launch { SettingsRepository.setCardBorderColor(ctx, c) } }
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(c.label, style = MaterialTheme.typography.bodyLarge)
-                    }
-                }
+
+                BorderColorPicker(
+                    selected = borderColor,
+                    onPick = { scope.launch { SettingsRepository.setCardBorderColor(ctx, it) } }
+                )
+
+                Spacer(Modifier.height(8.dp))
 
                 SwitchRow(
                     label = "Свечение вокруг карточки",
@@ -219,7 +215,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                 )
 
                 SwitchRow(
-                    label = "Неоновая обводка (анимация)",
+                    label = "Неоновая бегущая полоса",
                     checked = neonBorder,
                     onToggle = { scope.launch { SettingsRepository.setNeonBorder(ctx, it) } }
                 )
@@ -243,6 +239,60 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                 Spacer(Modifier.height(16.dp))
                 YandexBanner(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp))
                 Spacer(Modifier.height(16.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun BorderColorPicker(
+    selected: CardBorderColor,
+    onPick: (CardBorderColor) -> Unit
+) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        items(CardBorderColor.entries) { color ->
+            val isSelected = color == selected
+            val bgBrush: Brush = when (color) {
+                CardBorderColor.AUTO -> Brush.sweepGradient(
+                    listOf(
+                        Color(0xFFE91E63), Color(0xFFFF9800), Color(0xFFFFEB3B),
+                        Color(0xFF4CAF50), Color(0xFF00BCD4), Color(0xFF3F51B5),
+                        Color(0xFF9C27B0), Color(0xFFE91E63)
+                    )
+                )
+                CardBorderColor.ACCENT -> SolidColor(MaterialTheme.colorScheme.primary)
+                else -> SolidColor(Color(color.hex ?: 0xFFFFFFFF))
+            }
+            val checkColor = when (color) {
+                CardBorderColor.WHITE, CardBorderColor.YELLOW, CardBorderColor.GOLD -> Color.Black
+                else -> Color.White
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(bgBrush)
+                    .border(
+                        width = if (isSelected) 3.dp else 1.dp,
+                        color = if (isSelected) MaterialTheme.colorScheme.onSurface
+                                else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                        shape = CircleShape
+                    )
+                    .clickable { onPick(color) },
+                contentAlignment = Alignment.Center
+            ) {
+                if (isSelected) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        tint = checkColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
             }
         }
     }
