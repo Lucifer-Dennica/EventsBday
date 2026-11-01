@@ -673,7 +673,7 @@ private fun NeonStyleCircle(
                         drawCircle(
                             color = Color.White,
                             radius = strokeW * 0.55f,
-                            center = Offset(c.width, c.height - radius)
+                            center = Offset(c.x, c.y - radius) 
                         )
                     }
                 }
