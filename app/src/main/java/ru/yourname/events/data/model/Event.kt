@@ -30,10 +30,20 @@ data class Event(
     val repeatYearly: Boolean = true
 ) {
     fun nextOccurrence(from: LocalDate): LocalDate {
-        var date = LocalDate.of(from.year, month, dayOfMonth)
+        // Защита от 29 февраля в невисокосный год
+        var date = try {
+            LocalDate.of(from.year, month, dayOfMonth)
+        } catch (e: java.time.DateTimeException) {
+            LocalDate.of(from.year, 2, 28)
+        }
+
         if (date.isBefore(from)) {
             if (repeatYearly) {
-                date = date.plusYears(1)
+                date = try {
+                    LocalDate.of(from.year + 1, month, dayOfMonth)
+                } catch (e: java.time.DateTimeException) {
+                    LocalDate.of(from.year + 1, 2, 28)
+                }
             } else {
                 // Разовое событие в прошлом — возвращаем как есть
                 return date
