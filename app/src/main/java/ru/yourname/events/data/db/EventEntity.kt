@@ -22,5 +22,6 @@ data class EventEntity(
     val isPinned: Boolean = false,
     val animation: String = "NONE",
     val customColorHex: String? = null,
-    val checklistRaw: String = ""
+    val checklistRaw: String = "",
+    val repeatYearly: Boolean = true
 )
