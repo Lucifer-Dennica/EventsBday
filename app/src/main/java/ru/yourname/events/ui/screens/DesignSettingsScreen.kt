@@ -35,7 +35,6 @@ import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.data.settings.SortMode
 import ru.yourname.events.ui.components.EventCard
 import ru.yourname.events.ui.components.SwipeNavigationBox
-import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,8 +55,8 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
     val borderWidth by SettingsRepository.cardBorderWidthFlow(ctx).collectAsState(initial = 2)
     val borderColor by SettingsRepository.cardBorderColorFlow(ctx).collectAsState(initial = CardBorderColor.AUTO)
     val borderGlow by SettingsRepository.cardBorderGlowFlow(ctx).collectAsState(initial = false)
+    val neonBorder by SettingsRepository.neonBorderFlow(ctx).collectAsState(initial = false)
 
-    // Демо-событие для предпросмотра
     val previewEvent = remember {
         Event(
             id = -1,
@@ -92,8 +91,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
             Column(
                 Modifier.fillMaxSize().padding(p).verticalScroll(rememberScrollState())
             ) {
-                
-                // === ПРЕДПРОСМОТР КАРТОЧКИ ===
                 Text(
                     "Предпросмотр карточки",
                     style = MaterialTheme.typography.titleSmall,
@@ -104,9 +101,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                 
                 Box(Modifier.padding(horizontal = 16.dp)) {
                     EventCard(
-                        event = previewEvent.copy(
-                            cardColor = if (borderColor == CardBorderColor.AUTO) 1 else previewEvent.cardColor
-                        ),
+                        event = previewEvent,
                         isSelected = false,
                         selectionMode = false,
                         showNotificationsIcon = true,
@@ -115,6 +110,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                         borderWidth = borderWidth,
                         borderColorPref = borderColor,
                         borderGlow = borderGlow,
+                        neonBorder = neonBorder,
                         onClick = {},
                         onLongClick = {},
                         onToggleNotifications = {},
@@ -124,9 +120,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
-                // === ТЕМА ===
                 SectionHeader("Тема оформления")
-                // ... (код темы без изменений) ...
                 var themeExpanded by remember { mutableStateOf(false) }
                 ExposedDropdownMenuBox(
                     expanded = themeExpanded, onExpandedChange = { themeExpanded = it },
@@ -150,7 +144,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
-                // === АВАТАР ===
                 SectionHeader("Аватар события")
                 SwitchRow(
                     label = "Свечение вокруг аватара",
@@ -166,17 +159,11 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
                 )
                 
-                // Компактный выбор размера чипсами
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val sizeOptions = listOf(
-                        44 to "S",
-                        54 to "M",
-                        64 to "L",
-                        76 to "XL"
-                    )
+                    val sizeOptions = listOf(44 to "S", 54 to "M", 64 to "L", 76 to "XL")
                     sizeOptions.forEach { (value, label) ->
                         FilterChip(
                             selected = avatarSize == value,
@@ -189,7 +176,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
-                // === ОБВОДКА ===
                 SectionHeader("Обводка карточек")
                 
                 SliderRow(
@@ -232,9 +218,14 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     onToggle = { scope.launch { SettingsRepository.setCardBorderGlow(ctx, it) } }
                 )
 
+                SwitchRow(
+                    label = "Неоновая обводка (анимация)",
+                    checked = neonBorder,
+                    onToggle = { scope.launch { SettingsRepository.setNeonBorder(ctx, it) } }
+                )
+
                 HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
-                // === ИКОНКА И ДРУГОЕ (без изменений) ===
                 SectionHeader("Иконка приложения")
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     IconTile(R.mipmap.ic_launcher_main, appIcon == AppIcon.MAIN, Modifier.weight(1f)) { scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.MAIN) }; IconSwitcher.switchTo(ctx, AppIcon.MAIN) }
