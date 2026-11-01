@@ -88,6 +88,7 @@ fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
     val borderWidth by SettingsRepository.cardBorderWidthFlow(ctx).collectAsState(initial = 2)
     val borderColor by SettingsRepository.cardBorderColorFlow(ctx).collectAsState(initial = CardBorderColor.AUTO)
     val borderGlow by SettingsRepository.cardBorderGlowFlow(ctx).collectAsState(initial = false)
+    val neonBorder by SettingsRepository.neonBorderFlow(ctx).collectAsState(initial = false)
 
     val animationsAllowed = remember(animEnabled, animBatterySaver, animRespectSystem, animMode) {
         if (!animEnabled || animMode == AnimationMode.OFF) {
@@ -137,6 +138,7 @@ fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
                     borderWidth = borderWidth,
                     borderColor = borderColor,
                     borderGlow = borderGlow,
+                    neonBorder = neonBorder,
                     onToggleViewMode = {
                         scope.launch {
                             SettingsRepository.setViewMode(
