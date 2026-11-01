@@ -28,6 +28,7 @@ import ru.yourname.events.data.settings.AnimationMode
 import ru.yourname.events.data.settings.AppIcon
 import ru.yourname.events.data.settings.AppTheme
 import ru.yourname.events.data.settings.CalendarMarkStyle
+import ru.yourname.events.data.settings.CardBorderColor
 import ru.yourname.events.data.settings.IconSwitcher
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.data.settings.SortMode
@@ -50,6 +51,10 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
     val avatarGlow by SettingsRepository.avatarGlowFlow(ctx).collectAsState(initial = true)
     val avatarSize by SettingsRepository.avatarSizeFlow(ctx).collectAsState(initial = 54)
+
+    val borderWidth by SettingsRepository.cardBorderWidthFlow(ctx).collectAsState(initial = 2)
+    val borderColor by SettingsRepository.cardBorderColorFlow(ctx).collectAsState(initial = CardBorderColor.AUTO)
+    val borderGlow by SettingsRepository.cardBorderGlowFlow(ctx).collectAsState(initial = false)
 
     val inPowerSave = remember {
         val pm = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -83,7 +88,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     .padding(p)
                     .verticalScroll(rememberScrollState())
             ) {
-
                 SectionHeader("Тема оформления")
                 ExposedDropdownMenuBox(
                     expanded = themeExpanded,
@@ -121,19 +125,10 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                 HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
                 SectionHeader("Аватар события")
-                Text(
-                    "Свечение вокруг круглой рамки и размер аватара во всех карточках",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
-                )
-
                 SwitchRow(
                     label = "Свечение вокруг аватара",
                     checked = avatarGlow,
-                    onToggle = {
-                        scope.launch { SettingsRepository.setAvatarGlow(ctx, it) }
-                    }
+                    onToggle = { scope.launch { SettingsRepository.setAvatarGlow(ctx, it) } }
                 )
 
                 Text(
@@ -143,12 +138,11 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
                 )
-
                 val sizeOptions = listOf(
-                    44 to "Маленький (44 dp)",
-                    54 to "Стандартный (54 dp)",
-                    64 to "Большой (64 dp)",
-                    76 to "Очень большой (76 dp)"
+                    44 to "Маленький",
+                    54 to "Стандартный",
+                    64 to "Большой",
+                    76 to "Очень большой"
                 )
                 sizeOptions.forEach { (value, label) ->
                     Row(
@@ -156,23 +150,64 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                             .fillMaxWidth()
                             .selectable(
                                 selected = avatarSize == value,
-                                onClick = {
-                                    scope.launch { SettingsRepository.setAvatarSize(ctx, value) }
-                                }
+                                onClick = { scope.launch { SettingsRepository.setAvatarSize(ctx, value) } }
                             )
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
                             selected = avatarSize == value,
-                            onClick = {
-                                scope.launch { SettingsRepository.setAvatarSize(ctx, value) }
-                            }
+                            onClick = { scope.launch { SettingsRepository.setAvatarSize(ctx, value) } }
                         )
                         Spacer(Modifier.width(12.dp))
                         Text(label, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
+
+                HorizontalDivider(Modifier.padding(vertical = 20.dp))
+
+                SectionHeader("Обводка карточек")
+                
+                SliderRow(
+                    label = "Толщина обводки",
+                    value = borderWidth,
+                    valueRange = 0..4,
+                    suffix = " dp",
+                    onChange = { scope.launch { SettingsRepository.setCardBorderWidth(ctx, it) } }
+                )
+
+                Text(
+                    "Цвет обводки",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
+                )
+                CardBorderColor.entries.forEach { c ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = borderColor == c,
+                                onClick = { scope.launch { SettingsRepository.setCardBorderColor(ctx, c) } }
+                            )
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = borderColor == c,
+                            onClick = { scope.launch { SettingsRepository.setCardBorderColor(ctx, c) } }
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(c.label, style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+
+                SwitchRow(
+                    label = "Свечение вокруг карточки",
+                    checked = borderGlow,
+                    onToggle = { scope.launch { SettingsRepository.setCardBorderGlow(ctx, it) } }
+                )
 
                 HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
@@ -211,7 +246,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                 }
 
                 Spacer(Modifier.height(16.dp))
-
                 SectionHeader("Отметки в календаре")
                 ExposedDropdownMenuBox(
                     expanded = markExpanded,
@@ -249,13 +283,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                 HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
                 SectionHeader("Анимации карточек")
-                Text(
-                    "Выбираются в каждой карточке отдельно. Здесь — общие настройки.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
-                )
-
                 ListItem(
                     headlineContent = {
                         Text("Разрешить анимации",
@@ -266,13 +293,10 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     trailingContent = {
                         Switch(
                             checked = animEnabled,
-                            onCheckedChange = {
-                                scope.launch { SettingsRepository.setAnimEnabled(ctx, it) }
-                            }
+                            onCheckedChange = { scope.launch { SettingsRepository.setAnimEnabled(ctx, it) } }
                         )
                     }
                 )
-
                 if (animEnabled) {
                     Text(
                         "Режим отображения",
@@ -287,9 +311,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                                 .fillMaxWidth()
                                 .selectable(
                                     selected = animMode == m,
-                                    onClick = {
-                                        scope.launch { SettingsRepository.setAnimMode(ctx, m) }
-                                    }
+                                    onClick = { scope.launch { SettingsRepository.setAnimMode(ctx, m) } }
                                 )
                                 .padding(horizontal = 16.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -302,7 +324,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                             Text(m.label, style = MaterialTheme.typography.bodyLarge)
                         }
                     }
-
                     ListItem(
                         headlineContent = {
                             Text("Уважать системную настройку",
@@ -315,13 +336,10 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                         trailingContent = {
                             Switch(
                                 checked = animRespectSystem,
-                                onCheckedChange = {
-                                    scope.launch { SettingsRepository.setAnimRespectSystem(ctx, it) }
-                                }
+                                onCheckedChange = { scope.launch { SettingsRepository.setAnimRespectSystem(ctx, it) } }
                             )
                         }
                     )
-
                     ListItem(
                         headlineContent = {
                             Text("Анимации в режиме экономии",
@@ -343,9 +361,7 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                         trailingContent = {
                             Switch(
                                 checked = animBatterySaver,
-                                onCheckedChange = {
-                                    scope.launch { SettingsRepository.setAnimBatterySaver(ctx, it) }
-                                }
+                                onCheckedChange = { scope.launch { SettingsRepository.setAnimBatterySaver(ctx, it) } }
                             )
                         }
                     )
@@ -353,7 +369,6 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 
                 HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
-                // ===== ИКОНКА ПРИЛОЖЕНИЯ =====
                 SectionHeader("Иконка приложения")
                 Text(
                     "Рабочий стол может обновляться не сразу",
@@ -362,102 +377,53 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
                 )
 
-                // Первый ряд из 4 иконок
                 Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    IconTile(
-                        iconRes = R.mipmap.ic_launcher_main,
-                        selected = appIcon == AppIcon.MAIN,
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.MAIN) }
-                            IconSwitcher.switchTo(ctx, AppIcon.MAIN)
-                        }
-                    )
-                    IconTile(
-                        iconRes = R.mipmap.ic_launcher_cake,
-                        selected = appIcon == AppIcon.CAKE,
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.CAKE) }
-                            IconSwitcher.switchTo(ctx, AppIcon.CAKE)
-                        }
-                    )
-                    IconTile(
-                        iconRes = R.mipmap.ic_launcher_calendar,
-                        selected = appIcon == AppIcon.CALENDAR,
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.CALENDAR) }
-                            IconSwitcher.switchTo(ctx, AppIcon.CALENDAR)
-                        }
-                    )
-                    IconTile(
-                        iconRes = R.mipmap.ic_launcher_gift,
-                        selected = appIcon == AppIcon.GIFT,
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.GIFT) }
-                            IconSwitcher.switchTo(ctx, AppIcon.GIFT)
-                        }
-                    )
+                    IconTile(R.mipmap.ic_launcher_main, appIcon == AppIcon.MAIN, Modifier.weight(1f)) {
+                        scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.MAIN) }
+                        IconSwitcher.switchTo(ctx, AppIcon.MAIN)
+                    }
+                    IconTile(R.mipmap.ic_launcher_cake, appIcon == AppIcon.CAKE, Modifier.weight(1f)) {
+                        scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.CAKE) }
+                        IconSwitcher.switchTo(ctx, AppIcon.CAKE)
+                    }
+                    IconTile(R.mipmap.ic_launcher_calendar, appIcon == AppIcon.CALENDAR, Modifier.weight(1f)) {
+                        scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.CALENDAR) }
+                        IconSwitcher.switchTo(ctx, AppIcon.CALENDAR)
+                    }
+                    IconTile(R.mipmap.ic_launcher_gift, appIcon == AppIcon.GIFT, Modifier.weight(1f)) {
+                        scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.GIFT) }
+                        IconSwitcher.switchTo(ctx, AppIcon.GIFT)
+                    }
                 }
-
-                // Второй ряд из 4 новых иконок
                 Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    IconTile(
-                        iconRes = R.mipmap.ic_launcher_balloons,
-                        selected = appIcon == AppIcon.BALLOONS,
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.BALLOONS) }
-                            IconSwitcher.switchTo(ctx, AppIcon.BALLOONS)
-                        }
-                    )
-                    IconTile(
-                        iconRes = R.mipmap.ic_launcher_heart,
-                        selected = appIcon == AppIcon.HEART,
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.HEART) }
-                            IconSwitcher.switchTo(ctx, AppIcon.HEART)
-                        }
-                    )
-                    IconTile(
-                        iconRes = R.mipmap.ic_launcher_bear,
-                        selected = appIcon == AppIcon.BEAR,
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.BEAR) }
-                            IconSwitcher.switchTo(ctx, AppIcon.BEAR)
-                        }
-                    )
-                    IconTile(
-                        iconRes = R.mipmap.ic_launcher_present,
-                        selected = appIcon == AppIcon.PRESENT,
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.PRESENT) }
-                            IconSwitcher.switchTo(ctx, AppIcon.PRESENT)
-                        }
-                    )
+                    IconTile(R.mipmap.ic_launcher_balloons, appIcon == AppIcon.BALLOONS, Modifier.weight(1f)) {
+                        scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.BALLOONS) }
+                        IconSwitcher.switchTo(ctx, AppIcon.BALLOONS)
+                    }
+                    IconTile(R.mipmap.ic_launcher_heart, appIcon == AppIcon.HEART, Modifier.weight(1f)) {
+                        scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.HEART) }
+                        IconSwitcher.switchTo(ctx, AppIcon.HEART)
+                    }
+                    IconTile(R.mipmap.ic_launcher_bear, appIcon == AppIcon.BEAR, Modifier.weight(1f)) {
+                        scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.BEAR) }
+                        IconSwitcher.switchTo(ctx, AppIcon.BEAR)
+                    }
+                    IconTile(R.mipmap.ic_launcher_present, appIcon == AppIcon.PRESENT, Modifier.weight(1f)) {
+                        scope.launch { SettingsRepository.setAppIcon(ctx, AppIcon.PRESENT) }
+                        IconSwitcher.switchTo(ctx, AppIcon.PRESENT)
+                    }
                 }
 
                 Spacer(Modifier.height(16.dp))
 
                 YandexBanner(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
                 )
 
                 Spacer(Modifier.height(16.dp))
@@ -467,28 +433,13 @@ fun DesignSettingsScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun IconTile(
-    iconRes: Int,
-    selected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    val borderColor = if (selected) MaterialTheme.colorScheme.primary
-                      else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+private fun IconTile(iconRes: Int, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val borderColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
     val borderWidth = if (selected) 3.dp else 1.dp
-
     Box(
-        modifier = modifier
-            .aspectRatio(1f)
-            .clip(RoundedCornerShape(16.dp))
-            .border(borderWidth, borderColor, RoundedCornerShape(16.dp))
-            .clickable { onClick() }
+        modifier = modifier.aspectRatio(1f).clip(RoundedCornerShape(16.dp)).border(borderWidth, borderColor, RoundedCornerShape(16.dp)).clickable { onClick() }
     ) {
-        Image(
-            painter = painterResource(iconRes),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))
-        )
+        Image(painter = painterResource(iconRes), contentDescription = null, modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp)))
     }
 }
 
@@ -504,22 +455,34 @@ private fun SectionHeader(text: String) {
 }
 
 @Composable
-private fun SwitchRow(
-    label: String,
-    checked: Boolean,
-    onToggle: (Boolean) -> Unit
-) {
+private fun SwitchRow(label: String, checked: Boolean, onToggle: (Boolean) -> Unit) {
     Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            label,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyLarge
-        )
+        Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
         Switch(checked = checked, onCheckedChange = onToggle)
+    }
+}
+
+@Composable
+private fun SliderRow(
+    label: String,
+    value: Int,
+    valueRange: IntRange,
+    suffix: String,
+    onChange: (Int) -> Unit
+) {
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            Text("$value$suffix", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+        }
+        Slider(
+            value = value.toFloat(),
+            onValueChange = { onChange(it.toInt()) },
+            valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
+            steps = (valueRange.last - valueRange.first) - 1
+        )
     }
 }
