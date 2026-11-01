@@ -14,6 +14,7 @@ enum class CardAnimation(
     FLOWERS("Цветы", "🌸", null),
     FISH("Рыбки", "🐠", 0xFF001A33),
     BUTTERFLIES("Бабочки", "🦋", null),
+    JELLYFISH("Медузы", "🪼", 0xFF001D3D),
     WAVES("Волны", "🌊", null),
     WAVES_FOAM("Волны с пеной", "🌊", null);
 
