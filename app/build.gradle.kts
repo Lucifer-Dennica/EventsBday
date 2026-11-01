@@ -71,7 +71,7 @@ dependencies {
 
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
-    implementation("com.yandex.android:mobileads:8.5.0")
+    implementation("com.yandex.android:mobileads:8.6.0")
 
     implementation("androidx.glance:glance-appwidget:1.1.0")
     implementation("androidx.glance:glance-material3:1.1.0")
