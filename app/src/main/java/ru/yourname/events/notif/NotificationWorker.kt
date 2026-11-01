@@ -31,7 +31,8 @@ class NotificationWorker(
         val today = LocalDate.now()
 
         entities.forEach { entity ->
-            if (!entity.notificationsEnabled) return@forEach
+            // ИСПРАВЛЕНО: Если режим "Выборочно" и тумблер выключен — пропускаем.
+            // Если режим "Все события" — игнорируем тумблер (уведомляем обо всех).
             if (mode == NotificationMode.CUSTOM && !entity.notificationsEnabled) return@forEach
 
             val event = Event(
@@ -48,7 +49,8 @@ class NotificationWorker(
                 isFromContacts = entity.isFromContacts,
                 socialLinks = emptyList(),
                 notificationsEnabled = entity.notificationsEnabled,
-                cardColor = entity.cardColor
+                cardColor = entity.cardColor,
+                repeatYearly = entity.repeatYearly
             )
 
             val days: Long = event.daysUntil(today)
