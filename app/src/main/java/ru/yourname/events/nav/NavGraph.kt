@@ -22,14 +22,20 @@ import kotlinx.coroutines.launch
 import ru.yourname.events.ads.AdsConfig
 import ru.yourname.events.ads.InterstitialManager
 import ru.yourname.events.data.settings.AnimationMode
+import ru.yourname.events.data.settings.AvatarShape
 import ru.yourname.events.data.settings.CalendarMarkStyle
 import ru.yourname.events.data.settings.CardBorderColor
+import ru.yourname.events.data.settings.DaysFormat
+import ru.yourname.events.data.settings.ListDensity
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.data.settings.SortMode
 import ru.yourname.events.data.settings.SwipeAction
+import ru.yourname.events.data.settings.TitleFontSize
 import ru.yourname.events.data.settings.ViewMode
 import ru.yourname.events.ui.components.AvatarConfig
+import ru.yourname.events.ui.components.DesignConfig
 import ru.yourname.events.ui.components.LocalAvatarConfig
+import ru.yourname.events.ui.components.LocalDesignConfig
 import ru.yourname.events.ui.screens.AboutScreen
 import ru.yourname.events.ui.screens.AddEventScreen
 import ru.yourname.events.ui.screens.BehaviorSettingsScreen
@@ -82,13 +88,25 @@ fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
     val animRespectSystem by SettingsRepository.animRespectSystemFlow(ctx).collectAsState(initial = true)
     val animMode by SettingsRepository.animModeFlow(ctx).collectAsState(initial = AnimationMode.ALL_VISIBLE)
 
+    // Аватар
     val avatarGlow by SettingsRepository.avatarGlowFlow(ctx).collectAsState(initial = true)
     val avatarSize by SettingsRepository.avatarSizeFlow(ctx).collectAsState(initial = 54)
-    
+    val avatarShape by SettingsRepository.avatarShapeFlow(ctx).collectAsState(initial = AvatarShape.CIRCLE)
+
+    // Обводки
     val borderWidth by SettingsRepository.cardBorderWidthFlow(ctx).collectAsState(initial = 2)
     val borderColor by SettingsRepository.cardBorderColorFlow(ctx).collectAsState(initial = CardBorderColor.AUTO)
     val borderGlow by SettingsRepository.cardBorderGlowFlow(ctx).collectAsState(initial = false)
     val neonBorder by SettingsRepository.neonBorderFlow(ctx).collectAsState(initial = false)
+    val neonBorderFull by SettingsRepository.neonBorderFullFlow(ctx).collectAsState(initial = false)
+
+    // Новые настройки дизайна
+    val cornerRadius by SettingsRepository.cardCornerRadiusFlow(ctx).collectAsState(initial = 18)
+    val density by SettingsRepository.listDensityFlow(ctx).collectAsState(initial = ListDensity.NORMAL)
+    val showZodiac by SettingsRepository.showZodiacFlow(ctx).collectAsState(initial = true)
+    val titleFontSize by SettingsRepository.titleFontSizeFlow(ctx).collectAsState(initial = TitleFontSize.MEDIUM)
+    val daysFormat by SettingsRepository.daysFormatFlow(ctx).collectAsState(initial = DaysFormat.SHORT)
+    val showDayOfWeek by SettingsRepository.showDayOfWeekFlow(ctx).collectAsState(initial = false)
 
     val animationsAllowed = remember(animEnabled, animBatterySaver, animRespectSystem, animMode) {
         if (!animEnabled || animMode == AnimationMode.OFF) {
@@ -120,7 +138,17 @@ fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
     }
 
     CompositionLocalProvider(
-        LocalAvatarConfig provides AvatarConfig(glow = avatarGlow, size = avatarSize)
+        LocalAvatarConfig provides AvatarConfig(glow = avatarGlow, size = avatarSize, shape = avatarShape),
+        LocalDesignConfig provides DesignConfig(
+            cornerRadius = cornerRadius,
+            density = density,
+            titleFontSize = titleFontSize,
+            daysFormat = daysFormat,
+            showDayOfWeek = showDayOfWeek,
+            neonBorder = neonBorder,
+            neonBorderFull = neonBorderFull,
+            showZodiac = showZodiac
+        )
     ) {
         NavHost(navController = nav, startDestination = startRoute) {
 
