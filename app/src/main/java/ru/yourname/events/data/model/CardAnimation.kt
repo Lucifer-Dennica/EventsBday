@@ -16,7 +16,16 @@ enum class CardAnimation(
     BUTTERFLIES("Бабочки", "🦋", null),
     JELLYFISH("Медузы", "🪼", 0xFF001D3D),
     WAVES("Волны", "🌊", null),
-    WAVES_FOAM("Волны с пеной", "🌊", null);
+    WAVES_FOAM("Волны с пеной", "🌊", null),
+    // === НОВЫЕ ===
+    CONFETTI("Конфетти", "🎉", null),
+    HEARTS("Сердечки", "💗", null),
+    FIREWORKS("Салют", "🎆", 0xFF0A0015),
+    BALLOONS("Воздушные шары", "🎈", null),
+    SPARKS("Искры", "✨", 0xFF1A0E00),
+    STREAMERS("Серпантин", "🎊", null),
+    CRYSTALS("Кристаллы", "💎", 0xFF0A1428),
+    COINS("Монеты", "💰", null);
 
     companion object {
         fun fromName(n: String): CardAnimation =
