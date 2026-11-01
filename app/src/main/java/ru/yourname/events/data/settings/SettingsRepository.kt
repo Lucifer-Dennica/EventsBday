@@ -31,10 +31,10 @@ object SettingsRepository {
     private val KEY_AVATAR_GLOW = booleanPreferencesKey("avatar_glow")
     private val KEY_AVATAR_SIZE = intPreferencesKey("avatar_size")
     
-    // Обводка карточек
     private val KEY_CARD_BORDER_WIDTH = intPreferencesKey("card_border_width")
     private val KEY_CARD_BORDER_COLOR = stringPreferencesKey("card_border_color")
     private val KEY_CARD_BORDER_GLOW = booleanPreferencesKey("card_border_glow")
+    private val KEY_NEON_BORDER = booleanPreferencesKey("neon_border")
 
     private val KEY_ANIM_ENABLED = booleanPreferencesKey("anim_enabled")
     private val KEY_ANIM_BATTERY_SAVER = booleanPreferencesKey("anim_battery_saver")
@@ -53,7 +53,6 @@ object SettingsRepository {
     private val KEY_FIRST_LAUNCH = stringPreferencesKey("first_launch_iso")
     private val KEY_ACHIEVEMENTS_SHOWN = stringPreferencesKey("achievements_shown")
 
-    // ТЕМА
     fun themeFlow(ctx: Context): Flow<AppTheme> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_THEME]?.let { runCatching { AppTheme.valueOf(it) }.getOrNull() } ?: AppTheme.SYSTEM
     }
@@ -61,7 +60,6 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_THEME] = theme.name }
     }
 
-    // ИКОНКА
     fun appIconFlow(ctx: Context): Flow<AppIcon> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_APP_ICON]?.let { runCatching { AppIcon.valueOf(it) }.getOrNull() } ?: AppIcon.MAIN
     }
@@ -69,7 +67,6 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_APP_ICON] = icon.name }
     }
 
-    // АВАТАР
     fun avatarGlowFlow(ctx: Context): Flow<Boolean> =
         ctx.settingsStore.data.map { it[KEY_AVATAR_GLOW] ?: true }
     suspend fun setAvatarGlow(ctx: Context, v: Boolean) {
@@ -82,7 +79,6 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_AVATAR_SIZE] = v.coerceIn(44, 80) }
     }
 
-    // ОБВОДКА
     fun cardBorderWidthFlow(ctx: Context): Flow<Int> =
         ctx.settingsStore.data.map { it[KEY_CARD_BORDER_WIDTH] ?: 2 }
     suspend fun setCardBorderWidth(ctx: Context, v: Int) {
@@ -103,7 +99,12 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_CARD_BORDER_GLOW] = v }
     }
 
-    // АНИМАЦИИ
+    fun neonBorderFlow(ctx: Context): Flow<Boolean> =
+        ctx.settingsStore.data.map { it[KEY_NEON_BORDER] ?: false }
+    suspend fun setNeonBorder(ctx: Context, v: Boolean) {
+        ctx.settingsStore.edit { it[KEY_NEON_BORDER] = v }
+    }
+
     fun animEnabledFlow(ctx: Context): Flow<Boolean> =
         ctx.settingsStore.data.map { it[KEY_ANIM_ENABLED] ?: true }
     suspend fun setAnimEnabled(ctx: Context, v: Boolean) {
@@ -127,7 +128,6 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_ANIM_MODE] = mode.name }
     }
 
-    // ИСТОРИЯ ЦВЕТОВ
     fun recentColorsFlow(ctx: Context): Flow<List<String>> = ctx.settingsStore.data.map { prefs ->
         (prefs[KEY_RECENT_COLORS] ?: "").split("|").filter { it.isNotBlank() }
     }
@@ -142,7 +142,6 @@ object SettingsRepository {
         }
     }
 
-    // ПОВЕДЕНИЕ
     fun swipesEnabledFlow(ctx: Context): Flow<Boolean> =
         ctx.settingsStore.data.map { it[KEY_SWIPES] ?: true }
     suspend fun setSwipesEnabled(ctx: Context, enabled: Boolean) {
@@ -168,7 +167,6 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_SWIPE_RIGHT] = action.name }
     }
 
-    // СОРТИРОВКА
     fun sortModeFlow(ctx: Context): Flow<SortMode> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_SORT]?.let { runCatching { SortMode.valueOf(it) }.getOrNull() } ?: SortMode.BY_DATE
     }
@@ -176,7 +174,6 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_SORT] = mode.name }
     }
 
-    // ВИД
     fun viewModeFlow(ctx: Context): Flow<ViewMode> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_VIEW_MODE]?.let { runCatching { ViewMode.valueOf(it) }.getOrNull() } ?: ViewMode.LIST
     }
@@ -184,7 +181,6 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_VIEW_MODE] = mode.name }
     }
 
-    // ОТМЕТКИ КАЛЕНДАРЯ
     fun calendarMarkStyleFlow(ctx: Context): Flow<CalendarMarkStyle> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_CAL_MARK]?.let { runCatching { CalendarMarkStyle.valueOf(it) }.getOrNull() }
             ?: CalendarMarkStyle.FILLED_SQUARE
@@ -214,7 +210,6 @@ object SettingsRepository {
     fun eventsCreatedFlow(ctx: Context): Flow<Int> =
         ctx.settingsStore.data.map { it[KEY_EVENTS_CREATED] ?: 0 }
 
-    // УВЕДОМЛЕНИЯ
     fun notifEnabledFlow(ctx: Context): Flow<Boolean> =
         ctx.settingsStore.data.map { it[KEY_NOTIF_ENABLED] ?: true }
     suspend fun setNotifEnabled(ctx: Context, enabled: Boolean) {
@@ -249,7 +244,6 @@ object SettingsRepository {
         }
     }
 
-    // ПЕРВЫЙ ЗАПУСК
     fun firstLaunchFlow(ctx: Context): Flow<String?> =
         ctx.settingsStore.data.map { it[KEY_FIRST_LAUNCH] }
     suspend fun ensureFirstLaunch(ctx: Context): String {
@@ -266,7 +260,6 @@ object SettingsRepository {
         return iso
     }
 
-    // ДОСТИЖЕНИЯ
     fun achievementsShownFlow(ctx: Context): Flow<Set<String>> = ctx.settingsStore.data.map { prefs ->
         (prefs[KEY_ACHIEVEMENTS_SHOWN] ?: "").split(",").filter { it.isNotBlank() }.toSet()
     }
@@ -281,27 +274,15 @@ object SettingsRepository {
 }
 
 enum class AppTheme(val label: String) {
-    SYSTEM("Системная"),
-    LIGHT("Светлая"),
-    DARK("Тёмная"),
-    AMOLED("AMOLED (чёрная)"),
-    BLUE_NIGHT("Синяя ночь"),
-    WARM_SUNSET("Тёплый закат"),
-    FOREST("Лес"),
-    BERRY("Ягодный милкшейк"),
-    MINIMAL("Минимал"),
-    HIGH_CONTRAST("Высокий контраст")
+    SYSTEM("Системная"), LIGHT("Светлая"), DARK("Тёмная"), AMOLED("AMOLED (чёрная)"),
+    BLUE_NIGHT("Синяя ночь"), WARM_SUNSET("Тёплый закат"), FOREST("Лес"),
+    BERRY("Ягодный милкшейк"), MINIMAL("Минимал"), HIGH_CONTRAST("Высокий контраст")
 }
 
 enum class AnimationMode(val label: String) {
-    ALL_VISIBLE("Все видимые карточки"),
-    FIRST_ONLY("Только первая видимая"),
-    OFF("Отключить анимации")
+    ALL_VISIBLE("Все видимые карточки"), FIRST_ONLY("Только первая видимая"), OFF("Отключить анимации")
 }
 
 enum class CardBorderColor(val label: String) {
-    AUTO("Автоматически"),
-    WHITE("Белая"),
-    BLACK("Чёрная"),
-    ACCENT("В цвет акцента")
+    AUTO("Автоматически"), WHITE("Белая"), BLACK("Чёрная"), ACCENT("В цвет акцента")
 }
