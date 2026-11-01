@@ -12,11 +12,11 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import ru.yourname.events.R
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.model.cardColorAt
 import ru.yourname.events.data.settings.AvatarShape
@@ -33,7 +33,6 @@ object SharePostcardManager {
     private const val POSTER_HEIGHT = 1350
 
     suspend fun generateAndShare(ctx: Context, event: Event) {
-        // Настройки пользователя
         val shape = SettingsRepository.avatarShapeFlow(ctx).first()
 
         val bitmap = withContext(Dispatchers.IO) {
@@ -72,7 +71,7 @@ object SharePostcardManager {
     private fun renderPostcard(ctx: Context, event: Event, avatarShape: AvatarShape): Bitmap {
         val bmp = Bitmap.createBitmap(POSTER_WIDTH, POSTER_HEIGHT, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
-        canvas.drawColor(Color.WHITE) // fallback
+        canvas.drawColor(Color.WHITE)
 
         // === 1. ФОН ===
         val (bgPrimary, bgSecondary, isDarkBg) = resolveBackground(event)
@@ -167,26 +166,22 @@ object SharePostcardManager {
         return bmp
     }
 
-    /** Возвращает (primary, secondary-or-null, isDarkBg) */
     private fun resolveBackground(event: Event): Triple<Int, Int?, Boolean> {
-        // 1. Кастомный цвет / градиент
         val customHex = event.customColorHex
         if (!customHex.isNullOrBlank()) {
             val parsed = parseCustomColor(customHex)
             if (parsed.isNotEmpty()) {
                 val primary = parsed[0].toArgb()
                 val secondary = if (parsed.size > 1) parsed[1].toArgb() else null
-                val isDark = parsed[0].isLight().not()
+                val isDark = !parsed[0].isLight()
                 return Triple(primary, secondary, isDark)
             }
         }
-        // 2. Стандартный цвет карточки
         if (event.cardColor != 0) {
             val c = cardColorAt(event.cardColor).toArgb()
-            val isDark = cardColorAt(event.cardColor).isLight().not()
+            val isDark = !cardColorAt(event.cardColor).isLight()
             return Triple(c, null, isDark)
         }
-        // 3. Дефолт — мягкий пастельный
         return Triple(Color.rgb(232, 235, 250), null, false)
     }
 
@@ -199,7 +194,6 @@ object SharePostcardManager {
         accentColor: Int,
         isDarkBg: Boolean
     ) {
-        // Фон аватара (мягкий круг/квадрат)
         val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = if (isDarkBg) Color.argb(60, 255, 255, 255)
                     else Color.argb(50, 0, 0, 0)
@@ -208,19 +202,14 @@ object SharePostcardManager {
         val innerRect = RectF(rect.left + padding, rect.top + padding, rect.right - padding, rect.bottom - padding)
 
         when (shape) {
-            AvatarShape.CIRCLE -> {
-                canvas.drawCircle(rect.centerX(), rect.centerY(), rect.width() / 2f, bgPaint)
-            }
-            AvatarShape.SQUARE -> {
-                canvas.drawRect(rect, bgPaint)
-            }
+            AvatarShape.CIRCLE -> canvas.drawCircle(rect.centerX(), rect.centerY(), rect.width() / 2f, bgPaint)
+            AvatarShape.SQUARE -> canvas.drawRect(rect, bgPaint)
             AvatarShape.ROUNDED_SQUARE -> {
                 val r = rect.width() * 0.22f
                 canvas.drawRoundRect(rect, r, r, bgPaint)
             }
         }
 
-        // Само изображение
         val presetRes = event.presetAvatar?.let { presetAvatarRes(it) }
         val photoBmp = loadAvatarBitmap(ctx, event, presetRes)
 
@@ -251,7 +240,6 @@ object SharePostcardManager {
                 }
             }
         } else {
-            // Нет фото — первая буква имени
             val letterPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = accentColor
                 textSize = innerRect.width() * 0.55f
@@ -266,7 +254,6 @@ object SharePostcardManager {
     }
 
     private fun loadAvatarBitmap(ctx: Context, event: Event, presetRes: Int?): Bitmap? {
-        // Фото пользователя (URI)
         if (!event.photoUri.isNullOrBlank()) {
             val bmp = runCatching {
                 ctx.contentResolver.openInputStream(android.net.Uri.parse(event.photoUri))?.use {
@@ -275,7 +262,6 @@ object SharePostcardManager {
             }.getOrNull()
             if (bmp != null) return bmp
         }
-        // Пресет
         if (presetRes != null && presetRes != 0) {
             return runCatching {
                 BitmapFactory.decodeResource(ctx.resources, presetRes)
