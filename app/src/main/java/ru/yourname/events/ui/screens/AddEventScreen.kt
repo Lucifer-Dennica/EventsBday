@@ -59,7 +59,9 @@ fun AddEventScreen(
     var date by remember {
         mutableStateOf(
             if (editing != null)
-                LocalDate.of(editing.year ?: 2000, editing.month, editing.dayOfMonth)
+                runCatching {
+                    LocalDate.of(editing.year ?: LocalDate.now().year, editing.month, editing.dayOfMonth)
+                }.getOrElse { LocalDate.now() }
             else LocalDate.now()
         )
     }
