@@ -116,7 +116,6 @@ fun EventCard(
         else -> accent
     }
 
-    // Per-card обводка имеет приоритет над глобальной
     val cardBorderColor: Color = if (!event.borderColorHex.isNullOrBlank()) {
         runCatching { Color(android.graphics.Color.parseColor(event.borderColorHex)) }
             .getOrElse { accent }
@@ -191,17 +190,23 @@ fun EventCard(
                         if (neonFull) {
                             // Сплошная градиентная обводка по всему периметру
                             val inset = strokePx / 2f
+                            val innerSize = Size(size.width - strokePx, size.height - strokePx)
+                            val innerTopLeft = Offset(inset, inset)
+
+                            // Внешнее свечение (полупрозрачный широкий штрих)
                             drawRoundRect(
                                 brush = neonBrush,
-                                topLeft = Offset(inset, inset),
-                                size = Size(size.width - strokePx, size.height - strokePx),
+                                topLeft = innerTopLeft,
+                                size = innerSize,
                                 cornerRadius = CornerRadius(cornerPx),
-                                style = Stroke(width = strokePx + 4.dp.toPx(), alpha = 0.35f)
+                                alpha = 0.35f, // ← alpha на drawRoundRect, НЕ в Stroke
+                                style = Stroke(width = strokePx + 4.dp.toPx())
                             )
+                            // Чёткая линия
                             drawRoundRect(
                                 brush = neonBrush,
-                                topLeft = Offset(inset, inset),
-                                size = Size(size.width - strokePx, size.height - strokePx),
+                                topLeft = innerTopLeft,
+                                size = innerSize,
                                 cornerRadius = CornerRadius(cornerPx),
                                 style = Stroke(width = strokePx)
                             )
@@ -235,7 +240,7 @@ fun EventCard(
                                 drawPath(
                                     path = segment,
                                     brush = neonBrush,
-                                    alpha = 0.40f,
+                                    alpha = 0.40f, // drawPath с brush — alpha корректно
                                     style = Stroke(width = strokePx + 8.dp.toPx(), cap = StrokeCap.Round)
                                 )
                                 drawPath(
@@ -316,19 +321,12 @@ fun EventCard(
                             color = accentOnCard
                         )
                     } else {
-                        val formatted = formatDays(days, design.daysFormat)
-                        val showUnit = design.daysFormat != DaysFormat.PREFIX
                         Text(
-                            text = formatted,
+                            text = formatDays(days, design.daysFormat),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = if (days <= 7) accentOnCard else textColor
                         )
-                        if (showUnit && design.daysFormat == DaysFormat.SHORT) {
-                            // "5 дн." уже с сокращением, доп. юнит не нужен
-                        } else if (design.daysFormat == DaysFormat.FULL) {
-                            // "5 дней" уже с юнитом
-                        }
                     }
                     if (showNotificationsIcon || showPinIcon) {
                         Spacer(Modifier.height(6.dp))
