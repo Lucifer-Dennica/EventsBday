@@ -27,10 +27,11 @@ data class Event(
     val animation: CardAnimation = CardAnimation.NONE,
     val customColorHex: String? = null,
     val checklist: List<ChecklistItem> = emptyList(),
-    val repeatYearly: Boolean = true
+    val repeatYearly: Boolean = true,
+    // НОВОЕ: индивидуальный цвет обводки ("#RRGGBB") или null = глобальный из настроек
+    val borderColorHex: String? = null
 ) {
     fun nextOccurrence(from: LocalDate): LocalDate {
-        // Защита от 29 февраля в невисокосный год
         var date = try {
             LocalDate.of(from.year, month, dayOfMonth)
         } catch (e: java.time.DateTimeException) {
@@ -45,7 +46,6 @@ data class Event(
                     LocalDate.of(from.year + 1, 2, 28)
                 }
             } else {
-                // Разовое событие в прошлом — возвращаем как есть
                 return date
             }
         }
