@@ -34,9 +34,12 @@ object SettingsRepository {
 
     private val KEY_CARD_BORDER_WIDTH = intPreferencesKey("card_border_width")
     private val KEY_CARD_BORDER_COLOR = stringPreferencesKey("card_border_color")
-    private val KEY_CARD_BORDER_GLOW = booleanPreferencesKey("card_border_glow")
+    private val KEY_CARD_BORDER_GLOW = booleanPreferencesKey("card_border_glow") // legacy
     private val KEY_NEON_BORDER = booleanPreferencesKey("neon_border")
-    private val KEY_NEON_BORDER_FULL = booleanPreferencesKey("neon_border_full") // НОВОЕ
+    private val KEY_NEON_BORDER_FULL = booleanPreferencesKey("neon_border_full")
+    private val KEY_NEON_BORDER_ANIMATED = booleanPreferencesKey("neon_border_animated") // НОВОЕ
+    private val KEY_CARD_GLOW_STYLE = stringPreferencesKey("card_glow_style")           // НОВОЕ
+    private val KEY_CARD_GLOW_INTENSITY = intPreferencesKey("card_glow_intensity")      // НОВОЕ
 
     private val KEY_CARD_CORNER_RADIUS = intPreferencesKey("card_corner_radius")
     private val KEY_LIST_DENSITY = stringPreferencesKey("list_density")
@@ -91,6 +94,7 @@ object SettingsRepository {
     }
     suspend fun setCardBorderColor(ctx: Context, color: CardBorderColor) { ctx.settingsStore.edit { it[KEY_CARD_BORDER_COLOR] = color.name } }
 
+    // Устаревший флаг, оставлен для совместимости. Используй cardGlowStyleFlow.
     fun cardBorderGlowFlow(ctx: Context): Flow<Boolean> = ctx.settingsStore.data.map { it[KEY_CARD_BORDER_GLOW] ?: false }
     suspend fun setCardBorderGlow(ctx: Context, v: Boolean) { ctx.settingsStore.edit { it[KEY_CARD_BORDER_GLOW] = v } }
 
@@ -99,6 +103,56 @@ object SettingsRepository {
 
     fun neonBorderFullFlow(ctx: Context): Flow<Boolean> = ctx.settingsStore.data.map { it[KEY_NEON_BORDER_FULL] ?: false }
     suspend fun setNeonBorderFull(ctx: Context, v: Boolean) { ctx.settingsStore.edit { it[KEY_NEON_BORDER_FULL] = v } }
+
+    fun neonBorderAnimatedFlow(ctx: Context): Flow<Boolean> = ctx.settingsStore.data.map { it[KEY_NEON_BORDER_ANIMATED] ?: true }
+    suspend fun setNeonBorderAnimated(ctx: Context, v: Boolean) { ctx.settingsStore.edit { it[KEY_NEON_BORDER_ANIMATED] = v } }
+
+    // Вспомогательный метод — единый источник истины о режиме неона
+    fun neonModeFlow(ctx: Context): Flow<NeonMode> = ctx.settingsStore.data.map { prefs ->
+        val active = prefs[KEY_NEON_BORDER] ?: false
+        if (!active) return@map NeonMode.OFF
+        val full = prefs[KEY_NEON_BORDER_FULL] ?: false
+        if (!full) return@map NeonMode.RUNNING
+        val animated = prefs[KEY_NEON_BORDER_ANIMATED] ?: true
+        if (animated) NeonMode.FULL_ANIMATED else NeonMode.FULL_STATIC
+    }
+    suspend fun setNeonMode(ctx: Context, mode: NeonMode) {
+        ctx.settingsStore.edit { prefs ->
+            when (mode) {
+                NeonMode.OFF -> {
+                    prefs[KEY_NEON_BORDER] = false
+                    prefs[KEY_NEON_BORDER_FULL] = false
+                }
+                NeonMode.RUNNING -> {
+                    prefs[KEY_NEON_BORDER] = true
+                    prefs[KEY_NEON_BORDER_FULL] = false
+                }
+                NeonMode.FULL_STATIC -> {
+                    prefs[KEY_NEON_BORDER] = true
+                    prefs[KEY_NEON_BORDER_FULL] = true
+                    prefs[KEY_NEON_BORDER_ANIMATED] = false
+                }
+                NeonMode.FULL_ANIMATED -> {
+                    prefs[KEY_NEON_BORDER] = true
+                    prefs[KEY_NEON_BORDER_FULL] = true
+                    prefs[KEY_NEON_BORDER_ANIMATED] = true
+                }
+            }
+        }
+    }
+
+    fun cardGlowStyleFlow(ctx: Context): Flow<CardGlowStyle> = ctx.settingsStore.data.map { prefs ->
+        prefs[KEY_CARD_GLOW_STYLE]?.let { runCatching { CardGlowStyle.valueOf(it) }.getOrNull() }
+            ?: (if (prefs[KEY_CARD_BORDER_GLOW] == true) CardGlowStyle.GLOW else CardGlowStyle.NONE)
+    }
+    suspend fun setCardGlowStyle(ctx: Context, style: CardGlowStyle) {
+        ctx.settingsStore.edit { it[KEY_CARD_GLOW_STYLE] = style.name }
+    }
+
+    fun cardGlowIntensityFlow(ctx: Context): Flow<Int> = ctx.settingsStore.data.map { it[KEY_CARD_GLOW_INTENSITY] ?: 60 }
+    suspend fun setCardGlowIntensity(ctx: Context, v: Int) {
+        ctx.settingsStore.edit { it[KEY_CARD_GLOW_INTENSITY] = v.coerceIn(0, 100) }
+    }
 
     fun cardCornerRadiusFlow(ctx: Context): Flow<Int> = ctx.settingsStore.data.map { it[KEY_CARD_CORNER_RADIUS] ?: 18 }
     suspend fun setCardCornerRadius(ctx: Context, v: Int) { ctx.settingsStore.edit { it[KEY_CARD_CORNER_RADIUS] = v.coerceIn(0, 24) } }
@@ -276,4 +330,20 @@ enum class TitleFontSize(val label: String, val sp: Int) {
 
 enum class DaysFormat(val label: String) {
     SHORT("5 дн."), FULL("5 дней"), PREFIX("через 5")
+}
+
+/** Режим неоновой обводки карточек. */
+enum class NeonMode(val label: String) {
+    OFF("Выключена"),
+    RUNNING("Бегущая (сегмент)"),
+    FULL_STATIC("Полная (статичная)"),
+    FULL_ANIMATED("Полная (анимированная)")
+}
+
+/** Стиль свечения/тени вокруг карточки. */
+enum class CardGlowStyle(val label: String) {
+    NONE("Без свечения"),
+    GLOW("Свечение"),
+    SHADOW("Тень"),
+    GLOW_SHADOW("Свечение + тень")
 }
