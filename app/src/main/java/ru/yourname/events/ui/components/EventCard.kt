@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.model.cardColorAt
+import ru.yourname.events.data.settings.CardBorderColor
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -36,6 +37,9 @@ fun EventCard(
     showNotificationsIcon: Boolean,
     showPinIcon: Boolean,
     animationsAllowed: Boolean = true,
+    borderWidth: Int = 2,
+    borderColorPref: CardBorderColor = CardBorderColor.AUTO,
+    borderGlow: Boolean = false,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onToggleNotifications: () -> Unit,
@@ -86,12 +90,25 @@ fun EventCard(
         hasCustomBg -> Color(0xFF394099)
         else -> accent
     }
-    val borderColor = when {
-        isSelected -> accent
-        event.isPinned -> accent.copy(alpha = 0.6f)
-        hasAnimOverride || (hasCustomColor && isDarkBg) -> Color(0x33FFFFFF)
-        hasCustomBg || hasCustomColor -> Color(0xFFB8BEC9)
-        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+
+    val cardBorderColor = when (borderColorPref) {
+        CardBorderColor.AUTO -> {
+            when {
+                isSelected -> accent
+                event.isPinned -> accent.copy(alpha = 0.6f)
+                hasAnimOverride || (hasCustomColor && isDarkBg) -> Color(0x33FFFFFF)
+                hasCustomBg || hasCustomColor -> Color(0xFFB8BEC9)
+                else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+            }
+        }
+        CardBorderColor.WHITE -> Color.White
+        CardBorderColor.BLACK -> Color.Black
+        CardBorderColor.ACCENT -> accent
+    }
+
+    val actualBorderWidth = when {
+        isSelected || event.isPinned -> 2.dp
+        else -> borderWidth.dp
     }
 
     val cardShape = RoundedCornerShape(18.dp)
@@ -99,8 +116,10 @@ fun EventCard(
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = cardShape,
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(width = if (isSelected || event.isPinned) 2.dp else 1.dp, color = borderColor),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (borderGlow) 8.dp else 0.dp
+        ),
+        border = BorderStroke(width = actualBorderWidth, color = cardBorderColor),
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
@@ -137,7 +156,6 @@ fun EventCard(
                     Spacer(Modifier.width(10.dp))
                 }
 
-                // Размер и свечение аватара берутся из LocalAvatarConfig
                 EventAvatar(event, accentColor = accentOnCard)
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
