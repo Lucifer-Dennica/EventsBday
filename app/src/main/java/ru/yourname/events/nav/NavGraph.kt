@@ -25,8 +25,10 @@ import ru.yourname.events.data.settings.AnimationMode
 import ru.yourname.events.data.settings.AvatarShape
 import ru.yourname.events.data.settings.CalendarMarkStyle
 import ru.yourname.events.data.settings.CardBorderColor
+import ru.yourname.events.data.settings.CardGlowStyle
 import ru.yourname.events.data.settings.DaysFormat
 import ru.yourname.events.data.settings.ListDensity
+import ru.yourname.events.data.settings.NeonMode
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.data.settings.SortMode
 import ru.yourname.events.data.settings.SwipeAction
@@ -96,9 +98,9 @@ fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
     // Обводки
     val borderWidth by SettingsRepository.cardBorderWidthFlow(ctx).collectAsState(initial = 2)
     val borderColor by SettingsRepository.cardBorderColorFlow(ctx).collectAsState(initial = CardBorderColor.AUTO)
-    val borderGlow by SettingsRepository.cardBorderGlowFlow(ctx).collectAsState(initial = false)
-    val neonBorder by SettingsRepository.neonBorderFlow(ctx).collectAsState(initial = false)
-    val neonBorderFull by SettingsRepository.neonBorderFullFlow(ctx).collectAsState(initial = false)
+    val neonMode by SettingsRepository.neonModeFlow(ctx).collectAsState(initial = NeonMode.OFF)
+    val glowStyle by SettingsRepository.cardGlowStyleFlow(ctx).collectAsState(initial = CardGlowStyle.NONE)
+    val glowIntensity by SettingsRepository.cardGlowIntensityFlow(ctx).collectAsState(initial = 60)
 
     // Новые настройки дизайна
     val cornerRadius by SettingsRepository.cardCornerRadiusFlow(ctx).collectAsState(initial = 18)
@@ -145,8 +147,9 @@ fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
             titleFontSize = titleFontSize,
             daysFormat = daysFormat,
             showDayOfWeek = showDayOfWeek,
-            neonBorder = neonBorder,
-            neonBorderFull = neonBorderFull,
+            neonMode = neonMode,
+            glowStyle = glowStyle,
+            glowIntensity = glowIntensity,
             showZodiac = showZodiac
         )
     ) {
@@ -165,8 +168,8 @@ fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
                     animationsAllowed = animationsAllowed,
                     borderWidth = borderWidth,
                     borderColor = borderColor,
-                    borderGlow = borderGlow,
-                    neonBorder = neonBorder,
+                    borderGlow = false,
+                    neonBorder = false,
                     onToggleViewMode = {
                         scope.launch {
                             SettingsRepository.setViewMode(
