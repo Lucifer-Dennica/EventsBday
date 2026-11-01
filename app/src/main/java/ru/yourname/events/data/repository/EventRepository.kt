@@ -31,7 +31,8 @@ class EventRepository(private val dao: EventDao) {
         customColorHex = customColorHex,
         checklist = parseChecklist(checklistRaw),
         repeatYearly = repeatYearly,
-        borderColorHex = borderColorHex
+        borderColorHex = borderColorHex,
+        borderStyle = borderStyle
     )
 
     private fun Event.toEntity() = EventEntity(
@@ -46,7 +47,8 @@ class EventRepository(private val dao: EventDao) {
         customColorHex = customColorHex,
         checklistRaw = serializeChecklist(checklist),
         repeatYearly = repeatYearly,
-        borderColorHex = borderColorHex
+        borderColorHex = borderColorHex,
+        borderStyle = borderStyle
     )
 
     private fun parseSocials(raw: String): List<SocialLink> {
@@ -55,10 +57,7 @@ class EventRepository(private val dao: EventDao) {
             val arr = JSONArray(raw)
             (0 until arr.length()).map { i ->
                 val o = arr.getJSONObject(i)
-                SocialLink(
-                    platform = SocialPlatform.fromKey(o.getString("p")),
-                    value = o.getString("v")
-                )
+                SocialLink(platform = SocialPlatform.fromKey(o.getString("p")), value = o.getString("v"))
             }
         } catch (_: Exception) { emptyList() }
     }
@@ -66,12 +65,7 @@ class EventRepository(private val dao: EventDao) {
     private fun serializeSocials(list: List<SocialLink>): String {
         if (list.isEmpty()) return ""
         val arr = JSONArray()
-        list.forEach {
-            arr.put(JSONObject().apply {
-                put("p", it.platform.key)
-                put("v", it.value)
-            })
-        }
+        list.forEach { arr.put(JSONObject().apply { put("p", it.platform.key); put("v", it.value) }) }
         return arr.toString()
     }
 
@@ -81,10 +75,7 @@ class EventRepository(private val dao: EventDao) {
             val arr = JSONArray(raw)
             (0 until arr.length()).map { i ->
                 val o = arr.getJSONObject(i)
-                ChecklistItem(
-                    text = o.optString("text", ""),
-                    done = o.optBoolean("done", false)
-                )
+                ChecklistItem(text = o.optString("text", ""), done = o.optBoolean("done", false))
             }.filter { it.text.isNotBlank() }
         } catch (_: Exception) { emptyList() }
     }
@@ -92,12 +83,7 @@ class EventRepository(private val dao: EventDao) {
     private fun serializeChecklist(list: List<ChecklistItem>): String {
         if (list.isEmpty()) return ""
         val arr = JSONArray()
-        list.forEach {
-            arr.put(JSONObject().apply {
-                put("text", it.text)
-                put("done", it.done)
-            })
-        }
+        list.forEach { arr.put(JSONObject().apply { put("text", it.text); put("done", it.done) }) }
         return arr.toString()
     }
 }
