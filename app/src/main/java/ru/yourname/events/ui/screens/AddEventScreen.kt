@@ -3,6 +3,7 @@ package ru.yourname.events.ui.screens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,9 +27,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -62,7 +66,6 @@ fun AddEventScreen(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // Глобальные настройки обводки — для точного превью
     val globalBorderWidth by SettingsRepository.cardBorderWidthFlow(ctx).collectAsState(initial = 2)
     val globalBorderColor by SettingsRepository.cardBorderColorFlow(ctx).collectAsState(initial = CardBorderColor.AUTO)
 
@@ -89,7 +92,9 @@ fun AddEventScreen(
     var customColorHex by remember { mutableStateOf(editing?.customColorHex) }
     var checklist by remember { mutableStateOf(editing?.checklist ?: emptyList()) }
     var repeatYearly by remember { mutableStateOf(editing?.repeatYearly ?: true) }
+    // === Обводка карточки ===
     var borderColorHex by remember { mutableStateOf(editing?.borderColorHex) }
+    var borderStyle by remember { mutableStateOf(editing?.borderStyle) }
     var newItemText by remember { mutableStateOf("") }
     var showDatePicker by remember { mutableStateOf(false) }
     var showColorDialog by remember { mutableStateOf(false) }
@@ -110,7 +115,6 @@ fun AddEventScreen(
 
     val groupPresets = listOf("Семья", "Друзья", "Родственники", "Знакомые", "Работа", "Прочее")
 
-    // Живой превью-объект — обновляется при каждом изменении
     val previewEvent = Event(
         id = editing?.id ?: -1L,
         name = name.ifBlank { "Имя события" },
@@ -129,7 +133,8 @@ fun AddEventScreen(
         customColorHex = customColorHex,
         checklist = checklist,
         repeatYearly = repeatYearly,
-        borderColorHex = borderColorHex
+        borderColorHex = borderColorHex,
+        borderStyle = borderStyle
     )
 
     Scaffold(
@@ -166,11 +171,9 @@ fun AddEventScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         if (photoUri != null) {
-                            AsyncImage(
-                                model = photoUri, contentDescription = null,
+                            AsyncImage(model = photoUri, contentDescription = null,
                                 contentScale = ContentScale.Crop,
-                                modifier = Modifier.size(64.dp).clip(CircleShape)
-                            )
+                                modifier = Modifier.size(64.dp).clip(CircleShape))
                         } else {
                             Icon(Icons.Default.PhotoLibrary, contentDescription = "Выбрать фото")
                         }
@@ -193,11 +196,9 @@ fun AddEventScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         if (res != 0) {
-                            Image(
-                                painter = painterResource(res), contentDescription = null,
+                            Image(painter = painterResource(res), contentDescription = null,
                                 contentScale = ContentScale.Crop,
-                                modifier = Modifier.size(64.dp).clip(CircleShape)
-                            )
+                                modifier = Modifier.size(64.dp).clip(CircleShape))
                         }
                     }
                 }
@@ -284,14 +285,19 @@ fun AddEventScreen(
                 }
             }
 
+            // === ОБВОДКА ЭТОЙ КАРТОЧКИ ===
             Text("Обводка этой карточки", style = MaterialTheme.typography.titleMedium)
-            Text("Перекрывает глобальную настройку только для этой карточки. «A» = как в настройках дизайна.",
+            Text("«A» — как в настройках дизайна. Цвета — статичная обводка. Неоновые кружки — анимированная.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             PerCardBorderPicker(
-                selectedHex = borderColorHex,
-                onPick = { borderColorHex = it }
+                selectedStyle = borderStyle,
+                selectedColorHex = borderColorHex,
+                onPick = { style, hex ->
+                    borderStyle = style
+                    borderColorHex = hex
+                }
             )
 
             Text("Анимация карточки", style = MaterialTheme.typography.titleMedium)
@@ -308,7 +314,7 @@ fun AddEventScreen(
                 }
             }
 
-            // === ЖИВОЙ ПРЕДПРОСМОТР ===
+            // === ПРЕДПРОСМОТР ===
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Предпросмотр", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.width(8.dp))
@@ -420,7 +426,8 @@ fun AddEventScreen(
                             customColorHex = customColorHex,
                             checklist = checklist,
                             repeatYearly = repeatYearly,
-                            borderColorHex = borderColorHex
+                            borderColorHex = borderColorHex,
+                            borderStyle = borderStyle
                         )
                     )
                 },
@@ -474,39 +481,46 @@ fun AddEventScreen(
     }
 }
 
-/** Горизонтальный ряд кружков. Первый — «Стандарт» (null → глобальная настройка). */
+/** 1 «A» + 16 цветов + 3 неона. Компактный ряд из 20 кружков. */
 @Composable
 private fun PerCardBorderPicker(
-    selectedHex: String?,
-    onPick: (String?) -> Unit
+    selectedStyle: String?,
+    selectedColorHex: String?,
+    onPick: (style: String?, hex: String?) -> Unit
 ) {
+    val neonGradient = listOf(
+        Color(0xFFE91E63), Color(0xFFFF9800), Color(0xFFFFEB3B),
+        Color(0xFF4CAF50), Color(0xFF00BCD4), Color(0xFF3F51B5),
+        Color(0xFF9C27B0), Color(0xFFE91E63)
+    )
+
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(vertical = 4.dp)
     ) {
+        // 1. «A» — стандарт (глобальные настройки)
         item {
+            val isSelected = selectedStyle == null && selectedColorHex == null
             Box(
                 modifier = Modifier.size(44.dp).clip(CircleShape)
-                    .background(Brush.sweepGradient(listOf(
-                        Color(0xFFE91E63), Color(0xFFFF9800), Color(0xFFFFEB3B),
-                        Color(0xFF4CAF50), Color(0xFF00BCD4), Color(0xFF3F51B5),
-                        Color(0xFF9C27B0), Color(0xFFE91E63)
-                    )))
+                    .background(Brush.sweepGradient(neonGradient))
                     .border(
-                        width = if (selectedHex == null) 3.dp else 1.dp,
-                        color = if (selectedHex == null) MaterialTheme.colorScheme.onSurface
+                        width = if (isSelected) 3.dp else 1.dp,
+                        color = if (isSelected) MaterialTheme.colorScheme.onSurface
                                 else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                         shape = CircleShape
                     )
-                    .clickable { onPick(null) },
+                    .clickable { onPick(null, null) },
                 contentAlignment = Alignment.Center
             ) {
                 Text("A", color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
+
+        // 2. 16 цветов — статичная обводка
         items(CardBorderColor.entries.filter { it.hex != null }) { color ->
             val hex = "#" + (color.hex!!.toInt() and 0xFFFFFF).toString(16).padStart(6, '0').uppercase()
-            val isSelected = selectedHex.equals(hex, ignoreCase = true)
+            val isSelected = selectedStyle == "COLOR" && selectedColorHex.equals(hex, ignoreCase = true)
             val checkColor = when (color) {
                 CardBorderColor.WHITE, CardBorderColor.YELLOW, CardBorderColor.GOLD -> Color.Black
                 else -> Color.White
@@ -520,11 +534,93 @@ private fun PerCardBorderPicker(
                                 else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                         shape = CircleShape
                     )
-                    .clickable { onPick(hex) },
+                    .clickable { onPick("COLOR", hex) },
                 contentAlignment = Alignment.Center
             ) {
                 if (isSelected) {
                     Icon(Icons.Default.Check, contentDescription = null, tint = checkColor, modifier = Modifier.size(22.dp))
+                }
+            }
+        }
+
+        // 3. Три неона
+        item {
+            NeonStyleCircle(
+                mode = NeonStyle.FULL_STATIC,
+                isSelected = selectedStyle == "NEON_FULL_STATIC",
+                onClick = { onPick("NEON_FULL_STATIC", null) }
+            )
+        }
+        item {
+            NeonStyleCircle(
+                mode = NeonStyle.RUNNING,
+                isSelected = selectedStyle == "NEON_RUNNING",
+                onClick = { onPick("NEON_RUNNING", null) }
+            )
+        }
+        item {
+            NeonStyleCircle(
+                mode = NeonStyle.FULL_ANIMATED,
+                isSelected = selectedStyle == "NEON_FULL_ANIMATED",
+                onClick = { onPick("NEON_FULL_ANIMATED", null) }
+            )
+        }
+    }
+}
+
+private enum class NeonStyle { FULL_STATIC, RUNNING, FULL_ANIMATED }
+
+@Composable
+private fun NeonStyleCircle(
+    mode: NeonStyle,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val neonGradient = listOf(
+        Color(0xFFE91E63), Color(0xFFFF9800), Color(0xFFFFEB3B),
+        Color(0xFF4CAF50), Color(0xFF00BCD4), Color(0xFF3F51B5),
+        Color(0xFF9C27B0), Color(0xFFE91E63)
+    )
+    val brush = Brush.sweepGradient(neonGradient)
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.onSurface
+        else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+    val borderWidth = if (isSelected) 3.dp else 1.dp
+
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(borderWidth, borderColor, CircleShape)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(Modifier.fillMaxSize().padding(8.dp)) {
+            val strokeW = 5f
+            when (mode) {
+                NeonStyle.FULL_STATIC -> {
+                    // Залитый градиентом круг
+                    drawCircle(brush = brush)
+                }
+                NeonStyle.RUNNING -> {
+                    // Прозрачный круг с неполной дугой (60% периметра)
+                    drawArc(
+                        brush = brush,
+                        startAngle = -90f,
+                        sweepAngle = 216f,
+                        useCenter = false,
+                        style = Stroke(width = strokeW, cap = StrokeCap.Round)
+                    )
+                }
+                NeonStyle.FULL_ANIMATED -> {
+                    // Кольцо градиентом (замкнутый круг)
+                    drawCircle(brush = brush, style = Stroke(width = strokeW))
+                    // Доп. точка для намёка на анимацию
+                    drawCircle(
+                        color = Color.White.copy(alpha = 0.9f),
+                        radius = 2.5f,
+                        center = Offset(size.width / 2f, 3f)
+                    )
                 }
             }
         }
