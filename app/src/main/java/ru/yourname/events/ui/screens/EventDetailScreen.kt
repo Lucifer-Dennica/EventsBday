@@ -28,6 +28,7 @@ import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.model.SocialPlatform
 import ru.yourname.events.data.social.SocialUrlParser
 import ru.yourname.events.ui.components.EventAvatar
+import ru.yourname.events.ui.components.LocalDesignConfig
 import ru.yourname.events.ui.components.SocialIcon
 import ru.yourname.events.ui.components.ZodiacBlock
 import java.time.LocalDate
@@ -44,6 +45,7 @@ fun EventDetailScreen(
     onBack: () -> Unit
 ) {
     val ctx = LocalContext.current
+    val design = LocalDesignConfig.current
     val today = LocalDate.now()
     val next = event.nextOccurrence(today)
     val days = event.daysUntil(today)
@@ -174,7 +176,10 @@ fun EventDetailScreen(
                 }
             }
 
-            ZodiacBlock(event)
+            // Скрываем блок астрологии, если пользователь отключил его в настройках дизайна
+            if (design.showZodiac) {
+                ZodiacBlock(event)
+            }
 
             if (event.note.isNotBlank()) {
                 Column(Modifier.fillMaxWidth()) {
