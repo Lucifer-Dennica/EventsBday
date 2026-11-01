@@ -23,6 +23,12 @@
             android:exported="true"
             android:theme="@style/Theme.EventsBday" />
 
+        <!-- ============================================================= -->
+        <!-- 8 activity-alias для смены иконки.                           -->
+        <!-- Ровно один должен быть enabled=true в любой момент времени.   -->
+        <!-- Переключение делает IconSwitcher.switchTo(ctx, AppIcon).      -->
+        <!-- ============================================================= -->
+
         <activity-alias
             android:name=".MainActivityDefault"
             android:enabled="true"
@@ -35,6 +41,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Deep link для виджетов: events://list -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -141,7 +148,10 @@
             </intent-filter>
         </activity-alias>
 
-        <!-- Большой виджет -->
+        <!-- ============================================================= -->
+        <!-- Виджеты (Glance)                                              -->
+        <!-- ============================================================= -->
+
         <receiver
             android:name=".widget.EventsWidgetReceiver"
             android:exported="true">
@@ -153,7 +163,6 @@
                 android:resource="@xml/events_widget_info" />
         </receiver>
 
-        <!-- Мини-виджет -->
         <receiver
             android:name=".widget.EventsWidgetMiniReceiver"
             android:exported="true">
@@ -164,6 +173,19 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/events_widget_mini_info" />
         </receiver>
+
+        <!-- ============================================================= -->
+        <!-- FileProvider — для «Поделиться открыткой»                     -->
+        <!-- ============================================================= -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 </manifest>
