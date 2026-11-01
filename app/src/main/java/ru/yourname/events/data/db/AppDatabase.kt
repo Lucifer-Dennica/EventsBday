@@ -7,17 +7,23 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [EventEntity::class], version = 8, exportSchema = false)
+@Database(entities = [EventEntity::class], version = 9, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
 
     companion object {
         @Volatile private var instance: AppDatabase? = null
 
-        /** Миграция 7 → 8: добавляем колонку borderColorHex. Данные сохраняются. */
         private val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE events ADD COLUMN borderColorHex TEXT")
+            }
+        }
+
+        /** Миграция 8 → 9: добавляем borderStyle. Данные сохраняются. */
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE events ADD COLUMN borderStyle TEXT")
             }
         }
 
@@ -27,8 +33,8 @@ abstract class AppDatabase : RoomDatabase() {
                 AppDatabase::class.java,
                 "events.db"
             )
-                .addMigrations(MIGRATION_7_8)
-                .fallbackToDestructiveMigration() // страховка на будущее
+                .addMigrations(MIGRATION_7_8, MIGRATION_8_9)
+                .fallbackToDestructiveMigration()
                 .build()
                 .also { instance = it }
         }
