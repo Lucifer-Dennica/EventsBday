@@ -30,6 +30,11 @@ object SettingsRepository {
 
     private val KEY_AVATAR_GLOW = booleanPreferencesKey("avatar_glow")
     private val KEY_AVATAR_SIZE = intPreferencesKey("avatar_size")
+    
+    // Обводка карточек
+    private val KEY_CARD_BORDER_WIDTH = intPreferencesKey("card_border_width")
+    private val KEY_CARD_BORDER_COLOR = stringPreferencesKey("card_border_color")
+    private val KEY_CARD_BORDER_GLOW = booleanPreferencesKey("card_border_glow")
 
     private val KEY_ANIM_ENABLED = booleanPreferencesKey("anim_enabled")
     private val KEY_ANIM_BATTERY_SAVER = booleanPreferencesKey("anim_battery_saver")
@@ -75,6 +80,27 @@ object SettingsRepository {
         ctx.settingsStore.data.map { it[KEY_AVATAR_SIZE] ?: 54 }
     suspend fun setAvatarSize(ctx: Context, v: Int) {
         ctx.settingsStore.edit { it[KEY_AVATAR_SIZE] = v.coerceIn(44, 80) }
+    }
+
+    // ОБВОДКА
+    fun cardBorderWidthFlow(ctx: Context): Flow<Int> =
+        ctx.settingsStore.data.map { it[KEY_CARD_BORDER_WIDTH] ?: 2 }
+    suspend fun setCardBorderWidth(ctx: Context, v: Int) {
+        ctx.settingsStore.edit { it[KEY_CARD_BORDER_WIDTH] = v.coerceIn(0, 4) }
+    }
+
+    fun cardBorderColorFlow(ctx: Context): Flow<CardBorderColor> = ctx.settingsStore.data.map { prefs ->
+        prefs[KEY_CARD_BORDER_COLOR]?.let { runCatching { CardBorderColor.valueOf(it) }.getOrNull() }
+            ?: CardBorderColor.AUTO
+    }
+    suspend fun setCardBorderColor(ctx: Context, color: CardBorderColor) {
+        ctx.settingsStore.edit { it[KEY_CARD_BORDER_COLOR] = color.name }
+    }
+
+    fun cardBorderGlowFlow(ctx: Context): Flow<Boolean> =
+        ctx.settingsStore.data.map { it[KEY_CARD_BORDER_GLOW] ?: false }
+    suspend fun setCardBorderGlow(ctx: Context, v: Boolean) {
+        ctx.settingsStore.edit { it[KEY_CARD_BORDER_GLOW] = v }
     }
 
     // АНИМАЦИИ
@@ -271,4 +297,11 @@ enum class AnimationMode(val label: String) {
     ALL_VISIBLE("Все видимые карточки"),
     FIRST_ONLY("Только первая видимая"),
     OFF("Отключить анимации")
+}
+
+enum class CardBorderColor(val label: String) {
+    AUTO("Автоматически"),
+    WHITE("Белая"),
+    BLACK("Чёрная"),
+    ACCENT("В цвет акцента")
 }
