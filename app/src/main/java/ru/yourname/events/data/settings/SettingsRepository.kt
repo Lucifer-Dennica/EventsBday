@@ -30,11 +30,20 @@ object SettingsRepository {
 
     private val KEY_AVATAR_GLOW = booleanPreferencesKey("avatar_glow")
     private val KEY_AVATAR_SIZE = intPreferencesKey("avatar_size")
-    
+    private val KEY_AVATAR_SHAPE = stringPreferencesKey("avatar_shape")
+
     private val KEY_CARD_BORDER_WIDTH = intPreferencesKey("card_border_width")
     private val KEY_CARD_BORDER_COLOR = stringPreferencesKey("card_border_color")
     private val KEY_CARD_BORDER_GLOW = booleanPreferencesKey("card_border_glow")
     private val KEY_NEON_BORDER = booleanPreferencesKey("neon_border")
+
+    // Новые ключи для дизайна
+    private val KEY_CARD_CORNER_RADIUS = intPreferencesKey("card_corner_radius")
+    private val KEY_LIST_DENSITY = stringPreferencesKey("list_density")
+    private val KEY_SHOW_ZODIAC = booleanPreferencesKey("show_zodiac")
+    private val KEY_TITLE_FONT_SIZE = stringPreferencesKey("title_font_size")
+    private val KEY_DAYS_FORMAT = stringPreferencesKey("days_format")
+    private val KEY_SHOW_DAY_OF_WEEK = booleanPreferencesKey("show_day_of_week")
 
     private val KEY_ANIM_ENABLED = booleanPreferencesKey("anim_enabled")
     private val KEY_ANIM_BATTERY_SAVER = booleanPreferencesKey("anim_battery_saver")
@@ -79,6 +88,14 @@ object SettingsRepository {
         ctx.settingsStore.edit { it[KEY_AVATAR_SIZE] = v.coerceIn(44, 80) }
     }
 
+    fun avatarShapeFlow(ctx: Context): Flow<AvatarShape> = ctx.settingsStore.data.map { prefs ->
+        prefs[KEY_AVATAR_SHAPE]?.let { runCatching { AvatarShape.valueOf(it) }.getOrNull() }
+            ?: AvatarShape.CIRCLE
+    }
+    suspend fun setAvatarShape(ctx: Context, shape: AvatarShape) {
+        ctx.settingsStore.edit { it[KEY_AVATAR_SHAPE] = shape.name }
+    }
+
     fun cardBorderWidthFlow(ctx: Context): Flow<Int> =
         ctx.settingsStore.data.map { it[KEY_CARD_BORDER_WIDTH] ?: 2 }
     suspend fun setCardBorderWidth(ctx: Context, v: Int) {
@@ -103,6 +120,49 @@ object SettingsRepository {
         ctx.settingsStore.data.map { it[KEY_NEON_BORDER] ?: false }
     suspend fun setNeonBorder(ctx: Context, v: Boolean) {
         ctx.settingsStore.edit { it[KEY_NEON_BORDER] = v }
+    }
+
+    // Новые flow для дизайна
+    fun cardCornerRadiusFlow(ctx: Context): Flow<Int> =
+        ctx.settingsStore.data.map { it[KEY_CARD_CORNER_RADIUS] ?: 18 }
+    suspend fun setCardCornerRadius(ctx: Context, v: Int) {
+        ctx.settingsStore.edit { it[KEY_CARD_CORNER_RADIUS] = v.coerceIn(0, 24) }
+    }
+
+    fun listDensityFlow(ctx: Context): Flow<ListDensity> = ctx.settingsStore.data.map { prefs ->
+        prefs[KEY_LIST_DENSITY]?.let { runCatching { ListDensity.valueOf(it) }.getOrNull() }
+            ?: ListDensity.NORMAL
+    }
+    suspend fun setListDensity(ctx: Context, v: ListDensity) {
+        ctx.settingsStore.edit { it[KEY_LIST_DENSITY] = v.name }
+    }
+
+    fun showZodiacFlow(ctx: Context): Flow<Boolean> =
+        ctx.settingsStore.data.map { it[KEY_SHOW_ZODIAC] ?: true }
+    suspend fun setShowZodiac(ctx: Context, v: Boolean) {
+        ctx.settingsStore.edit { it[KEY_SHOW_ZODIAC] = v }
+    }
+
+    fun titleFontSizeFlow(ctx: Context): Flow<TitleFontSize> = ctx.settingsStore.data.map { prefs ->
+        prefs[KEY_TITLE_FONT_SIZE]?.let { runCatching { TitleFontSize.valueOf(it) }.getOrNull() }
+            ?: TitleFontSize.MEDIUM
+    }
+    suspend fun setTitleFontSize(ctx: Context, v: TitleFontSize) {
+        ctx.settingsStore.edit { it[KEY_TITLE_FONT_SIZE] = v.name }
+    }
+
+    fun daysFormatFlow(ctx: Context): Flow<DaysFormat> = ctx.settingsStore.data.map { prefs ->
+        prefs[KEY_DAYS_FORMAT]?.let { runCatching { DaysFormat.valueOf(it) }.getOrNull() }
+            ?: DaysFormat.SHORT
+    }
+    suspend fun setDaysFormat(ctx: Context, v: DaysFormat) {
+        ctx.settingsStore.edit { it[KEY_DAYS_FORMAT] = v.name }
+    }
+
+    fun showDayOfWeekFlow(ctx: Context): Flow<Boolean> =
+        ctx.settingsStore.data.map { it[KEY_SHOW_DAY_OF_WEEK] ?: false }
+    suspend fun setShowDayOfWeek(ctx: Context, v: Boolean) {
+        ctx.settingsStore.edit { it[KEY_SHOW_DAY_OF_WEEK] = v }
     }
 
     fun animEnabledFlow(ctx: Context): Flow<Boolean> =
@@ -283,7 +343,6 @@ enum class AnimationMode(val label: String) {
     ALL_VISIBLE("Все видимые карточки"), FIRST_ONLY("Только первая видимая"), OFF("Отключить анимации")
 }
 
-/** Цвета обводки карточек. hex == null означает, что цвет берётся по контексту (AUTO/ACCENT). */
 enum class CardBorderColor(val label: String, val hex: Long?) {
     AUTO("Автоматически", null),
     ACCENT("В цвет акцента", null),
@@ -301,4 +360,37 @@ enum class CardBorderColor(val label: String, val hex: Long?) {
     PINK("Розовая", 0xFFD81B60),
     BROWN("Коричневая", 0xFF6D4C41),
     GOLD("Золотая", 0xFFD4AF37)
+}
+
+/** Плотность списка событий. */
+enum class ListDensity(
+    val label: String,
+    val verticalSpacingDp: Int,
+    val horizontalPaddingDp: Int,
+    val cardPaddingDp: Int
+) {
+    COMPACT("Компактная", 6, 10, 10),
+    NORMAL("Обычная", 10, 16, 14),
+    SPACIOUS("Просторная", 16, 20, 18)
+}
+
+/** Форма аватара. */
+enum class AvatarShape(val label: String) {
+    CIRCLE("Круг"),
+    SQUARE("Квадрат"),
+    ROUNDED_SQUARE("Скруглённый квадрат")
+}
+
+/** Размер шрифта заголовка (имени) на карточке. */
+enum class TitleFontSize(val label: String, val sp: Int) {
+    SMALL("S", 16),
+    MEDIUM("M", 18),
+    LARGE("L", 21)
+}
+
+/** Формат счётчика дней. */
+enum class DaysFormat(val label: String) {
+    SHORT("5 дн."),
+    FULL("5 дней"),
+    PREFIX("через 5")
 }
