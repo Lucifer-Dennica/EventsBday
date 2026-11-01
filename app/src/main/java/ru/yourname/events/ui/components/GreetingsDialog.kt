@@ -5,6 +5,8 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -17,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.model.SocialPlatform
@@ -47,7 +50,6 @@ fun GreetingsDialog(
         generateGreeting(event.name, tone, age, seed)
     }
 
-    // Как отправить — ищем соцсеть из контактов
     val preferredPlatform = event.socialLinks.firstOrNull()?.platform
     val phoneDigits = event.socialLinks.firstOrNull {
         it.platform == SocialPlatform.PHONE || it.platform == SocialPlatform.WHATSAPP || it.platform == SocialPlatform.VIBER
@@ -82,7 +84,6 @@ fun GreetingsDialog(
                 return
             }
         }
-        // Fallback — обычный SEND
         shareGeneric()
     }
 
@@ -94,19 +95,26 @@ fun GreetingsDialog(
                 modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Tone chips
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    GreetingTone.entries.forEach { t ->
+                // ИСПРАВЛЕНО: LazyRow вместо Row с weight
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(GreetingTone.entries.toList()) { t ->
                         FilterChip(
                             selected = tone == t,
                             onClick = { tone = t; seed = Random.nextInt() },
-                            label = { Text(t.label) },
-                            modifier = Modifier.weight(1f)
+                            label = { 
+                                Text(
+                                    t.label, 
+                                    maxLines = 1, 
+                                    overflow = TextOverflow.Ellipsis 
+                                ) 
+                            }
                         )
                     }
                 }
 
-                // Текст поздравления
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
@@ -217,7 +225,6 @@ private fun generateGreeting(name: String, tone: GreetingTone, age: Int?, seed: 
     }
 
     var text = baseGreetings[Random(seed).nextInt(baseGreetings.size)]
-    // Для ДР с возрастом — добавляем строчку
     if (age != null && age > 0 && tone != GreetingTone.SHORT) {
         text += "\n\n🎂 Тебе сегодня $age! Пусть следующий год будет ещё лучше!"
     }
