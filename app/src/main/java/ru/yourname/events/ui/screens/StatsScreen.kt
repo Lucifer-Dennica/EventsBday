@@ -433,10 +433,10 @@ private fun computeStats(events: List<Event>, today: LocalDate): Stats {
     val youngest = ageContacts.minByOrNull { it.age }
 
     val zodiacCounts = events.groupingBy { it.westernZodiac().label }.eachCount()
-    val topZodiac = zodiacCounts.maxByOrNull { it.value }
+    val topZodiac = zodiacCounts.maxByOrNull { it.value }?.toPair()
 
     val groupCountsMap = events.filter { it.group.isNotBlank() }.groupingBy { it.group }.eachCount()
-    val topGroup = groupCountsMap.maxByOrNull { it.value }
+    val topGroup = groupCountsMap.maxByOrNull { it.value }?.toPair()
 
     val allChecklistItems = events.flatMap { it.checklist }
     val checklistTotal = allChecklistItems.size
