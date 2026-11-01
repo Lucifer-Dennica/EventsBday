@@ -144,7 +144,6 @@ fun EventCard(
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = cardShape,
-        // Если неоновая рамка включена, стандартную отключаем
         border = if (!neonBorder) BorderStroke(width = actualBorderWidth, color = cardBorderColor) else null,
         modifier = Modifier
             .fillMaxWidth()
@@ -163,7 +162,6 @@ fun EventCard(
                 if (neonBorder) {
                     Modifier.drawWithContent {
                         drawContent()
-                        // Рисуем неоновую рамку
                         rotate(borderAngle) {
                             val gradient = Brush.sweepGradient(
                                 colors = listOf(
@@ -173,13 +171,13 @@ fun EventCard(
                                 ),
                                 center = Offset(size.width / 2, size.height / 2)
                             )
-                            // Свечение (широкий полупрозрачный штрих)
+                            // Свечение
                             drawRoundRect(
                                 brush = gradient,
                                 size = Size(size.width, size.height),
                                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(18.dp.toPx()),
                                 style = Stroke(width = (actualBorderWidth.value + 4).dp.toPx()),
-                                alpha = 0.3f // <--- ИСПРАВЛЕНО ТУТ
+                                alpha = 0.3f // ИСПРАВЛЕНО: alpha теперь в drawRoundRect
                             )
                             // Четкая линия
                             drawRoundRect(
