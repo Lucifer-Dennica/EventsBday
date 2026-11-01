@@ -40,11 +40,15 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.model.cardColorAt
 import ru.yourname.events.data.settings.CardBorderColor
+import ru.yourname.events.data.settings.DaysFormat
+import ru.yourname.events.data.settings.ListDensity
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.util.Locale
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -65,6 +69,7 @@ fun EventCard(
     onToggleNotifications: () -> Unit,
     onTogglePin: () -> Unit
 ) {
+    val design = LocalDesignConfig.current
     val today = LocalDate.now()
     val days = event.daysUntil(today)
     val accent = MaterialTheme.colorScheme.primary
@@ -111,15 +116,17 @@ fun EventCard(
         else -> accent
     }
 
-    val cardBorderColor = when (borderColorPref) {
-        CardBorderColor.AUTO -> {
-            when {
-                isSelected -> accent
-                event.isPinned -> accent.copy(alpha = 0.6f)
-                hasAnimOverride || (hasCustomColor && isDarkBg) -> Color(0x33FFFFFF)
-                hasCustomBg || hasCustomColor -> Color(0xFFB8BEC9)
-                else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
-            }
+    // Per-card обводка имеет приоритет над глобальной
+    val cardBorderColor: Color = if (!event.borderColorHex.isNullOrBlank()) {
+        runCatching { Color(android.graphics.Color.parseColor(event.borderColorHex)) }
+            .getOrElse { accent }
+    } else when (borderColorPref) {
+        CardBorderColor.AUTO -> when {
+            isSelected -> accent
+            event.isPinned -> accent.copy(alpha = 0.6f)
+            hasAnimOverride || (hasCustomColor && isDarkBg) -> Color(0x33FFFFFF)
+            hasCustomBg || hasCustomColor -> Color(0xFFB8BEC9)
+            else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
         }
         CardBorderColor.ACCENT -> accent
         else -> borderColorPref.hex?.let { Color(it) } ?: accent
@@ -130,10 +137,13 @@ fun EventCard(
         else -> borderWidth.dp
     }
 
-    val cardShape = RoundedCornerShape(18.dp)
+    val cornerRadiusDp = design.cornerRadius.dp
+    val cardShape = RoundedCornerShape(cornerRadiusDp)
     val glowColor = cardBorderColor.copy(alpha = 0.6f)
 
-    // Бегущая неоновая полоса
+    val neonActive = neonBorder && design.neonBorder
+    val neonFull = neonActive && design.neonBorderFull
+
     val infiniteTransition = rememberInfiniteTransition(label = "neon")
     val borderPhase by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -148,7 +158,7 @@ fun EventCard(
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = cardShape,
-        border = if (!neonBorder) BorderStroke(width = actualBorderWidth, color = cardBorderColor) else null,
+        border = if (!neonActive) BorderStroke(width = actualBorderWidth, color = cardBorderColor) else null,
         modifier = Modifier
             .fillMaxWidth()
             .then(
@@ -163,43 +173,11 @@ fun EventCard(
                 } else Modifier
             )
             .then(
-                if (neonBorder) {
+                if (neonActive) {
                     Modifier.drawWithContent {
                         drawContent()
-
                         val strokePx = actualBorderWidth.value.dp.toPx().coerceAtLeast(2.dp.toPx())
-                        val cornerPx = 18.dp.toPx()
-                        val rect = Rect(0f, 0f, size.width, size.height)
-
-                        // Тонкая базовая рамка, чтобы карточка не выглядела без обводки
-                        drawRoundRect(
-                            color = cardBorderColor.copy(alpha = 0.18f),
-                            topLeft = rect.topLeft,
-                            size = rect.size,
-                            cornerRadius = CornerRadius(cornerPx),
-                            style = Stroke(width = strokePx)
-                        )
-
-                        // Путь карточки и его измерение
-                        val borderPath = Path().apply {
-                            addRoundRect(RoundRect(rect, CornerRadius(cornerPx)))
-                        }
-                        val measure = PathMeasure()
-                        measure.setPath(borderPath, false)
-                        val totalLen = measure.length
-                        if (totalLen <= 0f) return@drawWithContent
-
-                        val dashLen = totalLen * 0.28f
-                        val head = borderPhase * totalLen
-                        val tail = head - dashLen
-
-                        val segment = Path()
-                        if (tail >= 0f) {
-                            measure.getSegment(tail, head, segment, true)
-                        } else {
-                            measure.getSegment(totalLen + tail, totalLen, segment, true)
-                            measure.getSegment(0f, head, segment, true)
-                        }
+                        val cornerPx = cornerRadiusDp.toPx()
 
                         val neonBrush = Brush.sweepGradient(
                             colors = listOf(
@@ -210,24 +188,74 @@ fun EventCard(
                             center = Offset(size.width / 2f, size.height / 2f)
                         )
 
-                        // Внешнее свечение
-                        drawPath(
-                            path = segment,
-                            brush = neonBrush,
-                            alpha = 0.40f,
-                            style = Stroke(width = strokePx + 8.dp.toPx(), cap = StrokeCap.Round)
-                        )
-                        // Чёткая линия
-                        drawPath(
-                            path = segment,
-                            brush = neonBrush,
-                            style = Stroke(width = strokePx, cap = StrokeCap.Round)
-                        )
+                        if (neonFull) {
+                            // Сплошная градиентная обводка по всему периметру
+                            val inset = strokePx / 2f
+                            drawRoundRect(
+                                brush = neonBrush,
+                                topLeft = Offset(inset, inset),
+                                size = Size(size.width - strokePx, size.height - strokePx),
+                                cornerRadius = CornerRadius(cornerPx),
+                                style = Stroke(width = strokePx + 4.dp.toPx(), alpha = 0.35f)
+                            )
+                            drawRoundRect(
+                                brush = neonBrush,
+                                topLeft = Offset(inset, inset),
+                                size = Size(size.width - strokePx, size.height - strokePx),
+                                cornerRadius = CornerRadius(cornerPx),
+                                style = Stroke(width = strokePx)
+                            )
+                        } else {
+                            // Бегущий сегмент по периметру
+                            val rect = Rect(0f, 0f, size.width, size.height)
+                            drawRoundRect(
+                                color = cardBorderColor.copy(alpha = 0.18f),
+                                topLeft = rect.topLeft,
+                                size = rect.size,
+                                cornerRadius = CornerRadius(cornerPx),
+                                style = Stroke(width = strokePx)
+                            )
+                            val borderPath = Path().apply {
+                                addRoundRect(RoundRect(rect, CornerRadius(cornerPx)))
+                            }
+                            val measure = PathMeasure()
+                            measure.setPath(borderPath, false)
+                            val totalLen = measure.length
+                            if (totalLen > 0f) {
+                                val dashLen = totalLen * 0.28f
+                                val head = borderPhase * totalLen
+                                val tail = head - dashLen
+                                val segment = Path()
+                                if (tail >= 0f) {
+                                    measure.getSegment(tail, head, segment, true)
+                                } else {
+                                    measure.getSegment(totalLen + tail, totalLen, segment, true)
+                                    measure.getSegment(0f, head, segment, true)
+                                }
+                                drawPath(
+                                    path = segment,
+                                    brush = neonBrush,
+                                    alpha = 0.40f,
+                                    style = Stroke(width = strokePx + 8.dp.toPx(), cap = StrokeCap.Round)
+                                )
+                                drawPath(
+                                    path = segment,
+                                    brush = neonBrush,
+                                    style = Stroke(width = strokePx, cap = StrokeCap.Round)
+                                )
+                            }
+                        }
                     }
                 } else Modifier
             )
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
     ) {
+        val innerPadding = when (design.density) {
+            ListDensity.COMPACT -> 10.dp
+            ListDensity.NORMAL -> 14.dp
+            ListDensity.SPACIOUS -> 18.dp
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -245,7 +273,7 @@ fun EventCard(
             }
 
             Row(
-                modifier = Modifier.padding(14.dp),
+                modifier = Modifier.padding(innerPadding),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (selectionMode) {
@@ -261,10 +289,18 @@ fun EventCard(
                             Icon(Icons.Default.PushPin, contentDescription = "Закреплено", tint = accentOnCard, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
                         }
-                        Text(event.name, style = MaterialTheme.typography.titleMedium, color = textColor)
+                        Text(
+                            text = event.name,
+                            style = MaterialTheme.typography.titleMedium.copy(fontSize = design.titleFontSize.sp.sp),
+                            color = textColor
+                        )
                     }
                     Spacer(Modifier.height(2.dp))
-                    Text(text = buildDateString(event, today), style = MaterialTheme.typography.bodyMedium, color = subTextColor)
+                    Text(
+                        text = buildDateString(event, today, design.showDayOfWeek),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = subTextColor
+                    )
                     if (event.group.isNotBlank()) {
                         Spacer(Modifier.height(6.dp))
                         GroupChip(event.group, accentOnCard)
@@ -272,14 +308,27 @@ fun EventCard(
                 }
                 Spacer(Modifier.width(6.dp))
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = if (days == 0L) "сегодня" else "$days",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = if (days <= 7) accentOnCard else textColor
-                    )
-                    if (days > 0L) {
-                        Text("дн.", style = MaterialTheme.typography.labelSmall, color = subTextColor)
+                    if (days == 0L) {
+                        Text(
+                            text = "сегодня",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = accentOnCard
+                        )
+                    } else {
+                        val formatted = formatDays(days, design.daysFormat)
+                        val showUnit = design.daysFormat != DaysFormat.PREFIX
+                        Text(
+                            text = formatted,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = if (days <= 7) accentOnCard else textColor
+                        )
+                        if (showUnit && design.daysFormat == DaysFormat.SHORT) {
+                            // "5 дн." уже с сокращением, доп. юнит не нужен
+                        } else if (design.daysFormat == DaysFormat.FULL) {
+                            // "5 дней" уже с юнитом
+                        }
                     }
                     if (showNotificationsIcon || showPinIcon) {
                         Spacer(Modifier.height(6.dp))
@@ -322,9 +371,27 @@ private fun GroupChip(group: String, color: Color) {
     }
 }
 
-private fun buildDateString(event: Event, today: LocalDate): String {
-    val fmt = DateTimeFormatter.ofPattern("d MMMM", Locale("ru"))
-    val base = event.nextOccurrence(today).format(fmt)
+private fun buildDateString(event: Event, today: LocalDate, showDayOfWeek: Boolean): String {
+    val next = event.nextOccurrence(today)
+    val datePart = next.format(DateTimeFormatter.ofPattern("d MMMM", Locale("ru")))
+    val base = if (showDayOfWeek) {
+        val dow = next.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("ru"))
+            .replaceFirstChar { it.uppercase() }
+        "$dow, $datePart"
+    } else datePart
     val age = event.ageAtNext(today)
     return if (age != null) "$base • $age лет" else base
+}
+
+private fun formatDays(days: Long, format: DaysFormat): String {
+    val plural = when {
+        days % 10L == 1L && days % 100L != 11L -> "день"
+        days % 10L in 2L..4L && (days % 100L < 10L || days % 100L >= 20L) -> "дня"
+        else -> "дней"
+    }
+    return when (format) {
+        DaysFormat.SHORT -> "$days дн."
+        DaysFormat.FULL -> "$days $plural"
+        DaysFormat.PREFIX -> "через $days"
+    }
 }
