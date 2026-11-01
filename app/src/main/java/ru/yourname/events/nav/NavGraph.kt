@@ -23,6 +23,7 @@ import ru.yourname.events.ads.AdsConfig
 import ru.yourname.events.ads.InterstitialManager
 import ru.yourname.events.data.settings.AnimationMode
 import ru.yourname.events.data.settings.CalendarMarkStyle
+import ru.yourname.events.data.settings.CardBorderColor
 import ru.yourname.events.data.settings.SettingsRepository
 import ru.yourname.events.data.settings.SortMode
 import ru.yourname.events.data.settings.SwipeAction
@@ -83,6 +84,10 @@ fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
 
     val avatarGlow by SettingsRepository.avatarGlowFlow(ctx).collectAsState(initial = true)
     val avatarSize by SettingsRepository.avatarSizeFlow(ctx).collectAsState(initial = 54)
+    
+    val borderWidth by SettingsRepository.cardBorderWidthFlow(ctx).collectAsState(initial = 2)
+    val borderColor by SettingsRepository.cardBorderColorFlow(ctx).collectAsState(initial = CardBorderColor.AUTO)
+    val borderGlow by SettingsRepository.cardBorderGlowFlow(ctx).collectAsState(initial = false)
 
     val animationsAllowed = remember(animEnabled, animBatterySaver, animRespectSystem, animMode) {
         if (!animEnabled || animMode == AnimationMode.OFF) {
@@ -98,7 +103,6 @@ fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
                     ) == 0f
                 }.getOrDefault(false)
             } else false
-
             when {
                 systemAnimationsDisabled -> false
                 inPowerSave && !animBatterySaver -> false
@@ -107,11 +111,8 @@ fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
         }
     }
 
-    LaunchedEffect(Unit) {
-        InterstitialManager.preload(ctx)
-    }
+    LaunchedEffect(Unit) { InterstitialManager.preload(ctx) }
 
-    // Автообновление виджетов при изменении событий
     LaunchedEffect(events) {
         runCatching { EventsWidget().updateAll(ctx) }
         runCatching { EventsWidgetMini().updateAll(ctx) }
@@ -133,6 +134,9 @@ fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
                     viewMode = viewMode,
                     calendarMarkStyle = calMark,
                     animationsAllowed = animationsAllowed,
+                    borderWidth = borderWidth,
+                    borderColor = borderColor,
+                    borderGlow = borderGlow,
                     onToggleViewMode = {
                         scope.launch {
                             SettingsRepository.setViewMode(
@@ -213,18 +217,8 @@ fun NavGraph(vm: EventViewModel, startRoute: String = Routes.LIST) {
             composable(Routes.SETTINGS_DESIGN) { DesignSettingsScreen(onBack = { nav.popBackStack() }) }
             composable(Routes.SETTINGS_NOTIF) { NotificationsSettingsScreen(onBack = { nav.popBackStack() }) }
             composable(Routes.SETTINGS_BEHAVIOR) { BehaviorSettingsScreen(onBack = { nav.popBackStack() }) }
-            composable(Routes.SETTINGS_WIDGETS) {
-                WidgetSettingsScreen(
-                    events = events,
-                    onBack = { nav.popBackStack() }
-                )
-            }
-            composable(Routes.SETTINGS_STATS) {
-                StatsScreen(
-                    events = events,
-                    onBack = { nav.popBackStack() }
-                )
-            }
+            composable(Routes.SETTINGS_WIDGETS) { WidgetSettingsScreen(events = events, onBack = { nav.popBackStack() }) }
+            composable(Routes.SETTINGS_STATS) { StatsScreen(events = events, onBack = { nav.popBackStack() }) }
             composable(Routes.SETTINGS_DATA) { DataSettingsScreen(onBack = { nav.popBackStack() }) }
             composable(Routes.SETTINGS_ABOUT) { AboutScreen(onBack = { nav.popBackStack() }) }
         }
