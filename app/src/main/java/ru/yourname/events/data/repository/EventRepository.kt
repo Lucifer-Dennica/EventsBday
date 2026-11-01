@@ -29,7 +29,8 @@ class EventRepository(private val dao: EventDao) {
         isPinned = isPinned,
         animation = CardAnimation.fromName(animation),
         customColorHex = customColorHex,
-        checklist = parseChecklist(checklistRaw)
+        checklist = parseChecklist(checklistRaw),
+        repeatYearly = repeatYearly
     )
 
     private fun Event.toEntity() = EventEntity(
@@ -42,7 +43,8 @@ class EventRepository(private val dao: EventDao) {
         isPinned = isPinned,
         animation = animation.name,
         customColorHex = customColorHex,
-        checklistRaw = serializeChecklist(checklist)
+        checklistRaw = serializeChecklist(checklist),
+        repeatYearly = repeatYearly
     )
 
     private fun parseSocials(raw: String): List<SocialLink> {
