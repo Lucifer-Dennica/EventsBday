@@ -13,7 +13,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -76,6 +75,7 @@ fun EventListScreen(
     borderWidth: Int,
     borderColor: CardBorderColor,
     borderGlow: Boolean,
+    neonBorder: Boolean,
     onToggleViewMode: () -> Unit,
     onAddClick: () -> Unit,
     onEventClick: (Event) -> Unit,
@@ -109,15 +109,9 @@ fun EventListScreen(
         val phone = event.socialLinks.firstOrNull {
             it.platform == SocialPlatform.PHONE || it.platform == SocialPlatform.WHATSAPP || it.platform == SocialPlatform.VIBER
         }?.value
-        if (phone.isNullOrBlank()) {
-            scope.launch { snackbar.showSnackbar("Нет телефона в контактах события") }
-            return
-        }
+        if (phone.isNullOrBlank()) { scope.launch { snackbar.showSnackbar("Нет телефона в контактах события") }; return }
         val digits = phone.filter { it.isDigit() || it == '+' }
-        if (digits.isBlank()) {
-            scope.launch { snackbar.showSnackbar("Не удалось извлечь номер") }
-            return
-        }
+        if (digits.isBlank()) { scope.launch { snackbar.showSnackbar("Не удалось извлечь номер") }; return }
         runCatching { ctx.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$digits"))) }
     }
 
@@ -271,7 +265,7 @@ fun EventListScreen(
                                             event = event, isSelected = false, selectionMode = false,
                                             showNotificationsIcon = showNotificationsIcon, showPinIcon = showPinIcon,
                                             animationsAllowed = animationsAllowed,
-                                            borderWidth = borderWidth, borderColorPref = borderColor, borderGlow = borderGlow,
+                                            borderWidth = borderWidth, borderColorPref = borderColor, borderGlow = borderGlow, neonBorder = neonBorder,
                                             onClick = { onEventClick(event) }, onLongClick = {},
                                             onToggleNotifications = { onToggleNotifications(event) }, onTogglePin = { onTogglePin(event) }
                                         )
@@ -317,7 +311,7 @@ fun EventListScreen(
                                             isSelected = row.event.id in selectedIds, selectionMode = selectionMode,
                                             showNotificationsIcon = showNotificationsIcon, showPinIcon = showPinIcon,
                                             animationsAllowed = animationsAllowed,
-                                            borderWidth = borderWidth, borderColorPref = borderColor, borderGlow = borderGlow,
+                                            borderWidth = borderWidth, borderColorPref = borderColor, borderGlow = borderGlow, neonBorder = neonBorder,
                                             onClick = { handleCardClick(row.event) }, onLongClick = { handleCardLongClick(row.event) },
                                             onDelete = { eventToDelete = row.event }, onToggleNotifications = { onToggleNotifications(row.event) },
                                             onTogglePin = { onTogglePin(row.event) }, onEdit = { onEditEvent(row.event) }, onCall = { dialEvent(row.event) }
@@ -374,7 +368,7 @@ private fun AdCard() {
 private fun EventRow(
     event: Event, swipesEnabled: Boolean, swipeLeftAction: SwipeAction, swipeRightAction: SwipeAction,
     isSelected: Boolean, selectionMode: Boolean, showNotificationsIcon: Boolean, showPinIcon: Boolean,
-    animationsAllowed: Boolean, borderWidth: Int, borderColorPref: CardBorderColor, borderGlow: Boolean,
+    animationsAllowed: Boolean, borderWidth: Int, borderColorPref: CardBorderColor, borderGlow: Boolean, neonBorder: Boolean,
     onClick: () -> Unit, onLongClick: () -> Unit, onDelete: () -> Unit, onToggleNotifications: () -> Unit,
     onTogglePin: () -> Unit, onEdit: () -> Unit, onCall: () -> Unit
 ) {
@@ -429,7 +423,7 @@ private fun EventRow(
             event = event, isSelected = isSelected, selectionMode = selectionMode,
             showNotificationsIcon = showNotificationsIcon, showPinIcon = showPinIcon,
             animationsAllowed = animationsAllowed,
-            borderWidth = borderWidth, borderColorPref = borderColorPref, borderGlow = borderGlow,
+            borderWidth = borderWidth, borderColorPref = borderColorPref, borderGlow = borderGlow, neonBorder = neonBorder,
             onClick = onClick, onLongClick = onLongClick,
             onToggleNotifications = onToggleNotifications, onTogglePin = onTogglePin
         )
