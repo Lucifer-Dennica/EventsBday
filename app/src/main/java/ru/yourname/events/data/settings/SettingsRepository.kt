@@ -36,8 +36,8 @@ object SettingsRepository {
     private val KEY_CARD_BORDER_COLOR = stringPreferencesKey("card_border_color")
     private val KEY_CARD_BORDER_GLOW = booleanPreferencesKey("card_border_glow")
     private val KEY_NEON_BORDER = booleanPreferencesKey("neon_border")
+    private val KEY_NEON_BORDER_FULL = booleanPreferencesKey("neon_border_full") // НОВОЕ
 
-    // Новые ключи для дизайна
     private val KEY_CARD_CORNER_RADIUS = intPreferencesKey("card_corner_radius")
     private val KEY_LIST_DENSITY = stringPreferencesKey("list_density")
     private val KEY_SHOW_ZODIAC = booleanPreferencesKey("show_zodiac")
@@ -65,189 +65,115 @@ object SettingsRepository {
     fun themeFlow(ctx: Context): Flow<AppTheme> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_THEME]?.let { runCatching { AppTheme.valueOf(it) }.getOrNull() } ?: AppTheme.SYSTEM
     }
-    suspend fun setTheme(ctx: Context, theme: AppTheme) {
-        ctx.settingsStore.edit { it[KEY_THEME] = theme.name }
-    }
+    suspend fun setTheme(ctx: Context, theme: AppTheme) { ctx.settingsStore.edit { it[KEY_THEME] = theme.name } }
 
     fun appIconFlow(ctx: Context): Flow<AppIcon> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_APP_ICON]?.let { runCatching { AppIcon.valueOf(it) }.getOrNull() } ?: AppIcon.MAIN
     }
-    suspend fun setAppIcon(ctx: Context, icon: AppIcon) {
-        ctx.settingsStore.edit { it[KEY_APP_ICON] = icon.name }
-    }
+    suspend fun setAppIcon(ctx: Context, icon: AppIcon) { ctx.settingsStore.edit { it[KEY_APP_ICON] = icon.name } }
 
-    fun avatarGlowFlow(ctx: Context): Flow<Boolean> =
-        ctx.settingsStore.data.map { it[KEY_AVATAR_GLOW] ?: true }
-    suspend fun setAvatarGlow(ctx: Context, v: Boolean) {
-        ctx.settingsStore.edit { it[KEY_AVATAR_GLOW] = v }
-    }
+    fun avatarGlowFlow(ctx: Context): Flow<Boolean> = ctx.settingsStore.data.map { it[KEY_AVATAR_GLOW] ?: true }
+    suspend fun setAvatarGlow(ctx: Context, v: Boolean) { ctx.settingsStore.edit { it[KEY_AVATAR_GLOW] = v } }
 
-    fun avatarSizeFlow(ctx: Context): Flow<Int> =
-        ctx.settingsStore.data.map { it[KEY_AVATAR_SIZE] ?: 54 }
-    suspend fun setAvatarSize(ctx: Context, v: Int) {
-        ctx.settingsStore.edit { it[KEY_AVATAR_SIZE] = v.coerceIn(44, 80) }
-    }
+    fun avatarSizeFlow(ctx: Context): Flow<Int> = ctx.settingsStore.data.map { it[KEY_AVATAR_SIZE] ?: 54 }
+    suspend fun setAvatarSize(ctx: Context, v: Int) { ctx.settingsStore.edit { it[KEY_AVATAR_SIZE] = v.coerceIn(44, 80) } }
 
     fun avatarShapeFlow(ctx: Context): Flow<AvatarShape> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_AVATAR_SHAPE]?.let { runCatching { AvatarShape.valueOf(it) }.getOrNull() }
-            ?: AvatarShape.CIRCLE
+        prefs[KEY_AVATAR_SHAPE]?.let { runCatching { AvatarShape.valueOf(it) }.getOrNull() } ?: AvatarShape.CIRCLE
     }
-    suspend fun setAvatarShape(ctx: Context, shape: AvatarShape) {
-        ctx.settingsStore.edit { it[KEY_AVATAR_SHAPE] = shape.name }
-    }
+    suspend fun setAvatarShape(ctx: Context, shape: AvatarShape) { ctx.settingsStore.edit { it[KEY_AVATAR_SHAPE] = shape.name } }
 
-    fun cardBorderWidthFlow(ctx: Context): Flow<Int> =
-        ctx.settingsStore.data.map { it[KEY_CARD_BORDER_WIDTH] ?: 2 }
-    suspend fun setCardBorderWidth(ctx: Context, v: Int) {
-        ctx.settingsStore.edit { it[KEY_CARD_BORDER_WIDTH] = v.coerceIn(0, 4) }
-    }
+    fun cardBorderWidthFlow(ctx: Context): Flow<Int> = ctx.settingsStore.data.map { it[KEY_CARD_BORDER_WIDTH] ?: 2 }
+    suspend fun setCardBorderWidth(ctx: Context, v: Int) { ctx.settingsStore.edit { it[KEY_CARD_BORDER_WIDTH] = v.coerceIn(0, 4) } }
 
     fun cardBorderColorFlow(ctx: Context): Flow<CardBorderColor> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_CARD_BORDER_COLOR]?.let { runCatching { CardBorderColor.valueOf(it) }.getOrNull() }
-            ?: CardBorderColor.AUTO
+        prefs[KEY_CARD_BORDER_COLOR]?.let { runCatching { CardBorderColor.valueOf(it) }.getOrNull() } ?: CardBorderColor.AUTO
     }
-    suspend fun setCardBorderColor(ctx: Context, color: CardBorderColor) {
-        ctx.settingsStore.edit { it[KEY_CARD_BORDER_COLOR] = color.name }
-    }
+    suspend fun setCardBorderColor(ctx: Context, color: CardBorderColor) { ctx.settingsStore.edit { it[KEY_CARD_BORDER_COLOR] = color.name } }
 
-    fun cardBorderGlowFlow(ctx: Context): Flow<Boolean> =
-        ctx.settingsStore.data.map { it[KEY_CARD_BORDER_GLOW] ?: false }
-    suspend fun setCardBorderGlow(ctx: Context, v: Boolean) {
-        ctx.settingsStore.edit { it[KEY_CARD_BORDER_GLOW] = v }
-    }
+    fun cardBorderGlowFlow(ctx: Context): Flow<Boolean> = ctx.settingsStore.data.map { it[KEY_CARD_BORDER_GLOW] ?: false }
+    suspend fun setCardBorderGlow(ctx: Context, v: Boolean) { ctx.settingsStore.edit { it[KEY_CARD_BORDER_GLOW] = v } }
 
-    fun neonBorderFlow(ctx: Context): Flow<Boolean> =
-        ctx.settingsStore.data.map { it[KEY_NEON_BORDER] ?: false }
-    suspend fun setNeonBorder(ctx: Context, v: Boolean) {
-        ctx.settingsStore.edit { it[KEY_NEON_BORDER] = v }
-    }
+    fun neonBorderFlow(ctx: Context): Flow<Boolean> = ctx.settingsStore.data.map { it[KEY_NEON_BORDER] ?: false }
+    suspend fun setNeonBorder(ctx: Context, v: Boolean) { ctx.settingsStore.edit { it[KEY_NEON_BORDER] = v } }
 
-    // Новые flow для дизайна
-    fun cardCornerRadiusFlow(ctx: Context): Flow<Int> =
-        ctx.settingsStore.data.map { it[KEY_CARD_CORNER_RADIUS] ?: 18 }
-    suspend fun setCardCornerRadius(ctx: Context, v: Int) {
-        ctx.settingsStore.edit { it[KEY_CARD_CORNER_RADIUS] = v.coerceIn(0, 24) }
-    }
+    fun neonBorderFullFlow(ctx: Context): Flow<Boolean> = ctx.settingsStore.data.map { it[KEY_NEON_BORDER_FULL] ?: false }
+    suspend fun setNeonBorderFull(ctx: Context, v: Boolean) { ctx.settingsStore.edit { it[KEY_NEON_BORDER_FULL] = v } }
+
+    fun cardCornerRadiusFlow(ctx: Context): Flow<Int> = ctx.settingsStore.data.map { it[KEY_CARD_CORNER_RADIUS] ?: 18 }
+    suspend fun setCardCornerRadius(ctx: Context, v: Int) { ctx.settingsStore.edit { it[KEY_CARD_CORNER_RADIUS] = v.coerceIn(0, 24) } }
 
     fun listDensityFlow(ctx: Context): Flow<ListDensity> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_LIST_DENSITY]?.let { runCatching { ListDensity.valueOf(it) }.getOrNull() }
-            ?: ListDensity.NORMAL
+        prefs[KEY_LIST_DENSITY]?.let { runCatching { ListDensity.valueOf(it) }.getOrNull() } ?: ListDensity.NORMAL
     }
-    suspend fun setListDensity(ctx: Context, v: ListDensity) {
-        ctx.settingsStore.edit { it[KEY_LIST_DENSITY] = v.name }
-    }
+    suspend fun setListDensity(ctx: Context, v: ListDensity) { ctx.settingsStore.edit { it[KEY_LIST_DENSITY] = v.name } }
 
-    fun showZodiacFlow(ctx: Context): Flow<Boolean> =
-        ctx.settingsStore.data.map { it[KEY_SHOW_ZODIAC] ?: true }
-    suspend fun setShowZodiac(ctx: Context, v: Boolean) {
-        ctx.settingsStore.edit { it[KEY_SHOW_ZODIAC] = v }
-    }
+    fun showZodiacFlow(ctx: Context): Flow<Boolean> = ctx.settingsStore.data.map { it[KEY_SHOW_ZODIAC] ?: true }
+    suspend fun setShowZodiac(ctx: Context, v: Boolean) { ctx.settingsStore.edit { it[KEY_SHOW_ZODIAC] = v } }
 
     fun titleFontSizeFlow(ctx: Context): Flow<TitleFontSize> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_TITLE_FONT_SIZE]?.let { runCatching { TitleFontSize.valueOf(it) }.getOrNull() }
-            ?: TitleFontSize.MEDIUM
+        prefs[KEY_TITLE_FONT_SIZE]?.let { runCatching { TitleFontSize.valueOf(it) }.getOrNull() } ?: TitleFontSize.MEDIUM
     }
-    suspend fun setTitleFontSize(ctx: Context, v: TitleFontSize) {
-        ctx.settingsStore.edit { it[KEY_TITLE_FONT_SIZE] = v.name }
-    }
+    suspend fun setTitleFontSize(ctx: Context, v: TitleFontSize) { ctx.settingsStore.edit { it[KEY_TITLE_FONT_SIZE] = v.name } }
 
     fun daysFormatFlow(ctx: Context): Flow<DaysFormat> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_DAYS_FORMAT]?.let { runCatching { DaysFormat.valueOf(it) }.getOrNull() }
-            ?: DaysFormat.SHORT
+        prefs[KEY_DAYS_FORMAT]?.let { runCatching { DaysFormat.valueOf(it) }.getOrNull() } ?: DaysFormat.SHORT
     }
-    suspend fun setDaysFormat(ctx: Context, v: DaysFormat) {
-        ctx.settingsStore.edit { it[KEY_DAYS_FORMAT] = v.name }
-    }
+    suspend fun setDaysFormat(ctx: Context, v: DaysFormat) { ctx.settingsStore.edit { it[KEY_DAYS_FORMAT] = v.name } }
 
-    fun showDayOfWeekFlow(ctx: Context): Flow<Boolean> =
-        ctx.settingsStore.data.map { it[KEY_SHOW_DAY_OF_WEEK] ?: false }
-    suspend fun setShowDayOfWeek(ctx: Context, v: Boolean) {
-        ctx.settingsStore.edit { it[KEY_SHOW_DAY_OF_WEEK] = v }
-    }
+    fun showDayOfWeekFlow(ctx: Context): Flow<Boolean> = ctx.settingsStore.data.map { it[KEY_SHOW_DAY_OF_WEEK] ?: false }
+    suspend fun setShowDayOfWeek(ctx: Context, v: Boolean) { ctx.settingsStore.edit { it[KEY_SHOW_DAY_OF_WEEK] = v } }
 
-    fun animEnabledFlow(ctx: Context): Flow<Boolean> =
-        ctx.settingsStore.data.map { it[KEY_ANIM_ENABLED] ?: true }
-    suspend fun setAnimEnabled(ctx: Context, v: Boolean) {
-        ctx.settingsStore.edit { it[KEY_ANIM_ENABLED] = v }
-    }
-    fun animBatterySaverFlow(ctx: Context): Flow<Boolean> =
-        ctx.settingsStore.data.map { it[KEY_ANIM_BATTERY_SAVER] ?: false }
-    suspend fun setAnimBatterySaver(ctx: Context, v: Boolean) {
-        ctx.settingsStore.edit { it[KEY_ANIM_BATTERY_SAVER] = v }
-    }
-    fun animRespectSystemFlow(ctx: Context): Flow<Boolean> =
-        ctx.settingsStore.data.map { it[KEY_ANIM_RESPECT_SYSTEM] ?: true }
-    suspend fun setAnimRespectSystem(ctx: Context, v: Boolean) {
-        ctx.settingsStore.edit { it[KEY_ANIM_RESPECT_SYSTEM] = v }
-    }
+    fun animEnabledFlow(ctx: Context): Flow<Boolean> = ctx.settingsStore.data.map { it[KEY_ANIM_ENABLED] ?: true }
+    suspend fun setAnimEnabled(ctx: Context, v: Boolean) { ctx.settingsStore.edit { it[KEY_ANIM_ENABLED] = v } }
+    fun animBatterySaverFlow(ctx: Context): Flow<Boolean> = ctx.settingsStore.data.map { it[KEY_ANIM_BATTERY_SAVER] ?: false }
+    suspend fun setAnimBatterySaver(ctx: Context, v: Boolean) { ctx.settingsStore.edit { it[KEY_ANIM_BATTERY_SAVER] = v } }
+    fun animRespectSystemFlow(ctx: Context): Flow<Boolean> = ctx.settingsStore.data.map { it[KEY_ANIM_RESPECT_SYSTEM] ?: true }
+    suspend fun setAnimRespectSystem(ctx: Context, v: Boolean) { ctx.settingsStore.edit { it[KEY_ANIM_RESPECT_SYSTEM] = v } }
     fun animModeFlow(ctx: Context): Flow<AnimationMode> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_ANIM_MODE]?.let { runCatching { AnimationMode.valueOf(it) }.getOrNull() }
-            ?: AnimationMode.ALL_VISIBLE
+        prefs[KEY_ANIM_MODE]?.let { runCatching { AnimationMode.valueOf(it) }.getOrNull() } ?: AnimationMode.ALL_VISIBLE
     }
-    suspend fun setAnimMode(ctx: Context, mode: AnimationMode) {
-        ctx.settingsStore.edit { it[KEY_ANIM_MODE] = mode.name }
-    }
+    suspend fun setAnimMode(ctx: Context, mode: AnimationMode) { ctx.settingsStore.edit { it[KEY_ANIM_MODE] = mode.name } }
 
     fun recentColorsFlow(ctx: Context): Flow<List<String>> = ctx.settingsStore.data.map { prefs ->
         (prefs[KEY_RECENT_COLORS] ?: "").split("|").filter { it.isNotBlank() }
     }
     suspend fun addRecentColor(ctx: Context, hex: String) {
         ctx.settingsStore.edit { prefs ->
-            val current = (prefs[KEY_RECENT_COLORS] ?: "")
-                .split("|").filter { it.isNotBlank() }.toMutableList()
-            current.remove(hex)
-            current.add(0, hex)
+            val current = (prefs[KEY_RECENT_COLORS] ?: "").split("|").filter { it.isNotBlank() }.toMutableList()
+            current.remove(hex); current.add(0, hex)
             while (current.size > 8) current.removeAt(current.size - 1)
             prefs[KEY_RECENT_COLORS] = current.joinToString("|")
         }
     }
 
-    fun swipesEnabledFlow(ctx: Context): Flow<Boolean> =
-        ctx.settingsStore.data.map { it[KEY_SWIPES] ?: true }
-    suspend fun setSwipesEnabled(ctx: Context, enabled: Boolean) {
-        ctx.settingsStore.edit { it[KEY_SWIPES] = enabled }
-    }
-    fun swipeToSettingsEnabledFlow(ctx: Context): Flow<Boolean> =
-        ctx.settingsStore.data.map { it[KEY_SWIPE_TO_SETTINGS] ?: true }
-    suspend fun setSwipeToSettingsEnabled(ctx: Context, enabled: Boolean) {
-        ctx.settingsStore.edit { it[KEY_SWIPE_TO_SETTINGS] = enabled }
-    }
+    fun swipesEnabledFlow(ctx: Context): Flow<Boolean> = ctx.settingsStore.data.map { it[KEY_SWIPES] ?: true }
+    suspend fun setSwipesEnabled(ctx: Context, enabled: Boolean) { ctx.settingsStore.edit { it[KEY_SWIPES] = enabled } }
+    fun swipeToSettingsEnabledFlow(ctx: Context): Flow<Boolean> = ctx.settingsStore.data.map { it[KEY_SWIPE_TO_SETTINGS] ?: true }
+    suspend fun setSwipeToSettingsEnabled(ctx: Context, enabled: Boolean) { ctx.settingsStore.edit { it[KEY_SWIPE_TO_SETTINGS] = enabled } }
     fun swipeLeftActionFlow(ctx: Context): Flow<SwipeAction> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_SWIPE_LEFT]?.let { runCatching { SwipeAction.valueOf(it) }.getOrNull() }
-            ?: SwipeAction.DELETE
+        prefs[KEY_SWIPE_LEFT]?.let { runCatching { SwipeAction.valueOf(it) }.getOrNull() } ?: SwipeAction.DELETE
     }
-    suspend fun setSwipeLeftAction(ctx: Context, action: SwipeAction) {
-        ctx.settingsStore.edit { it[KEY_SWIPE_LEFT] = action.name }
-    }
+    suspend fun setSwipeLeftAction(ctx: Context, action: SwipeAction) { ctx.settingsStore.edit { it[KEY_SWIPE_LEFT] = action.name } }
     fun swipeRightActionFlow(ctx: Context): Flow<SwipeAction> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_SWIPE_RIGHT]?.let { runCatching { SwipeAction.valueOf(it) }.getOrNull() }
-            ?: SwipeAction.NOTHING
+        prefs[KEY_SWIPE_RIGHT]?.let { runCatching { SwipeAction.valueOf(it) }.getOrNull() } ?: SwipeAction.NOTHING
     }
-    suspend fun setSwipeRightAction(ctx: Context, action: SwipeAction) {
-        ctx.settingsStore.edit { it[KEY_SWIPE_RIGHT] = action.name }
-    }
+    suspend fun setSwipeRightAction(ctx: Context, action: SwipeAction) { ctx.settingsStore.edit { it[KEY_SWIPE_RIGHT] = action.name } }
 
     fun sortModeFlow(ctx: Context): Flow<SortMode> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_SORT]?.let { runCatching { SortMode.valueOf(it) }.getOrNull() } ?: SortMode.BY_DATE
     }
-    suspend fun setSortMode(ctx: Context, mode: SortMode) {
-        ctx.settingsStore.edit { it[KEY_SORT] = mode.name }
-    }
+    suspend fun setSortMode(ctx: Context, mode: SortMode) { ctx.settingsStore.edit { it[KEY_SORT] = mode.name } }
 
     fun viewModeFlow(ctx: Context): Flow<ViewMode> = ctx.settingsStore.data.map { prefs ->
         prefs[KEY_VIEW_MODE]?.let { runCatching { ViewMode.valueOf(it) }.getOrNull() } ?: ViewMode.LIST
     }
-    suspend fun setViewMode(ctx: Context, mode: ViewMode) {
-        ctx.settingsStore.edit { it[KEY_VIEW_MODE] = mode.name }
-    }
+    suspend fun setViewMode(ctx: Context, mode: ViewMode) { ctx.settingsStore.edit { it[KEY_VIEW_MODE] = mode.name } }
 
     fun calendarMarkStyleFlow(ctx: Context): Flow<CalendarMarkStyle> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_CAL_MARK]?.let { runCatching { CalendarMarkStyle.valueOf(it) }.getOrNull() }
-            ?: CalendarMarkStyle.FILLED_SQUARE
+        prefs[KEY_CAL_MARK]?.let { runCatching { CalendarMarkStyle.valueOf(it) }.getOrNull() } ?: CalendarMarkStyle.FILLED_SQUARE
     }
-    suspend fun setCalendarMarkStyle(ctx: Context, style: CalendarMarkStyle) {
-        ctx.settingsStore.edit { it[KEY_CAL_MARK] = style.name }
-    }
+    suspend fun setCalendarMarkStyle(ctx: Context, style: CalendarMarkStyle) { ctx.settingsStore.edit { it[KEY_CAL_MARK] = style.name } }
 
     suspend fun incrementCardOpens(ctx: Context): Int {
         var newValue = 0
@@ -267,52 +193,33 @@ object SettingsRepository {
         }
         return newValue
     }
-    fun eventsCreatedFlow(ctx: Context): Flow<Int> =
-        ctx.settingsStore.data.map { it[KEY_EVENTS_CREATED] ?: 0 }
+    fun eventsCreatedFlow(ctx: Context): Flow<Int> = ctx.settingsStore.data.map { it[KEY_EVENTS_CREATED] ?: 0 }
 
-    fun notifEnabledFlow(ctx: Context): Flow<Boolean> =
-        ctx.settingsStore.data.map { it[KEY_NOTIF_ENABLED] ?: true }
-    suspend fun setNotifEnabled(ctx: Context, enabled: Boolean) {
-        ctx.settingsStore.edit { it[KEY_NOTIF_ENABLED] = enabled }
-    }
+    fun notifEnabledFlow(ctx: Context): Flow<Boolean> = ctx.settingsStore.data.map { it[KEY_NOTIF_ENABLED] ?: true }
+    suspend fun setNotifEnabled(ctx: Context, enabled: Boolean) { ctx.settingsStore.edit { it[KEY_NOTIF_ENABLED] = enabled } }
     fun notifModeFlow(ctx: Context): Flow<NotificationMode> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_NOTIF_MODE]?.let { runCatching { NotificationMode.valueOf(it) }.getOrNull() }
-            ?: NotificationMode.ALL
+        prefs[KEY_NOTIF_MODE]?.let { runCatching { NotificationMode.valueOf(it) }.getOrNull() } ?: NotificationMode.ALL
     }
-    suspend fun setNotifMode(ctx: Context, mode: NotificationMode) {
-        ctx.settingsStore.edit { it[KEY_NOTIF_MODE] = mode.name }
-    }
+    suspend fun setNotifMode(ctx: Context, mode: NotificationMode) { ctx.settingsStore.edit { it[KEY_NOTIF_MODE] = mode.name } }
     fun notifFrequencyFlow(ctx: Context): Flow<NotificationFrequency> = ctx.settingsStore.data.map { prefs ->
-        prefs[KEY_NOTIF_FREQ]?.let { runCatching { NotificationFrequency.valueOf(it) }.getOrNull() }
-            ?: NotificationFrequency.EVERY_DAY
+        prefs[KEY_NOTIF_FREQ]?.let { runCatching { NotificationFrequency.valueOf(it) }.getOrNull() } ?: NotificationFrequency.EVERY_DAY
     }
-    suspend fun setNotifFrequency(ctx: Context, f: NotificationFrequency) {
-        ctx.settingsStore.edit { it[KEY_NOTIF_FREQ] = f.name }
-    }
-    fun notifDaysBeforeFlow(ctx: Context): Flow<Int> =
-        ctx.settingsStore.data.map { it[KEY_NOTIF_DAYS_BEFORE] ?: 7 }
-    suspend fun setNotifDaysBefore(ctx: Context, days: Int) {
-        ctx.settingsStore.edit { it[KEY_NOTIF_DAYS_BEFORE] = days }
-    }
+    suspend fun setNotifFrequency(ctx: Context, f: NotificationFrequency) { ctx.settingsStore.edit { it[KEY_NOTIF_FREQ] = f.name } }
+    fun notifDaysBeforeFlow(ctx: Context): Flow<Int> = ctx.settingsStore.data.map { it[KEY_NOTIF_DAYS_BEFORE] ?: 7 }
+    suspend fun setNotifDaysBefore(ctx: Context, days: Int) { ctx.settingsStore.edit { it[KEY_NOTIF_DAYS_BEFORE] = days } }
     fun notifTimeFlow(ctx: Context): Flow<Pair<Int, Int>> = ctx.settingsStore.data.map { prefs ->
         (prefs[KEY_NOTIF_HOUR] ?: 9) to (prefs[KEY_NOTIF_MINUTE] ?: 0)
     }
     suspend fun setNotifTime(ctx: Context, hour: Int, minute: Int) {
-        ctx.settingsStore.edit {
-            it[KEY_NOTIF_HOUR] = hour
-            it[KEY_NOTIF_MINUTE] = minute
-        }
+        ctx.settingsStore.edit { it[KEY_NOTIF_HOUR] = hour; it[KEY_NOTIF_MINUTE] = minute }
     }
 
-    fun firstLaunchFlow(ctx: Context): Flow<String?> =
-        ctx.settingsStore.data.map { it[KEY_FIRST_LAUNCH] }
+    fun firstLaunchFlow(ctx: Context): Flow<String?> = ctx.settingsStore.data.map { it[KEY_FIRST_LAUNCH] }
     suspend fun ensureFirstLaunch(ctx: Context): String {
         var iso = ""
         ctx.settingsStore.edit { prefs ->
             val existing = prefs[KEY_FIRST_LAUNCH]
-            if (existing != null) {
-                iso = existing
-            } else {
+            if (existing != null) iso = existing else {
                 iso = java.time.LocalDate.now().toString()
                 prefs[KEY_FIRST_LAUNCH] = iso
             }
@@ -325,8 +232,7 @@ object SettingsRepository {
     }
     suspend fun markAchievementShown(ctx: Context, key: String) {
         ctx.settingsStore.edit { prefs ->
-            val current = (prefs[KEY_ACHIEVEMENTS_SHOWN] ?: "")
-                .split(",").filter { it.isNotBlank() }.toMutableSet()
+            val current = (prefs[KEY_ACHIEVEMENTS_SHOWN] ?: "").split(",").filter { it.isNotBlank() }.toMutableSet()
             current.add(key)
             prefs[KEY_ACHIEVEMENTS_SHOWN] = current.joinToString(",")
         }
@@ -344,53 +250,30 @@ enum class AnimationMode(val label: String) {
 }
 
 enum class CardBorderColor(val label: String, val hex: Long?) {
-    AUTO("Автоматически", null),
-    ACCENT("В цвет акцента", null),
-    WHITE("Белая", 0xFFFFFFFF),
-    BLACK("Чёрная", 0xFF000000),
-    GRAY("Серая", 0xFF9E9E9E),
-    RED("Красная", 0xFFE53935),
-    ORANGE("Оранжевая", 0xFFFB8C00),
-    YELLOW("Жёлтая", 0xFFFDD835),
-    GREEN("Зелёная", 0xFF43A047),
-    TEAL("Бирюзовая", 0xFF00ACC1),
-    BLUE("Синяя", 0xFF1E88E5),
-    INDIGO("Индиго", 0xFF3949AB),
-    PURPLE("Фиолетовая", 0xFF8E24AA),
-    PINK("Розовая", 0xFFD81B60),
-    BROWN("Коричневая", 0xFF6D4C41),
-    GOLD("Золотая", 0xFFD4AF37)
+    AUTO("Автоматически", null), ACCENT("В цвет акцента", null),
+    WHITE("Белая", 0xFFFFFFFF), BLACK("Чёрная", 0xFF000000),
+    GRAY("Серая", 0xFF9E9E9E), RED("Красная", 0xFFE53935),
+    ORANGE("Оранжевая", 0xFFFB8C00), YELLOW("Жёлтая", 0xFFFDD835),
+    GREEN("Зелёная", 0xFF43A047), TEAL("Бирюзовая", 0xFF00ACC1),
+    BLUE("Синяя", 0xFF1E88E5), INDIGO("Индиго", 0xFF3949AB),
+    PURPLE("Фиолетовая", 0xFF8E24AA), PINK("Розовая", 0xFFD81B60),
+    BROWN("Коричневая", 0xFF6D4C41), GOLD("Золотая", 0xFFD4AF37)
 }
 
-/** Плотность списка событий. */
-enum class ListDensity(
-    val label: String,
-    val verticalSpacingDp: Int,
-    val horizontalPaddingDp: Int,
-    val cardPaddingDp: Int
-) {
+enum class ListDensity(val label: String, val verticalSpacingDp: Int, val horizontalPaddingDp: Int, val cardPaddingDp: Int) {
     COMPACT("Компактная", 6, 10, 10),
     NORMAL("Обычная", 10, 16, 14),
     SPACIOUS("Просторная", 16, 20, 18)
 }
 
-/** Форма аватара. */
 enum class AvatarShape(val label: String) {
-    CIRCLE("Круг"),
-    SQUARE("Квадрат"),
-    ROUNDED_SQUARE("Скруглённый квадрат")
+    CIRCLE("Круг"), SQUARE("Квадрат"), ROUNDED_SQUARE("Скруглённый квадрат")
 }
 
-/** Размер шрифта заголовка (имени) на карточке. */
 enum class TitleFontSize(val label: String, val sp: Int) {
-    SMALL("S", 16),
-    MEDIUM("M", 18),
-    LARGE("L", 21)
+    SMALL("S", 16), MEDIUM("M", 18), LARGE("L", 21)
 }
 
-/** Формат счётчика дней. */
 enum class DaysFormat(val label: String) {
-    SHORT("5 дн."),
-    FULL("5 дней"),
-    PREFIX("через 5")
+    SHORT("5 дн."), FULL("5 дней"), PREFIX("через 5")
 }
