@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -112,16 +113,27 @@ fun EventCard(
     }
 
     val cardShape = RoundedCornerShape(18.dp)
+    
+    // Цвет свечения берем от цвета обводки
+    val glowColor = cardBorderColor.copy(alpha = 0.6f)
 
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = cardShape,
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (borderGlow) 8.dp else 0.dp
-        ),
         border = BorderStroke(width = actualBorderWidth, color = cardBorderColor),
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (borderGlow) {
+                    Modifier.shadow(
+                        elevation = 12.dp,
+                        shape = cardShape,
+                        clip = false,
+                        ambientColor = glowColor,
+                        spotColor = glowColor
+                    )
+                } else Modifier
+            )
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
     ) {
         Box(
@@ -136,9 +148,7 @@ fun EventCard(
                 AnimatedBackground(
                     type = event.animation.name,
                     tint = accentOnCard,
-                    modifier = Modifier
-                        .matchParentSize()
-                        .clip(cardShape)
+                    modifier = Modifier.matchParentSize().clip(cardShape)
                 )
             }
 
@@ -147,12 +157,7 @@ fun EventCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (selectionMode) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = if (isSelected) accent else subTextColor,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = if (isSelected) accent else subTextColor, modifier = Modifier.size(24.dp))
                     Spacer(Modifier.width(10.dp))
                 }
 
@@ -161,22 +166,13 @@ fun EventCard(
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (event.isPinned) {
-                            Icon(
-                                Icons.Default.PushPin,
-                                contentDescription = "Закреплено",
-                                tint = accentOnCard,
-                                modifier = Modifier.size(14.dp)
-                            )
+                            Icon(Icons.Default.PushPin, contentDescription = "Закреплено", tint = accentOnCard, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
                         }
                         Text(event.name, style = MaterialTheme.typography.titleMedium, color = textColor)
                     }
                     Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = buildDateString(event, today),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = subTextColor
-                    )
+                    Text(text = buildDateString(event, today), style = MaterialTheme.typography.bodyMedium, color = subTextColor)
                     if (event.group.isNotBlank()) {
                         Spacer(Modifier.height(6.dp))
                         GroupChip(event.group, accentOnCard)
@@ -198,10 +194,8 @@ fun EventCard(
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             if (showNotificationsIcon) {
                                 SmallIconTap(
-                                    icon = if (event.notificationsEnabled)
-                                        Icons.Default.Notifications else Icons.Default.NotificationsOff,
-                                    contentDescription = if (event.notificationsEnabled)
-                                        "Уведомления включены" else "Уведомления выключены",
+                                    icon = if (event.notificationsEnabled) Icons.Default.Notifications else Icons.Default.NotificationsOff,
+                                    contentDescription = if (event.notificationsEnabled) "Уведомления включены" else "Уведомления выключены",
                                     tint = if (event.notificationsEnabled) accentOnCard else subTextColor,
                                     onClick = onToggleNotifications
                                 )
@@ -223,40 +217,16 @@ fun EventCard(
 }
 
 @Composable
-private fun SmallIconTap(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    contentDescription: String,
-    tint: Color,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .size(30.dp)
-            .clip(CircleShape)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = tint,
-            modifier = Modifier.size(18.dp)
-        )
+private fun SmallIconTap(icon: androidx.compose.ui.graphics.vector.ImageVector, contentDescription: String, tint: Color, onClick: () -> Unit) {
+    Box(modifier = Modifier.size(30.dp).clip(CircleShape).clickable { onClick() }, contentAlignment = Alignment.Center) {
+        Icon(imageVector = icon, contentDescription = contentDescription, tint = tint, modifier = Modifier.size(18.dp))
     }
 }
 
 @Composable
 private fun GroupChip(group: String, color: Color) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = color.copy(alpha = 0.18f)
-    ) {
-        Text(
-            text = group,
-            style = MaterialTheme.typography.labelSmall,
-            color = color,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
-        )
+    Surface(shape = RoundedCornerShape(50), color = color.copy(alpha = 0.18f)) {
+        Text(text = group, style = MaterialTheme.typography.labelSmall, color = color, modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp))
     }
 }
 
