@@ -14,7 +14,7 @@ import java.io.InputStreamReader
 
 object BackupManager {
 
-    private const val FORMAT_VERSION = 2 // Поднял версию из-за новых полей
+    private const val FORMAT_VERSION = 3 // + border_color_hex
 
     suspend fun export(ctx: Context, uri: Uri): Int = withContext(Dispatchers.IO) {
         val dao = AppDatabase.get(ctx).eventDao()
@@ -40,12 +40,12 @@ object BackupManager {
                         put("social_links", e.socialLinksRaw)
                         put("notifications_enabled", e.notificationsEnabled)
                         put("card_color", e.cardColor)
-                        // ДОБАВЛЕНО:
                         put("is_pinned", e.isPinned)
                         put("animation", e.animation)
                         put("custom_color_hex", e.customColorHex)
                         put("checklist_raw", e.checklistRaw)
                         put("repeat_yearly", e.repeatYearly)
+                        put("border_color_hex", e.borderColorHex) // НОВОЕ
                     })
                 }
             })
@@ -86,12 +86,13 @@ object BackupManager {
                     socialLinksRaw = o.optString("social_links", ""),
                     notificationsEnabled = o.optBoolean("notifications_enabled", true),
                     cardColor = o.optInt("card_color", 0),
-                    // ДОБАВЛЕНО:
                     isPinned = o.optBoolean("is_pinned", false),
                     animation = o.optString("animation", "NONE"),
                     customColorHex = if (o.isNull("custom_color_hex")) null else o.optString("custom_color_hex"),
                     checklistRaw = o.optString("checklist_raw", ""),
-                    repeatYearly = o.optBoolean("repeat_yearly", true)
+                    repeatYearly = o.optBoolean("repeat_yearly", true),
+                    // НОВОЕ: старые бэкапы (v1, v2) → null, новые (v3) → значение
+                    borderColorHex = if (o.isNull("border_color_hex")) null else o.optString("border_color_hex").takeIf { it.isNotBlank() }
                 )
             )
         }
