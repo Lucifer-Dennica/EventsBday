@@ -53,7 +53,6 @@ fun StatsScreen(
         ) { p ->
             Column(Modifier.fillMaxSize().padding(p)) {
 
-                // Скроллируемая часть со всеми карточками статистики
                 Column(
                     Modifier
                         .weight(1f)
@@ -75,6 +74,7 @@ fun StatsScreen(
                             )
                         }
                     } else {
+                        // === ГЛАВНЫЕ ЦИФРЫ ===
                         BigStatCard(
                             title = "Всего событий",
                             value = stats.total.toString(),
@@ -107,6 +107,16 @@ fun StatsScreen(
                             )
                         }
 
+                        // === ИНСАЙТЫ ===
+                        Text(
+                            "Инсайты",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                        )
+
+                        // Самый насыщенный месяц
                         if (stats.busiestMonth != null) {
                             Card(
                                 colors = CardDefaults.cardColors(
@@ -116,12 +126,16 @@ fun StatsScreen(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Column(Modifier.padding(16.dp)) {
-                                    Text(
-                                        "Самый насыщенный месяц",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(Modifier.height(4.dp))
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("📈", style = MaterialTheme.typography.titleLarge)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            "Самый насыщенный месяц",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Spacer(Modifier.height(6.dp))
                                     Text(
                                         "${stats.busiestMonth.first} — ${stats.busiestMonth.second} событий",
                                         style = MaterialTheme.typography.titleLarge,
@@ -131,7 +145,8 @@ fun StatsScreen(
                             }
                         }
 
-                        if (stats.oldest != null) {
+                        // Самые старшие и младшие
+                        if (stats.oldest != null || stats.youngest != null) {
                             Card(
                                 colors = CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -140,21 +155,126 @@ fun StatsScreen(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Column(Modifier.padding(16.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("👥", style = MaterialTheme.typography.titleLarge)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            "Возрастные рекорды",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Spacer(Modifier.height(10.dp))
+                                    if (stats.oldest != null) {
+                                        Text(
+                                            "Самый старший: ${stats.oldest.name} (${stats.oldest.age} лет)",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                    }
+                                    if (stats.youngest != null) {
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(
+                                            "Самый младший: ${stats.youngest.name} (${stats.youngest.age} лет)",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Самый частый знак зодиака
+                        if (stats.topZodiac != null) {
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(Modifier.padding(16.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("♈", style = MaterialTheme.typography.titleLarge)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            "Астрологический перекос",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Spacer(Modifier.height(6.dp))
                                     Text(
-                                        "Самый старший контакт",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(Modifier.height(4.dp))
-                                    Text(
-                                        "${stats.oldest.name} — ${stats.oldest.age} лет",
-                                        style = MaterialTheme.typography.titleLarge,
+                                        "Больше всего у вас ${stats.topZodiac.first} (${stats.topZodiac.second})",
+                                        style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }
                             }
                         }
 
+                        // Топ группа
+                        if (stats.topGroup != null) {
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(Modifier.padding(16.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("🏷️", style = MaterialTheme.typography.titleLarge)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            "Самая большая группа",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Spacer(Modifier.height(6.dp))
+                                    Text(
+                                        "${stats.topGroup.first} (${stats.topGroup.second} чел.)",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+
+                        // Прогресс по чек-листам
+                        if (stats.checklistTotal > 0) {
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(Modifier.padding(16.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("✅", style = MaterialTheme.typography.titleLarge)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            "Чек-листы",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Spacer(Modifier.height(6.dp))
+                                    Text(
+                                        "Выполнено ${stats.checklistDone} из ${stats.checklistTotal} задач",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    LinearProgressIndicator(
+                                        progress = { stats.checklistDone.toFloat() / stats.checklistTotal },
+                                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
+                                    )
+                                }
+                            }
+                        }
+
+                        // Все группы
                         if (stats.groupCounts.isNotEmpty()) {
                             Card(
                                 colors = CardDefaults.cardColors(
@@ -165,7 +285,7 @@ fun StatsScreen(
                             ) {
                                 Column(Modifier.padding(16.dp)) {
                                     Text(
-                                        "Группы",
+                                        "Все группы",
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -194,7 +314,6 @@ fun StatsScreen(
                     }
                 }
 
-                // Реклама прижата к низу экрана
                 YandexBanner(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -272,6 +391,8 @@ private fun SmallStatCard(
     }
 }
 
+private data class OldestContact(val name: String, val age: Int)
+
 private data class Stats(
     val total: Int,
     val thisMonthCount: Int,
@@ -279,10 +400,13 @@ private data class Stats(
     val avgAge: Int?,
     val busiestMonth: Pair<String, Int>?,
     val oldest: OldestContact?,
+    val youngest: OldestContact?, // НОВОЕ
+    val topZodiac: Pair<String, Int>?, // НОВОЕ
+    val topGroup: Pair<String, Int>?, // НОВОЕ
+    val checklistDone: Int, // НОВОЕ
+    val checklistTotal: Int, // НОВОЕ
     val groupCounts: List<Pair<String, Int>>
 )
-
-private data class OldestContact(val name: String, val age: Int)
 
 private fun computeStats(events: List<Event>, today: LocalDate): Stats {
     val total = events.size
@@ -301,12 +425,37 @@ private fun computeStats(events: List<Event>, today: LocalDate): Stats {
         name to count
     }
 
-    val oldest = events
+    val ageContacts = events
         .mapNotNull { e -> e.year?.let { OldestContact(e.name, today.year - it) } }
         .filter { it.age in 0..150 }
-        .maxByOrNull { it.age }
+    
+    val oldest = ageContacts.maxByOrNull { it.age }
+    val youngest = ageContacts.minByOrNull { it.age }
+
+    val zodiacCounts = events.groupingBy { it.westernZodiac().label }.eachCount()
+    val topZodiac = zodiacCounts.maxByOrNull { it.value }
+
+    val groupCountsMap = events.filter { it.group.isNotBlank() }.groupingBy { it.group }.eachCount()
+    val topGroup = groupCountsMap.maxByOrNull { it.value }
+
+    val allChecklistItems = events.flatMap { it.checklist }
+    val checklistTotal = allChecklistItems.size
+    val checklistDone = allChecklistItems.count { it.done }
 
     val groupCounts = events.groupingBy { it.group }.eachCount().toList().sortedByDescending { it.second }
 
-    return Stats(total, thisMonthCount, nearestDays, avgAge, busiest, oldest, groupCounts)
+    return Stats(
+        total = total,
+        thisMonthCount = thisMonthCount,
+        nearestDays = nearestDays,
+        avgAge = avgAge,
+        busiestMonth = busiest,
+        oldest = oldest,
+        youngest = youngest,
+        topZodiac = topZodiac,
+        topGroup = topGroup,
+        checklistDone = checklistDone,
+        checklistTotal = checklistTotal,
+        groupCounts = groupCounts
+    )
 }
