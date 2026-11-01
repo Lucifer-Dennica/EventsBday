@@ -15,7 +15,9 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -28,7 +30,6 @@ import ru.yourname.events.R
 import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.settings.AvatarShape
 
-/** Глобальные настройки отображения аватара — задаются в DesignSettingsScreen. */
 data class AvatarConfig(
     val glow: Boolean = true,
     val size: Int = 54,
@@ -65,41 +66,84 @@ fun EventAvatar(
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val cx = this.size.width / 2f
                 val cy = this.size.height / 2f
-                val outerR = this.size.width / 2f
-                val innerR = realSize.toPx() / 2f
+                val outerHalf = this.size.width / 2f
+                val innerHalf = realSize.toPx() / 2f
 
-                drawCircle(
-                    color = accentColor.copy(alpha = 0.08f),
-                    radius = outerR,
-                    center = Offset(cx, cy)
-                )
-                drawCircle(
-                    color = accentColor.copy(alpha = 0.16f),
-                    radius = innerR + 6.dp.toPx(),
-                    center = Offset(cx, cy)
-                )
-                drawCircle(
-                    color = accentColor.copy(alpha = 0.28f),
-                    radius = innerR + 3.dp.toPx(),
-                    center = Offset(cx, cy)
-                )
-                // Кольцо свечения работает только для круглой формы
+                // Радиус скругления для формы (для круга — половина)
+                val cornerPx = when (config.shape) {
+                    AvatarShape.CIRCLE -> innerHalf
+                    AvatarShape.SQUARE -> 0f
+                    AvatarShape.ROUNDED_SQUARE -> realSize.toPx() * 0.28f
+                }
+
                 if (config.shape == AvatarShape.CIRCLE) {
+                    // Круглая форма — круги
+                    drawCircle(
+                        color = accentColor.copy(alpha = 0.08f),
+                        radius = outerHalf,
+                        center = Offset(cx, cy)
+                    )
+                    drawCircle(
+                        color = accentColor.copy(alpha = 0.16f),
+                        radius = innerHalf + 6.dp.toPx(),
+                        center = Offset(cx, cy)
+                    )
+                    drawCircle(
+                        color = accentColor.copy(alpha = 0.28f),
+                        radius = innerHalf + 3.dp.toPx(),
+                        center = Offset(cx, cy)
+                    )
                     drawCircle(
                         color = accentColor.copy(alpha = 0.85f),
-                        radius = innerR + 1.dp.toPx(),
+                        radius = innerHalf + 1.dp.toPx(),
                         center = Offset(cx, cy),
                         style = Stroke(width = 2.5.dp.toPx())
                     )
                 } else {
-                    // Для квадратной формы — рисуем скруглённый прямоугольник
-                    val halfSide = innerR - 1.dp.toPx()
-                    val cornerPx = if (config.shape == AvatarShape.ROUNDED_SQUARE) realSize.toPx() * 0.28f else 0f
+                    // Квадрат / Скруглённый квадрат — roundRect
+
+                    // Слой 1 (самый дальний)
+                    val outerCorner = if (config.shape == AvatarShape.ROUNDED_SQUARE) {
+                        cornerPx + 4.dp.toPx()
+                    } else 0f
+                    drawRoundRect(
+                        color = accentColor.copy(alpha = 0.08f),
+                        topLeft = Offset(cx - outerHalf, cy - outerHalf),
+                        size = Size(outerHalf * 2, outerHalf * 2),
+                        cornerRadius = CornerRadius(outerCorner)
+                    )
+
+                    // Слой 2
+                    val layer2Half = innerHalf + 6.dp.toPx()
+                    val layer2Corner = if (config.shape == AvatarShape.ROUNDED_SQUARE) {
+                        cornerPx + 3.dp.toPx()
+                    } else 0f
+                    drawRoundRect(
+                        color = accentColor.copy(alpha = 0.16f),
+                        topLeft = Offset(cx - layer2Half, cy - layer2Half),
+                        size = Size(layer2Half * 2, layer2Half * 2),
+                        cornerRadius = CornerRadius(layer2Corner)
+                    )
+
+                    // Слой 3
+                    val layer3Half = innerHalf + 3.dp.toPx()
+                    val layer3Corner = if (config.shape == AvatarShape.ROUNDED_SQUARE) {
+                        cornerPx + 2.dp.toPx()
+                    } else 0f
+                    drawRoundRect(
+                        color = accentColor.copy(alpha = 0.28f),
+                        topLeft = Offset(cx - layer3Half, cy - layer3Half),
+                        size = Size(layer3Half * 2, layer3Half * 2),
+                        cornerRadius = CornerRadius(layer3Corner)
+                    )
+
+                    // Чёткое кольцо
+                    val ringHalf = innerHalf + 1.dp.toPx()
                     drawRoundRect(
                         color = accentColor.copy(alpha = 0.85f),
-                        topLeft = Offset(cx - halfSide, cy - halfSide),
-                        size = androidx.compose.ui.geometry.Size(halfSide * 2, halfSide * 2),
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerPx),
+                        topLeft = Offset(cx - ringHalf, cy - ringHalf),
+                        size = Size(ringHalf * 2, ringHalf * 2),
+                        cornerRadius = CornerRadius(cornerPx),
                         style = Stroke(width = 2.5.dp.toPx())
                     )
                 }
