@@ -283,6 +283,22 @@ enum class AnimationMode(val label: String) {
     ALL_VISIBLE("Все видимые карточки"), FIRST_ONLY("Только первая видимая"), OFF("Отключить анимации")
 }
 
-enum class CardBorderColor(val label: String) {
-    AUTO("Автоматически"), WHITE("Белая"), BLACK("Чёрная"), ACCENT("В цвет акцента")
+/** Цвета обводки карточек. hex == null означает, что цвет берётся по контексту (AUTO/ACCENT). */
+enum class CardBorderColor(val label: String, val hex: Long?) {
+    AUTO("Автоматически", null),
+    ACCENT("В цвет акцента", null),
+    WHITE("Белая", 0xFFFFFFFF),
+    BLACK("Чёрная", 0xFF000000),
+    GRAY("Серая", 0xFF9E9E9E),
+    RED("Красная", 0xFFE53935),
+    ORANGE("Оранжевая", 0xFFFB8C00),
+    YELLOW("Жёлтая", 0xFFFDD835),
+    GREEN("Зелёная", 0xFF43A047),
+    TEAL("Бирюзовая", 0xFF00ACC1),
+    BLUE("Синяя", 0xFF1E88E5),
+    INDIGO("Индиго", 0xFF3949AB),
+    PURPLE("Фиолетовая", 0xFF8E24AA),
+    PINK("Розовая", 0xFFD81B60),
+    BROWN("Коричневая", 0xFF6D4C41),
+    GOLD("Золотая", 0xFFD4AF37)
 }
