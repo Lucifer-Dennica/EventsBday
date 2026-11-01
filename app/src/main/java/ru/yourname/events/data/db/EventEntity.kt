@@ -23,5 +23,6 @@ data class EventEntity(
     val animation: String = "NONE",
     val customColorHex: String? = null,
     val checklistRaw: String = "",
-    val repeatYearly: Boolean = true
+    val repeatYearly: Boolean = true,
+    val borderColorHex: String? = null
 )
