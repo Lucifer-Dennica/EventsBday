@@ -2,12 +2,15 @@ package ru.yourname.events.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import android.provider.CalendarContract
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Cake
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -28,10 +31,12 @@ import ru.yourname.events.data.model.Event
 import ru.yourname.events.data.model.SocialPlatform
 import ru.yourname.events.data.social.SocialUrlParser
 import ru.yourname.events.ui.components.EventAvatar
+import ru.yourname.events.ui.components.GreetingsDialog
 import ru.yourname.events.ui.components.LocalDesignConfig
 import ru.yourname.events.ui.components.SocialIcon
 import ru.yourname.events.ui.components.ZodiacBlock
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -53,6 +58,7 @@ fun EventDetailScreen(
     val age = event.ageAtNext(today)
 
     var confirmDelete by remember { mutableStateOf(false) }
+    var showGreetings by remember { mutableStateOf(false) }
 
     val phoneLink = event.socialLinks.firstOrNull {
         it.platform == SocialPlatform.PHONE ||
@@ -65,16 +71,37 @@ fun EventDetailScreen(
 
     fun dial() {
         if (phoneDigits == null) return
-        runCatching {
-            ctx.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phoneDigits")))
-        }
+        runCatching { ctx.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phoneDigits"))) }
     }
 
     fun sendSms() {
         if (phoneDigits == null) return
-        runCatching {
-            ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("sms:$phoneDigits")))
+        runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("sms:$phoneDigits"))) }
+    }
+
+    fun addToCalendar() {
+        val beginMillis = next.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val endMillis = beginMillis + 24L * 60 * 60 * 1000
+        val title = if (age != null) "${event.name} — $age лет" else event.name
+        val description = buildString {
+            if (event.note.isNotBlank()) append(event.note).append("\n\n")
+            append("Добавлено из приложения «Мои События»")
         }
+
+        val intent = Intent(Intent.ACTION_INSERT).apply {
+            data = CalendarContract.Events.CONTENT_URI
+            putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, beginMillis)
+            putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endMillis)
+            putExtra(CalendarContract.Events.TITLE, "🎂 $title")
+            putExtra(CalendarContract.Events.DESCRIPTION, description)
+            putExtra(CalendarContract.Events.HAS_ALARM, 1)
+            putExtra(CalendarContract.Reminders.MINUTES, 60)
+            putExtra(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY)
+            if (event.repeatYearly) {
+                putExtra(CalendarContract.Events.RRULE, "FREQ=YEARLY")
+            }
+        }
+        runCatching { ctx.startActivity(intent) }
     }
 
     fun toggleChecklistItem(index: Int) {
@@ -119,27 +146,53 @@ fun EventDetailScreen(
                 Text("Исполнится $age лет", style = MaterialTheme.typography.titleLarge)
             }
 
-            if (phoneDigits != null) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
+            // === КНОПКИ ДЕЙСТВИЙ 2x2 ===
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                if (phoneDigits != null) {
                     Button(
                         onClick = { dial() },
                         modifier = Modifier.weight(1f).height(48.dp)
                     ) {
-                        Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Позвонить")
+                        Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Позвонить", maxLines = 1)
                     }
                     OutlinedButton(
                         onClick = { sendSms() },
                         modifier = Modifier.weight(1f).height(48.dp)
                     ) {
-                        Icon(Icons.Default.Message, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("SMS")
+                        Icon(Icons.Default.Message, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("SMS", maxLines = 1)
                     }
+                }
+            }
+
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { addToCalendar() },
+                    modifier = Modifier.weight(1f).height(48.dp)
+                ) {
+                    Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("В календарь", maxLines = 1)
+                }
+                Button(
+                    onClick = { showGreetings = true },
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiary
+                    )
+                ) {
+                    Icon(Icons.Default.Cake, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Поздравить", maxLines = 1)
                 }
             }
 
@@ -176,7 +229,6 @@ fun EventDetailScreen(
                 }
             }
 
-            // Скрываем блок астрологии, если пользователь отключил его в настройках дизайна
             if (design.showZodiac) {
                 ZodiacBlock(event)
             }
@@ -235,6 +287,10 @@ fun EventDetailScreen(
                 }
             }
         }
+    }
+
+    if (showGreetings) {
+        GreetingsDialog(event = event, onDismiss = { showGreetings = false })
     }
 
     if (confirmDelete) {
