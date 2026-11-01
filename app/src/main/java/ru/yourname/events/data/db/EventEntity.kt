@@ -24,5 +24,7 @@ data class EventEntity(
     val customColorHex: String? = null,
     val checklistRaw: String = "",
     val repeatYearly: Boolean = true,
-    val borderColorHex: String? = null
+    val borderColorHex: String? = null,
+    // НОВОЕ: "COLOR" | "NEON_RUNNING" | "NEON_FULL_STATIC" | "NEON_FULL_ANIMATED" | null
+    val borderStyle: String? = null
 )
