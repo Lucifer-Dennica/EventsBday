@@ -66,8 +66,8 @@ fun EventCard(
     animationsAllowed: Boolean = true,
     borderWidth: Int = 2,
     borderColorPref: CardBorderColor = CardBorderColor.AUTO,
-    borderGlow: Boolean = false, // deprecated — теперь design.glowStyle
-    neonBorder: Boolean = false, // deprecated — теперь design.neonMode
+    @Suppress("UNUSED_PARAMETER") borderGlow: Boolean = false, // legacy — игнорируется, используем design.glowStyle
+    @Suppress("UNUSED_PARAMETER") neonBorder: Boolean = false, // legacy — игнорируется, per-card логика ниже
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onToggleNotifications: () -> Unit,
@@ -78,17 +78,19 @@ fun EventCard(
     val days = event.daysUntil(today)
     val accent = MaterialTheme.colorScheme.primary
 
-    // Обратная совместимость со старыми параметрами
-    val effectiveGlowStyle = when {
-        design.glowStyle != CardGlowStyle.NONE -> design.glowStyle
-        borderGlow -> CardGlowStyle.GLOW
-        else -> CardGlowStyle.NONE
+    // Приоритет: borderStyle карточки > глобальный design.neonMode
+    val effectiveNeonMode: NeonMode = when (event.borderStyle) {
+        "NEON_RUNNING" -> NeonMode.RUNNING
+        "NEON_FULL_STATIC" -> NeonMode.FULL_STATIC
+        "NEON_FULL_ANIMATED" -> NeonMode.FULL_ANIMATED
+        "COLOR" -> NeonMode.OFF
+        else -> {
+            // Если стиль не задан, но задан цвет — значит это старый формат «статичный цвет»
+            if (!event.borderColorHex.isNullOrBlank()) NeonMode.OFF else design.neonMode
+        }
     }
-    val effectiveNeonMode = when {
-        design.neonMode != NeonMode.OFF -> design.neonMode
-        neonBorder -> NeonMode.RUNNING
-        else -> NeonMode.OFF
-    }
+
+    val effectiveGlowStyle = design.glowStyle
     val glowIntensity = (design.glowIntensity / 100f).coerceIn(0f, 1f)
 
     val hasCustomColor = !event.customColorHex.isNullOrBlank()
@@ -133,7 +135,7 @@ fun EventCard(
         else -> accent
     }
 
-    // Цвет обводки: приоритет per-card, иначе глобальный
+    // Приоритет: per-card цвет > глобальные настройки
     val cardBorderColor: Color = if (!event.borderColorHex.isNullOrBlank()) {
         runCatching { Color(android.graphics.Color.parseColor(event.borderColorHex)) }
             .getOrElse { accent }
@@ -160,7 +162,6 @@ fun EventCard(
     val needShadow = effectiveGlowStyle == CardGlowStyle.SHADOW || effectiveGlowStyle == CardGlowStyle.GLOW_SHADOW
     val needGlow = effectiveGlowStyle == CardGlowStyle.GLOW || effectiveGlowStyle == CardGlowStyle.GLOW_SHADOW
 
-    // Анимация для неона
     val infiniteTransition = rememberInfiniteTransition(label = "neon")
     val borderPhase by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -194,7 +195,6 @@ fun EventCard(
             .then(
                 if (needGlow) {
                     Modifier.drawWithContent {
-                        // Сначала рисуем свечение (под содержимым)
                         drawGlowLayers(cardBorderColor, cornerRadiusDp.toPx(), glowIntensity)
                         drawContent()
                     }
@@ -355,7 +355,6 @@ private fun formatDays(days: Long, format: DaysFormat): String {
     }
 }
 
-// === Усиленное свечение вокруг карточки ===
 private fun DrawScope.drawGlowLayers(color: Color, cornerPx: Float, intensity: Float) {
     if (intensity <= 0f) return
     val steps = 6
@@ -374,7 +373,6 @@ private fun DrawScope.drawGlowLayers(color: Color, cornerPx: Float, intensity: F
     }
 }
 
-// === 4 режима неоновой обводки ===
 private fun DrawScope.drawNeonBorder(
     mode: NeonMode,
     baseColor: Color,
@@ -385,7 +383,6 @@ private fun DrawScope.drawNeonBorder(
     val strokePx = borderWidth.value.dp.toPx().coerceAtLeast(2.dp.toPx())
     val cornerPx = cornerDp.toPx()
 
-    // Палитра неона. Для анимированной — цвета интерполируются по фазе
     val staticColors = listOf(
         Color(0xFFE91E63), Color(0xFFFF9800), Color(0xFFFFEB3B),
         Color(0xFF4CAF50), Color(0xFF00BCD4), Color(0xFF3F51B5),
@@ -399,13 +396,10 @@ private fun DrawScope.drawNeonBorder(
             val inset = strokePx / 2f
             val innerSize = Size(size.width - strokePx, size.height - strokePx)
             val innerTopLeft = Offset(inset, inset)
-
             val brush = Brush.sweepGradient(
                 colors = staticColors,
                 center = Offset(size.width / 2f, size.height / 2f)
             )
-
-            // Базовая тусклая обводка (чтобы не было пустоты)
             drawRoundRect(
                 color = baseColor.copy(alpha = 0.18f),
                 topLeft = innerTopLeft,
@@ -413,12 +407,8 @@ private fun DrawScope.drawNeonBorder(
                 cornerRadius = CornerRadius(cornerPx),
                 style = Stroke(width = strokePx)
             )
-
-            // Бегущий сегмент
             val rect = Rect(inset, inset, size.width - inset, size.height - inset)
-            val borderPath = Path().apply {
-                addRoundRect(RoundRect(rect, CornerRadius(cornerPx)))
-            }
+            val borderPath = Path().apply { addRoundRect(RoundRect(rect, CornerRadius(cornerPx))) }
             val measure = PathMeasure()
             measure.setPath(borderPath, false)
             val totalLen = measure.length
@@ -455,8 +445,6 @@ private fun DrawScope.drawNeonBorder(
             val inset = strokePx / 2f
             val innerSize = Size(size.width - strokePx, size.height - strokePx)
             val innerTopLeft = Offset(inset, inset)
-
-            // Внешнее свечение
             drawRoundRect(
                 brush = brush,
                 topLeft = innerTopLeft,
@@ -465,7 +453,6 @@ private fun DrawScope.drawNeonBorder(
                 alpha = 0.40f,
                 style = Stroke(width = strokePx + 8.dp.toPx())
             )
-            // Чёткая линия
             drawRoundRect(
                 brush = brush,
                 topLeft = innerTopLeft,
@@ -476,7 +463,6 @@ private fun DrawScope.drawNeonBorder(
         }
 
         NeonMode.FULL_ANIMATED -> {
-            // Плавная интерполяция цветов по фазе — эффект «переливания»
             val animatedColors = animatedSweepColors(phase)
             val brush = Brush.sweepGradient(
                 colors = animatedColors,
@@ -485,7 +471,6 @@ private fun DrawScope.drawNeonBorder(
             val inset = strokePx / 2f
             val innerSize = Size(size.width - strokePx, size.height - strokePx)
             val innerTopLeft = Offset(inset, inset)
-
             drawRoundRect(
                 brush = brush,
                 topLeft = innerTopLeft,
@@ -505,7 +490,6 @@ private fun DrawScope.drawNeonBorder(
     }
 }
 
-// Плавный циклический сдвиг цветов для анимации градиента
 private fun animatedSweepColors(phase: Float): List<Color> {
     val base = listOf(
         Color(0xFFE91E63), Color(0xFFFF9800), Color(0xFFFFEB3B),
