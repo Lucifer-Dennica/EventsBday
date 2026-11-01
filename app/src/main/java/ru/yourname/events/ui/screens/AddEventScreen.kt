@@ -75,6 +75,7 @@ fun AddEventScreen(
     var animation by remember { mutableStateOf(editing?.animation ?: CardAnimation.NONE) }
     var customColorHex by remember { mutableStateOf(editing?.customColorHex) }
     var checklist by remember { mutableStateOf(editing?.checklist ?: emptyList()) }
+    var repeatYearly by remember { mutableStateOf(editing?.repeatYearly ?: true) }
     var newItemText by remember { mutableStateOf("") }
     var showDatePicker by remember { mutableStateOf(false) }
     var showColorDialog by remember { mutableStateOf(false) }
@@ -197,6 +198,25 @@ fun AddEventScreen(
                 Text("Указать год рождения")
             }
 
+            // НОВОЕ: Повторять каждый год
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Checkbox(
+                    checked = repeatYearly,
+                    onCheckedChange = { repeatYearly = it }
+                )
+                Column {
+                    Text("Напоминать каждый год", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        "Если выключено — событие будет разовым",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
             Text("Группа", style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
                 value = group,
@@ -215,7 +235,6 @@ fun AddEventScreen(
                 }
             }
 
-            // ЦВЕТ КАРТОЧКИ
             Text("Цвет карточки", style = MaterialTheme.typography.titleMedium)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(CardColors.indices.toList()) { i ->
@@ -271,7 +290,6 @@ fun AddEventScreen(
                 }
             }
 
-            // АНИМАЦИЯ
             Text("Анимация карточки", style = MaterialTheme.typography.titleMedium)
             Text(
                 "Может немного нагружать устройство. Если не нужно — оставьте «Без анимации».",
@@ -296,14 +314,7 @@ fun AddEventScreen(
                 minLines = 2
             )
 
-            // === ЧЕК-ЛИСТ ===
             Text("Чек-лист", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Полезно для подготовки: «Купить подарок», «Позвонить» и т.д.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
             if (checklist.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     checklist.forEachIndexed { i, item ->
@@ -319,11 +330,7 @@ fun AddEventScreen(
                                     }
                                 }
                             )
-                            Text(
-                                item.text,
-                                modifier = Modifier.weight(1f),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+                            Text(item.text, modifier = Modifier.weight(1f))
                             IconButton(onClick = {
                                 checklist = checklist.toMutableList().also { it.removeAt(i) }
                             }) {
@@ -334,7 +341,6 @@ fun AddEventScreen(
                 }
             }
 
-            // Добавление нового пункта
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -356,20 +362,6 @@ fun AddEventScreen(
                     }
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Добавить")
-                }
-            }
-
-            // Быстрые пресеты
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(checklistPresets) { preset ->
-                    AssistChip(
-                        onClick = {
-                            if (checklist.none { it.text == preset }) {
-                                checklist = checklist + ChecklistItem(preset)
-                            }
-                        },
-                        label = { Text("+ $preset") }
-                    )
                 }
             }
 
@@ -409,7 +401,8 @@ fun AddEventScreen(
                             isPinned = isPinned,
                             animation = animation,
                             customColorHex = customColorHex,
-                            checklist = checklist
+                            checklist = checklist,
+                            repeatYearly = repeatYearly
                         )
                     )
                 },
